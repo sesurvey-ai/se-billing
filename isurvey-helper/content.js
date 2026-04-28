@@ -45,11 +45,14 @@
       tumbonHidden:     'input[type="hidden"][name="tab1_survey_tumbonID"]',
       feeInput:         'input#tab1_SUR_INVEST-inputEl',
       feeCmpId:         'tab1_SUR_INVEST',
-      outOfAreaCmpId:   'tab1_chk_co_area',
-      inOutGroupCmpId:  'tab1_grd-in_out',
-      outOfAreaInput:   'input#tab1_chk_co_area-inputEl',
-      inOutRadioName:   'tab1_rd-in_out',
-      outValueLabel:    'นอก',
+      outOfAreaCmpId:      'tab1_chk_co_area',
+      outOfAreaAmountCmpId:'tab1_chk_co_area_amount',          // numberfield ที่ user กรอกยอดเอง
+      outOfAreaAmountInputId: 'tab1_chk_co_area_amount-inputEl',
+      inOutGroupCmpId:     'tab1_grd-in_out',
+      outOfAreaInput:      'input#tab1_chk_co_area-inputEl',
+      outOfAreaInputId:    'tab1_chk_co_area-inputEl',
+      inOutRadioName:      'tab1_rd-in_out',
+      outValueLabel:       'นอก',
     },
     CFG.selectors || {}
   );
@@ -57,6 +60,44 @@
   const TAG = "[ISurveyHelper]";
   const log  = (...a) => CFG.debug && console.log(TAG, ...a);
   const warn = (...a) => console.warn(TAG, ...a);
+
+  // ─────────────────────────────────────────────────────────
+  // Reference data bridge (postMessage ↔ loader.js ใน ISOLATED)
+  // ─────────────────────────────────────────────────────────
+  // หน้าเว็บมี CSP เข้ม ห้าม inline <script> เลยใช้ postMessage แทน
+  (function setupRefBridge() {
+    let received = false;
+    const ORIGIN = window.location.origin;
+
+    window.addEventListener("message", (ev) => {
+      if (ev.source !== window) return;
+      const d = ev.data;
+      if (!d || d.__isurveyHelper !== true) return;
+      if (d.type === "ref-data-response" && !received && d.payload) {
+        received = true;
+        window.__ISURVEY_REF__ = d.payload;
+        window.dispatchEvent(new CustomEvent("isurvey-ref-ready"));
+      }
+    });
+
+    function request() {
+      window.postMessage(
+        { __isurveyHelper: true, type: "ref-data-request" },
+        ORIGIN
+      );
+    }
+
+    // ขอทันที + retry สั้น ๆ เผื่อ loader ยัง fetch ไม่เสร็จ
+    request();
+    let attempts = 0;
+    const timer = setInterval(() => {
+      if (received || attempts++ > 20) {
+        clearInterval(timer);
+        return;
+      }
+      request();
+    }, 500);
+  })();
 
   // ─────────────────────────────────────────────────────────
   // Utilities
@@ -157,6 +198,24 @@
     return !!(cb && cb.checked);
   }
 
+  /**
+   * อ่านยอดเงินที่ user กรอกใน numberfield "นอกพื้นที่"
+   * คืน { amount, source } โดย source = "custom" ถ้าได้จาก field, "default" ถ้า fallback
+   * - field ไม่มีอยู่ / ว่าง → ใช้ default จาก config (50)
+   * - field มีค่าตัวเลขถูกต้อง (รวม 0) → ใช้ค่านั้น
+   */
+  function getOutOfAreaAmount() {
+    const defaultAmt = CFG.modifierFees.outOfArea;
+    const cmp = getExtCmp(SEL.outOfAreaAmountCmpId);
+    if (cmp && typeof cmp.getValue === "function") {
+      const v = cmp.getValue();
+      if (v !== null && v !== undefined && v !== "" && !isNaN(v)) {
+        return { amount: Number(v), source: "custom" };
+      }
+    }
+    return { amount: defaultAmt, source: "default" };
+  }
+
   function isOutOfHoursSelected() {
     // Ext path: radiogroup.getValue() = { tab1_rd-in_out: "ใน" | "นอก" }
     const grp = getExtCmp(SEL.inOutGroupCmpId);
@@ -177,8 +236,17 @@
   function getActiveModifiers() {
     const m = CFG.modifierFees || {};
     const list = [];
-    if (m.outOfArea && isOutOfAreaChecked()) {
-      list.push({ key: "outOfArea", label: "นอกพื้นที่", amount: m.outOfArea });
+    if (isOutOfAreaChecked()) {
+      // ค่ามาจาก numberfield ก่อน → fallback default จาก config
+      const { amount, source } = getOutOfAreaAmount();
+      if (amount !== 0 || source === "custom") {
+        // amount 0 ที่ user กรอกเอง = ตั้งใจให้ +0 ก็ใส่ใน list เพื่อ log ให้ครบ
+        list.push({
+          key: "outOfArea",
+          label: source === "custom" ? "นอกพื้นที่ (custom)" : "นอกพื้นที่",
+          amount: amount,
+        });
+      }
     }
     if (m.outOfHours && isOutOfHoursSelected()) {
       list.push({ key: "outOfHours", label: "นอกเวลา", amount: m.outOfHours });
@@ -270,16 +338,24 @@
     if (window.__iSurveyHelperModifierListenerAttached) return;
     window.__iSurveyHelperModifierListenerAttached = true;
 
+    // 'change' = checkbox / radio / numberfield (blur)
     document.addEventListener("change", (ev) => {
       const t = ev.target;
       if (!t) return;
-      const isOutOfAreaCb =
-        t.id === SEL.outOfAreaInput.replace(/^input/, "").replace(/^#/, "") ||
-        (t.type === "checkbox" && t.id === "tab1_chk_co_area-inputEl");
-      const isInOutRadio =
-        t.type === "radio" && t.name === SEL.inOutRadioName;
-      if (isOutOfAreaCb || isInOutRadio) {
+      const matches =
+        t.id === SEL.outOfAreaInputId ||
+        t.id === SEL.outOfAreaAmountInputId ||
+        (t.type === "radio" && t.name === SEL.inOutRadioName);
+      if (matches) {
         // sync ทันทีหลัง Ext กระจาย event ภายใน
+        setTimeout(syncFeeFromLocation, 0);
+      }
+    }, true);
+
+    // 'input' = ขณะ user พิมพ์ใน numberfield (live update)
+    document.addEventListener("input", (ev) => {
+      const t = ev.target;
+      if (t && t.id === SEL.outOfAreaAmountInputId) {
         setTimeout(syncFeeFromLocation, 0);
       }
     }, true);
@@ -300,7 +376,7 @@
   function init() {
     const allow = CFG.enabledProvinces || [];
     log(
-      `Loaded v1.2.0. mappings: ` +
+      `Loaded. mappings: ` +
         `province=${Object.keys(PROVINCE_MAP).length}, ` +
         `amphur=${Object.keys(AMPHUR_MAP).length}, ` +
         `tumbon=${Object.keys(TUMBON_MAP).length}, ` +

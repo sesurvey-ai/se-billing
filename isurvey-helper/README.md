@@ -45,12 +45,17 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 
 ### Modifier (เปิด/ปิด/ปรับจำนวนเงินได้ใน config.js → `modifierFees`)
 
-| Modifier | Trigger | Default |
-|----------|---------|---------|
-| `outOfArea` | checkbox "นอกพื้นที่" (`tab1_chk_co_area`) ถูกติ๊ก | +50 |
-| `outOfHours` | radio "นอก" ใน group `tab1_grd-in_out` ถูกเลือก | +100 |
+| Modifier | Trigger | Default | หมายเหตุ |
+|----------|---------|---------|----------|
+| `outOfArea` | checkbox "นอกพื้นที่" (`tab1_chk_co_area`) ถูกติ๊ก | +50 | ถ้า user กรอกยอดเอง ใน numberfield ที่โผล่ขึ้นข้างหลัง checkbox จะใช้ค่านั้นแทน default |
+| `outOfHours` | radio "นอก" ใน group `tab1_grd-in_out` ถูกเลือก | +100 | ค่าคงที่ตาม config |
 
 ตั้ง `modifierFees.outOfArea = 0` หรือ `outOfHours = 0` เพื่อปิด
+
+**Numberfield "ยอดเงิน (บาท)" สำหรับ outOfArea:**
+- โผล่อัตโนมัติเมื่อติ๊ก checkbox (จัดการโดย [feature-out-of-area-amount.js](./feature-out-of-area-amount.js))
+- หาย + คืน width checkbox เป็น 400 เมื่อปลด
+- ค่าใน field จะถูก feed กลับเข้า fee คำนวณทันที (ทั้ง `change` และ `input` event)
 
 ### Whitelist จังหวัด (ทดสอบทีละจังหวัด)
 
@@ -67,8 +72,9 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 |-----------|---------------|
 | ใน + ในพื้นที่ | 700 |
 | นอก + ในพื้นที่ | 800 (+100) |
-| ใน + นอกพื้นที่ | 750 (+50) |
-| นอก + นอกพื้นที่ | 850 (+50 +100) |
+| ใน + นอกพื้นที่ (ไม่กรอกยอด) | 750 (+50 default) |
+| ใน + นอกพื้นที่ (กรอก 80) | 780 (+80 custom) |
+| นอก + นอกพื้นที่ (กรอก 120) | 920 (+120 +100) |
 
 ---
 
@@ -126,14 +132,15 @@ window.TUMBON_FEE_MAP = {
 
 ```
 isurvey-helper/
-├── manifest.json          ← MV3 + content_scripts + web_accessible_resources
-├── config.js              ← *_FEE_MAP + ตัวเลือกอื่น ๆ (แก้ที่นี่ที่เดียว)
-├── content.js             ← Logic หลัก (MAIN world): observer + setValue
-├── loader.js              ← Bridge (ISOLATED world): fetch JSON → window
+├── manifest.json                        ← MV3 + content_scripts + web_accessible_resources
+├── config.js                            ← *_FEE_MAP + ตัวเลือกอื่น ๆ (แก้ที่นี่ที่เดียว)
+├── content.js                           ← Logic หลัก (MAIN world): observer + setValue
+├── loader.js                            ← Bridge (ISOLATED world): fetch JSON → postMessage → MAIN
+├── feature-out-of-area-amount.js        ← UI: numberfield "ยอดเงิน" คู่กับ checkbox "นอกพื้นที่"
 ├── data/
-│   ├── provinces.json     ← 77 จังหวัด (reference)
-│   ├── amphurs.json       ← อำเภอทั้งประเทศ (reference)
-│   └── tumbons.json       ← ตำบลทั้งประเทศ (reference)
+│   ├── provinces.json                   ← 77 จังหวัด (reference)
+│   ├── amphurs.json                     ← อำเภอทั้งประเทศ (reference)
+│   └── tumbons.json                     ← ตำบลทั้งประเทศ (reference)
 ├── icon-16.png / icon-48.png / icon-128.png
 └── README.md
 ```
@@ -143,32 +150,61 @@ isurvey-helper/
 | ไฟล์ | World | หน้าที่ |
 |------|-------|--------|
 | `manifest.json` | — | ประกาศ extension, match URL, inject scripts, expose `data/*.json` |
-| `loader.js` | ISOLATED | fetch JSON อ้างอิง → ฉีดเข้า `window.__ISURVEY_REF__` ของ MAIN |
+| `loader.js` | ISOLATED | fetch JSON อ้างอิง → ส่งให้ MAIN ผ่าน `window.postMessage` (ใช้ postMessage แทน inline script เพราะหน้าเว็บมี CSP เข้ม) |
 | `config.js` | MAIN | กำหนด `*_FEE_MAP` และ `ISURVEY_HELPER_CONFIG` |
-| `content.js` | MAIN | อ่าน hidden inputs, lookup fee, set ผ่าน `Ext.getCmp().setValue()` |
+| `content.js` | MAIN | อ่าน hidden inputs / modifier inputs, lookup fee, set ผ่าน `Ext.getCmp().setValue()` |
+| `feature-out-of-area-amount.js` | MAIN | สร้าง/ลบ numberfield "ยอดเงิน (บาท)" ตามสถานะ checkbox "นอกพื้นที่" (poll ทุก 500ms) |
 | `data/*.json` | — | ข้อมูล reference จาก API I Survey ใช้ทั้ง runtime (log) และ developer (เปิดอ่าน) |
 
 ---
 
 ## การทำงาน (สรุป)
 
-1. **`loader.js` (ISOLATED)** รันที่ `document_start` → fetch 3 JSON files
-   พร้อมกัน → inject `<script>` ที่ตั้ง `window.__ISURVEY_REF__` ใน MAIN
-2. **`content.js` (MAIN)** รันที่ `document_idle`:
-   - ผูก `MutationObserver` กับ hidden inputs ของ province / amphur / tumbon
-   - มี `setInterval` 500ms เป็น safety-net (re-attach observer ถ้า DOM ถูก
-     re-render และ re-sync ค่าเผื่อ Ext set `.value` โดยไม่แตะ attribute)
-3. ทุกครั้งที่ค่าเปลี่ยน → lookup ตาม precedence (tumbon > amphur > province):
-   - ถ้าเจอ และค่าปัจจุบันใน `tab1_SUR_INVEST` ไม่ตรง →
-     `Ext.getCmp('tab1_SUR_INVEST').setValue(fee)`
-     (fallback DOM event ถ้า Ext ใช้ไม่ได้)
-   - ไฮไลต์ช่องสีเหลือง 1.5 วิ
-   - log: `[ISurveyHelper] Set ค่าบริการ = 900 (amphur: 1003 - หนองจอก) [ext]`
+### Reference data bridge (ISOLATED ↔ MAIN)
+1. **`loader.js` (ISOLATED)** รันที่ `document_start`
+   → `fetch(chrome.runtime.getURL("data/*.json"))` พร้อมกัน 3 ไฟล์
+   → ส่ง payload ให้ MAIN ผ่าน `window.postMessage({type:"ref-data-response", payload})`
+2. **`content.js` (MAIN)** ผูก `message` listener ที่หัว IIFE ตั้งแต่ก่อน init
+   → ส่ง `ref-data-request` ทันที + retry ทุก 500ms (สูงสุด 20 ครั้ง)
+   เผื่อ loader ยังโหลดไม่เสร็จ
+   → เมื่อรับ payload → set `window.__ISURVEY_REF__` + dispatch `isurvey-ref-ready`
 
-ถ้าไม่เจอใน mapping เลย → extension ไม่ทำอะไร ปล่อยให้ผู้ใช้กรอกเอง
+> **ทำไมต้อง postMessage?** หน้า cloud.isurvey.mobi มี CSP เข้ม
+> (`script-src 'self' ...`) ห้าม inline script — แม้แต่จาก content script
+> การ `appendChild(<script>textContent=...</script>)` จะถูก block
+
+### Auto-fill ค่าบริการ (`content.js` MAIN, document_idle)
+- ผูก `MutationObserver` กับ hidden inputs ของ province / amphur / tumbon
+- ผูก delegated `change` + `input` listener สำหรับ checkbox "นอกพื้นที่",
+  radio "ใน/นอก", และ numberfield "ยอดเงิน"
+- มี `setInterval` 500ms เป็น safety-net (re-attach observer ถ้า DOM ถูก
+  re-render และ re-sync ค่าเผื่อ Ext set `.value` โดยไม่แตะ attribute)
+- ทุกครั้งที่ trigger:
+  1. lookup base fee ตาม precedence (tumbon > amphur > province)
+  2. รวม modifier ที่ active (outOfArea + outOfHours)
+  3. ถ้า `tab1_SUR_INVEST` ไม่ตรง → `Ext.getCmp(...).setValue(total)`
+  4. ไฮไลต์ช่องสีเหลือง 1.5 วิ
+  5. log breakdown:
+     `[ISurveyHelper] Set ค่าบริการ = 850 (base 700 [province: 10 - กรุงเทพฯ] +50 นอกพื้นที่ +100 นอกเวลา) [ext]`
+
+ถ้าไม่เจอ base fee ใน mapping เลย → extension ไม่ทำอะไร ปล่อยให้ผู้ใช้กรอกเอง
+
+### UI numberfield "ยอดเงิน (บาท)" (`feature-out-of-area-amount.js` MAIN)
+- Poll ทุก 500ms ตลอดเวลา (เพราะ Ext lazy-render form ตอน user เปิด tab)
+- เมื่อเจอ `Ext.getCmp("tab1_chk_co_area")` (instance ใหม่หรือ instance ที่ยังไม่ได้ผูก)
+  → ผูก `change` handler
+- เมื่อ checkbox = `true`:
+  → `parent.insert(idx+1, {xtype:"numberfield", id:"tab1_chk_co_area_amount", ...})`
+  → ย่อ width checkbox จาก 400 → 110
+- เมื่อ checkbox = `false`:
+  → `field.destroy()` + คืน width = 400
+- ค่าใน numberfield ส่งกลับไปให้ content.js ใช้แทน default 50
+  ผ่าน listener `input`/`change` ที่ delegated อยู่บน document
 
 > **หมายเหตุ:** ชื่อ field ของ amphur/tumbon (`tab1_survey_amphurID` /
 > `tab1_survey_tumbonID`) เป็นการอนุมานจาก pattern ของ provinceID
+> และยืนยันแล้วว่าใช้ได้กับฟอร์มจริง (`tumbonID` ไม่มีในฟอร์มนี้
+> — โค้ด `TUMBON_FEE_MAP` รองรับไว้สำหรับฟอร์มอื่น/อนาคต)
 > ถ้าระบบจริงใช้ชื่ออื่น แก้ที่ `ISURVEY_HELPER_CONFIG.selectors` ใน
 > `config.js` ได้เลย
 
@@ -183,15 +219,29 @@ isurvey-helper/
 - `isSameNumeric(a, b)` — เทียบค่าตัวเลขแบบ tolerant ต่อ format
 - `lookupName(level, id)` — ดึงชื่อจาก reference data (สำหรับ log/UI)
 - `lookupFee(p, a, t)` — แก้เป็น mapping แบบซับซ้อนเพิ่มได้
+- `getActiveModifiers()` — เพิ่ม modifier ใหม่ตามเงื่อนไขฟอร์ม
 
 ตัวอย่างฟีเจอร์ที่เพิ่มได้:
 
-- ตรวจ radio "ใน/นอกเวลางาน" แล้ว apply ส่วนเพิ่ม
-- ตรวจ checkbox "นอกพื้นที่" แล้วบวกค่าเดินทาง
 - คิดค่าบริการตามประเภทเคลม (key ใหม่ใน mapping)
+- Modifier ตามจำนวนรูป/ระยะทาง (อ่านจาก field ในฟอร์ม)
+- Validate กับยอดสูงสุดที่ระบบยอมรับ
+- UI helper อื่น ๆ คล้าย `feature-out-of-area-amount.js`
 
 เพิ่มฟังก์ชัน `syncXxx()` ใหม่ แล้วเรียกจาก `init()` และใน loop ของ
-`startPolling()` ได้เลย
+`startPolling()` ได้เลย — หรือสร้างไฟล์ `feature-*.js` แยก แล้ว register
+ใน `manifest.json` → `content_scripts.js[]`
+
+---
+
+## Changelog
+
+| Version | การเปลี่ยนแปลง |
+|---------|--------------|
+| **1.2.1** | Bridge ISOLATED→MAIN ด้วย `postMessage` แทน inline `<script>` injection (CSP fix); `feature-out-of-area-amount.js` poll ตลอดเวลาแทนยอมแพ้หลัง 20 วิ |
+| **1.2.0** | เพิ่ม modifier `outOfArea` (+50) / `outOfHours` (+100) + `enabledProvinces` whitelist; เพิ่ม `feature-out-of-area-amount.js` (numberfield คู่กับ checkbox); ค่าใน numberfield override default modifier |
+| **1.1.0** | เพิ่ม mapping ระดับ amphur / tumbon (precedence) + reference data 3 ไฟล์ |
+| **1.0.0** | Auto-fill ค่าบริการตามจังหวัด |
 
 ---
 
