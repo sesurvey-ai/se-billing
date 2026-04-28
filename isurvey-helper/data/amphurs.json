@@ -1,0 +1,4021 @@
+{
+  "data": [
+    {
+      "amphurID": "1001",
+      "amphurname": "เขตพระนคร"
+    },
+    {
+      "amphurID": "1002",
+      "amphurname": "เขตดุสิต"
+    },
+    {
+      "amphurID": "1003",
+      "amphurname": "เขตหนองจอก"
+    },
+    {
+      "amphurID": "1004",
+      "amphurname": "เขตบางรัก"
+    },
+    {
+      "amphurID": "1005",
+      "amphurname": "เขตบางเขน"
+    },
+    {
+      "amphurID": "1006",
+      "amphurname": "เขตบางกะปิ"
+    },
+    {
+      "amphurID": "1007",
+      "amphurname": "เขตปทุมวัน"
+    },
+    {
+      "amphurID": "1008",
+      "amphurname": "เขตป้อมปราบศัตรูพ่าย"
+    },
+    {
+      "amphurID": "1009",
+      "amphurname": "เขตพระโขนง"
+    },
+    {
+      "amphurID": "1010",
+      "amphurname": "เขตมีนบุรี"
+    },
+    {
+      "amphurID": "1011",
+      "amphurname": "เขตลาดกระบัง"
+    },
+    {
+      "amphurID": "1012",
+      "amphurname": "เขตยานนาวา"
+    },
+    {
+      "amphurID": "1013",
+      "amphurname": "เขตสัมพันธวงศ์"
+    },
+    {
+      "amphurID": "1014",
+      "amphurname": "เขตพญาไท"
+    },
+    {
+      "amphurID": "1015",
+      "amphurname": "เขตธนบุรี"
+    },
+    {
+      "amphurID": "1016",
+      "amphurname": "เขตบางกอกใหญ่"
+    },
+    {
+      "amphurID": "1017",
+      "amphurname": "เขตห้วยขวาง"
+    },
+    {
+      "amphurID": "1018",
+      "amphurname": "เขตคลองสาน"
+    },
+    {
+      "amphurID": "1019",
+      "amphurname": "เขตตลิ่งชัน"
+    },
+    {
+      "amphurID": "1020",
+      "amphurname": "เขตบางกอกน้อย"
+    },
+    {
+      "amphurID": "1021",
+      "amphurname": "เขตบางขุนเทียน"
+    },
+    {
+      "amphurID": "1022",
+      "amphurname": "เขตภาษีเจริญ"
+    },
+    {
+      "amphurID": "1023",
+      "amphurname": "เขตหนองแขม"
+    },
+    {
+      "amphurID": "1024",
+      "amphurname": "เขตราษฎร์บูรณะ"
+    },
+    {
+      "amphurID": "1025",
+      "amphurname": "เขตบางพลัด"
+    },
+    {
+      "amphurID": "1026",
+      "amphurname": "เขตดินแดง"
+    },
+    {
+      "amphurID": "1027",
+      "amphurname": "เขตบึงกุ่ม"
+    },
+    {
+      "amphurID": "1028",
+      "amphurname": "เขตสาทร"
+    },
+    {
+      "amphurID": "1029",
+      "amphurname": "เขตบางซื่อ"
+    },
+    {
+      "amphurID": "1030",
+      "amphurname": "เขตจตุจักร"
+    },
+    {
+      "amphurID": "1031",
+      "amphurname": "เขตบางคอแหลม"
+    },
+    {
+      "amphurID": "1032",
+      "amphurname": "เขตประเวศ"
+    },
+    {
+      "amphurID": "1033",
+      "amphurname": "เขตคลองเตย"
+    },
+    {
+      "amphurID": "1034",
+      "amphurname": "เขตสวนหลวง"
+    },
+    {
+      "amphurID": "1035",
+      "amphurname": "เขตจอมทอง"
+    },
+    {
+      "amphurID": "1036",
+      "amphurname": "เขตดอนเมือง"
+    },
+    {
+      "amphurID": "1037",
+      "amphurname": "เขตราชเทวี"
+    },
+    {
+      "amphurID": "1038",
+      "amphurname": "เขตลาดพร้าว"
+    },
+    {
+      "amphurID": "1039",
+      "amphurname": "เขตวัฒนา"
+    },
+    {
+      "amphurID": "1040",
+      "amphurname": "เขตบางแค"
+    },
+    {
+      "amphurID": "1041",
+      "amphurname": "เขตหลักสี่"
+    },
+    {
+      "amphurID": "1042",
+      "amphurname": "เขตสายไหม"
+    },
+    {
+      "amphurID": "1043",
+      "amphurname": "เขตคันนายาว"
+    },
+    {
+      "amphurID": "1044",
+      "amphurname": "เขตสะพานสูง"
+    },
+    {
+      "amphurID": "1045",
+      "amphurname": "เขตวังทองหลาง"
+    },
+    {
+      "amphurID": "1046",
+      "amphurname": "เขตคลองสามวา"
+    },
+    {
+      "amphurID": "1047",
+      "amphurname": "เขตบางนา"
+    },
+    {
+      "amphurID": "1048",
+      "amphurname": "เขตทวีวัฒนา"
+    },
+    {
+      "amphurID": "1049",
+      "amphurname": "เขตทุ่งครุ"
+    },
+    {
+      "amphurID": "1050",
+      "amphurname": "เขตบางบอน"
+    },
+    {
+      "amphurID": "1101",
+      "amphurname": "เมืองสมุทรปราการ"
+    },
+    {
+      "amphurID": "1102",
+      "amphurname": "บางบ่อ"
+    },
+    {
+      "amphurID": "1103",
+      "amphurname": "บางพลี"
+    },
+    {
+      "amphurID": "1104",
+      "amphurname": "พระประแดง"
+    },
+    {
+      "amphurID": "1105",
+      "amphurname": "พระสมุทรเจดีย์"
+    },
+    {
+      "amphurID": "1106",
+      "amphurname": "บางเสาธง"
+    },
+    {
+      "amphurID": "1201",
+      "amphurname": "เมืองนนทบุรี"
+    },
+    {
+      "amphurID": "1202",
+      "amphurname": "บางกรวย"
+    },
+    {
+      "amphurID": "1203",
+      "amphurname": "บางใหญ่"
+    },
+    {
+      "amphurID": "1204",
+      "amphurname": "บางบัวทอง"
+    },
+    {
+      "amphurID": "1205",
+      "amphurname": "ไทรน้อย"
+    },
+    {
+      "amphurID": "1206",
+      "amphurname": "ปากเกร็ด"
+    },
+    {
+      "amphurID": "1301",
+      "amphurname": "เมืองปทุมธานี"
+    },
+    {
+      "amphurID": "1302",
+      "amphurname": "คลองหลวง"
+    },
+    {
+      "amphurID": "1303",
+      "amphurname": "ธัญบุรี"
+    },
+    {
+      "amphurID": "1304",
+      "amphurname": "หนองเสือ"
+    },
+    {
+      "amphurID": "1305",
+      "amphurname": "ลาดหลุมแก้ว"
+    },
+    {
+      "amphurID": "1306",
+      "amphurname": "ลำลูกกา"
+    },
+    {
+      "amphurID": "1307",
+      "amphurname": "สามโคก"
+    },
+    {
+      "amphurID": "1351",
+      "amphurname": "ลำลูกกา (สาขาตำบลคูคต)*"
+    },
+    {
+      "amphurID": "1401",
+      "amphurname": "พระนครศรีอยุธยา"
+    },
+    {
+      "amphurID": "1402",
+      "amphurname": "ท่าเรือ"
+    },
+    {
+      "amphurID": "1403",
+      "amphurname": "นครหลวง"
+    },
+    {
+      "amphurID": "1404",
+      "amphurname": "บางไทร"
+    },
+    {
+      "amphurID": "1405",
+      "amphurname": "บางบาล"
+    },
+    {
+      "amphurID": "1406",
+      "amphurname": "บางปะอิน"
+    },
+    {
+      "amphurID": "1407",
+      "amphurname": "บางปะหัน"
+    },
+    {
+      "amphurID": "1408",
+      "amphurname": "ผักไห่"
+    },
+    {
+      "amphurID": "1409",
+      "amphurname": "ภาชี"
+    },
+    {
+      "amphurID": "1410",
+      "amphurname": "ลาดบัวหลวง"
+    },
+    {
+      "amphurID": "1411",
+      "amphurname": "วังน้อย"
+    },
+    {
+      "amphurID": "1412",
+      "amphurname": "เสนา"
+    },
+    {
+      "amphurID": "1413",
+      "amphurname": "บางซ้าย"
+    },
+    {
+      "amphurID": "1414",
+      "amphurname": "อุทัย"
+    },
+    {
+      "amphurID": "1415",
+      "amphurname": "มหาราช"
+    },
+    {
+      "amphurID": "1416",
+      "amphurname": "บ้านแพรก"
+    },
+    {
+      "amphurID": "1501",
+      "amphurname": "เมืองอ่างทอง"
+    },
+    {
+      "amphurID": "1502",
+      "amphurname": "ไชโย"
+    },
+    {
+      "amphurID": "1503",
+      "amphurname": "ป่าโมก"
+    },
+    {
+      "amphurID": "1504",
+      "amphurname": "โพธิ์ทอง"
+    },
+    {
+      "amphurID": "1505",
+      "amphurname": "แสวงหา"
+    },
+    {
+      "amphurID": "1506",
+      "amphurname": "วิเศษชัยชาญ"
+    },
+    {
+      "amphurID": "1507",
+      "amphurname": "สามโก้"
+    },
+    {
+      "amphurID": "1601",
+      "amphurname": "เมืองลพบุรี"
+    },
+    {
+      "amphurID": "1602",
+      "amphurname": "พัฒนานิคม"
+    },
+    {
+      "amphurID": "1603",
+      "amphurname": "โคกสำโรง"
+    },
+    {
+      "amphurID": "1604",
+      "amphurname": "ชัยบาดาล"
+    },
+    {
+      "amphurID": "1605",
+      "amphurname": "ท่าวุ้ง"
+    },
+    {
+      "amphurID": "1606",
+      "amphurname": "บ้านหมี่"
+    },
+    {
+      "amphurID": "1607",
+      "amphurname": "ท่าหลวง"
+    },
+    {
+      "amphurID": "1608",
+      "amphurname": "สระโบสถ์"
+    },
+    {
+      "amphurID": "1609",
+      "amphurname": "โคกเจริญ"
+    },
+    {
+      "amphurID": "1610",
+      "amphurname": "ลำสนธิ"
+    },
+    {
+      "amphurID": "1611",
+      "amphurname": "หนองม่วง"
+    },
+    {
+      "amphurID": "1681",
+      "amphurname": "*อ.บ้านเช่า  จ.ลพบุรี"
+    },
+    {
+      "amphurID": "1701",
+      "amphurname": "เมืองสิงห์บุรี"
+    },
+    {
+      "amphurID": "1702",
+      "amphurname": "บางระจัน"
+    },
+    {
+      "amphurID": "1703",
+      "amphurname": "ค่ายบางระจัน"
+    },
+    {
+      "amphurID": "1704",
+      "amphurname": "พรหมบุรี"
+    },
+    {
+      "amphurID": "1705",
+      "amphurname": "ท่าช้าง"
+    },
+    {
+      "amphurID": "1706",
+      "amphurname": "อินทร์บุรี"
+    },
+    {
+      "amphurID": "1801",
+      "amphurname": "เมืองชัยนาท"
+    },
+    {
+      "amphurID": "1802",
+      "amphurname": "มโนรมย์"
+    },
+    {
+      "amphurID": "1803",
+      "amphurname": "วัดสิงห์"
+    },
+    {
+      "amphurID": "1804",
+      "amphurname": "สรรพยา"
+    },
+    {
+      "amphurID": "1805",
+      "amphurname": "สรรคบุรี"
+    },
+    {
+      "amphurID": "1806",
+      "amphurname": "หันคา"
+    },
+    {
+      "amphurID": "1807",
+      "amphurname": "หนองมะโมง"
+    },
+    {
+      "amphurID": "1808",
+      "amphurname": "เนินขาม"
+    },
+    {
+      "amphurID": "1901",
+      "amphurname": "เมืองสระบุรี"
+    },
+    {
+      "amphurID": "1902",
+      "amphurname": "แก่งคอย"
+    },
+    {
+      "amphurID": "1903",
+      "amphurname": "หนองแค"
+    },
+    {
+      "amphurID": "1904",
+      "amphurname": "วิหารแดง"
+    },
+    {
+      "amphurID": "1905",
+      "amphurname": "หนองแซง"
+    },
+    {
+      "amphurID": "1906",
+      "amphurname": "บ้านหมอ"
+    },
+    {
+      "amphurID": "1907",
+      "amphurname": "ดอนพุด"
+    },
+    {
+      "amphurID": "1908",
+      "amphurname": "หนองโดน"
+    },
+    {
+      "amphurID": "1909",
+      "amphurname": "พระพุทธบาท"
+    },
+    {
+      "amphurID": "1910",
+      "amphurname": "เสาไห้"
+    },
+    {
+      "amphurID": "1911",
+      "amphurname": "มวกเหล็ก"
+    },
+    {
+      "amphurID": "1912",
+      "amphurname": "วังม่วง"
+    },
+    {
+      "amphurID": "1913",
+      "amphurname": "เฉลิมพระเกียรติ"
+    },
+    {
+      "amphurID": "2001",
+      "amphurname": "เมืองชลบุรี"
+    },
+    {
+      "amphurID": "2002",
+      "amphurname": "บ้านบึง"
+    },
+    {
+      "amphurID": "2003",
+      "amphurname": "หนองใหญ่"
+    },
+    {
+      "amphurID": "2004",
+      "amphurname": "บางละมุง"
+    },
+    {
+      "amphurID": "2005",
+      "amphurname": "พานทอง"
+    },
+    {
+      "amphurID": "2006",
+      "amphurname": "พนัสนิคม"
+    },
+    {
+      "amphurID": "2007",
+      "amphurname": "ศรีราชา"
+    },
+    {
+      "amphurID": "2008",
+      "amphurname": "เกาะสีชัง"
+    },
+    {
+      "amphurID": "2009",
+      "amphurname": "สัตหีบ"
+    },
+    {
+      "amphurID": "2010",
+      "amphurname": "บ่อทอง"
+    },
+    {
+      "amphurID": "2011",
+      "amphurname": "เกาะจันทร์"
+    },
+    {
+      "amphurID": "2051",
+      "amphurname": "สัตหีบ (สาขาตำบลบางเสร่)*"
+    },
+    {
+      "amphurID": "2072",
+      "amphurname": "ท้องถิ่นเทศบาลเมืองหนองปรือ*"
+    },
+    {
+      "amphurID": "2093",
+      "amphurname": "เทศบาลตำบลแหลมฉบัง*"
+    },
+    {
+      "amphurID": "2099",
+      "amphurname": "เทศบาลเมืองชลบุรี*"
+    },
+    {
+      "amphurID": "2101",
+      "amphurname": "เมืองระยอง"
+    },
+    {
+      "amphurID": "2102",
+      "amphurname": "บ้านฉาง"
+    },
+    {
+      "amphurID": "2103",
+      "amphurname": "แกลง"
+    },
+    {
+      "amphurID": "2104",
+      "amphurname": "วังจันทร์"
+    },
+    {
+      "amphurID": "2105",
+      "amphurname": "บ้านค่าย"
+    },
+    {
+      "amphurID": "2106",
+      "amphurname": "ปลวกแดง"
+    },
+    {
+      "amphurID": "2107",
+      "amphurname": "เขาชะเมา"
+    },
+    {
+      "amphurID": "2108",
+      "amphurname": "นิคมพัฒนา"
+    },
+    {
+      "amphurID": "2151",
+      "amphurname": "สาขาตำบลมาบข่า*"
+    },
+    {
+      "amphurID": "2201",
+      "amphurname": "เมืองจันทบุรี"
+    },
+    {
+      "amphurID": "2202",
+      "amphurname": "ขลุง"
+    },
+    {
+      "amphurID": "2203",
+      "amphurname": "ท่าใหม่"
+    },
+    {
+      "amphurID": "2204",
+      "amphurname": "โป่งน้ำร้อน"
+    },
+    {
+      "amphurID": "2205",
+      "amphurname": "มะขาม"
+    },
+    {
+      "amphurID": "2206",
+      "amphurname": "แหลมสิงห์"
+    },
+    {
+      "amphurID": "2207",
+      "amphurname": "สอยดาว"
+    },
+    {
+      "amphurID": "2208",
+      "amphurname": "แก่งหางแมว"
+    },
+    {
+      "amphurID": "2209",
+      "amphurname": "นายายอาม"
+    },
+    {
+      "amphurID": "2210",
+      "amphurname": "เขาคิชฌกูฏ"
+    },
+    {
+      "amphurID": "2281",
+      "amphurname": "*กิ่ง อ.กำพุธ  จ.จันทบุรี"
+    },
+    {
+      "amphurID": "2301",
+      "amphurname": "เมืองตราด"
+    },
+    {
+      "amphurID": "2302",
+      "amphurname": "คลองใหญ่"
+    },
+    {
+      "amphurID": "2303",
+      "amphurname": "เขาสมิง"
+    },
+    {
+      "amphurID": "2304",
+      "amphurname": "บ่อไร่"
+    },
+    {
+      "amphurID": "2305",
+      "amphurname": "แหลมงอบ"
+    },
+    {
+      "amphurID": "2306",
+      "amphurname": "เกาะกูด"
+    },
+    {
+      "amphurID": "2307",
+      "amphurname": "เกาะช้าง"
+    },
+    {
+      "amphurID": "2401",
+      "amphurname": "เมืองฉะเชิงเทรา"
+    },
+    {
+      "amphurID": "2402",
+      "amphurname": "บางคล้า"
+    },
+    {
+      "amphurID": "2403",
+      "amphurname": "บางน้ำเปรี้ยว"
+    },
+    {
+      "amphurID": "2404",
+      "amphurname": "บางปะกง"
+    },
+    {
+      "amphurID": "2405",
+      "amphurname": "บ้านโพธิ์"
+    },
+    {
+      "amphurID": "2406",
+      "amphurname": "พนมสารคาม"
+    },
+    {
+      "amphurID": "2407",
+      "amphurname": "ราชสาส์น"
+    },
+    {
+      "amphurID": "2408",
+      "amphurname": "สนามชัยเขต"
+    },
+    {
+      "amphurID": "2409",
+      "amphurname": "แปลงยาว"
+    },
+    {
+      "amphurID": "2410",
+      "amphurname": "ท่าตะเกียบ"
+    },
+    {
+      "amphurID": "2411",
+      "amphurname": "คลองเขื่อน"
+    },
+    {
+      "amphurID": "2501",
+      "amphurname": "เมืองปราจีนบุรี"
+    },
+    {
+      "amphurID": "2502",
+      "amphurname": "กบินทร์บุรี"
+    },
+    {
+      "amphurID": "2503",
+      "amphurname": "นาดี"
+    },
+    {
+      "amphurID": "2504",
+      "amphurname": "*สระแก้ว"
+    },
+    {
+      "amphurID": "2505",
+      "amphurname": "*วังน้ำเย็น"
+    },
+    {
+      "amphurID": "2506",
+      "amphurname": "บ้านสร้าง"
+    },
+    {
+      "amphurID": "2507",
+      "amphurname": "ประจันตคาม"
+    },
+    {
+      "amphurID": "2508",
+      "amphurname": "ศรีมหาโพธิ"
+    },
+    {
+      "amphurID": "2509",
+      "amphurname": "ศรีมโหสถ"
+    },
+    {
+      "amphurID": "2510",
+      "amphurname": "*อรัญประเทศ"
+    },
+    {
+      "amphurID": "2511",
+      "amphurname": "*ตาพระยา"
+    },
+    {
+      "amphurID": "2512",
+      "amphurname": "*วัฒนานคร"
+    },
+    {
+      "amphurID": "2513",
+      "amphurname": "*คลองหาด"
+    },
+    {
+      "amphurID": "2601",
+      "amphurname": "เมืองนครนายก"
+    },
+    {
+      "amphurID": "2602",
+      "amphurname": "ปากพลี"
+    },
+    {
+      "amphurID": "2603",
+      "amphurname": "บ้านนา"
+    },
+    {
+      "amphurID": "2604",
+      "amphurname": "องครักษ์"
+    },
+    {
+      "amphurID": "2701",
+      "amphurname": "เมืองสระแก้ว"
+    },
+    {
+      "amphurID": "2702",
+      "amphurname": "คลองหาด"
+    },
+    {
+      "amphurID": "2703",
+      "amphurname": "ตาพระยา"
+    },
+    {
+      "amphurID": "2704",
+      "amphurname": "วังน้ำเย็น"
+    },
+    {
+      "amphurID": "2705",
+      "amphurname": "วัฒนานคร"
+    },
+    {
+      "amphurID": "2706",
+      "amphurname": "อรัญประเทศ"
+    },
+    {
+      "amphurID": "2707",
+      "amphurname": "เขาฉกรรจ์"
+    },
+    {
+      "amphurID": "2708",
+      "amphurname": "โคกสูง"
+    },
+    {
+      "amphurID": "2709",
+      "amphurname": "วังสมบูรณ์"
+    },
+    {
+      "amphurID": "3001",
+      "amphurname": "เมืองนครราชสีมา"
+    },
+    {
+      "amphurID": "3002",
+      "amphurname": "ครบุรี"
+    },
+    {
+      "amphurID": "3003",
+      "amphurname": "เสิงสาง"
+    },
+    {
+      "amphurID": "3004",
+      "amphurname": "คง"
+    },
+    {
+      "amphurID": "3005",
+      "amphurname": "บ้านเหลื่อม"
+    },
+    {
+      "amphurID": "3006",
+      "amphurname": "จักราช"
+    },
+    {
+      "amphurID": "3007",
+      "amphurname": "โชคชัย"
+    },
+    {
+      "amphurID": "3008",
+      "amphurname": "ด่านขุนทด"
+    },
+    {
+      "amphurID": "3009",
+      "amphurname": "โนนไทย"
+    },
+    {
+      "amphurID": "3010",
+      "amphurname": "โนนสูง"
+    },
+    {
+      "amphurID": "3011",
+      "amphurname": "ขามสะแกแสง"
+    },
+    {
+      "amphurID": "3012",
+      "amphurname": "บัวใหญ่"
+    },
+    {
+      "amphurID": "3013",
+      "amphurname": "ประทาย"
+    },
+    {
+      "amphurID": "3014",
+      "amphurname": "ปักธงชัย"
+    },
+    {
+      "amphurID": "3015",
+      "amphurname": "พิมาย"
+    },
+    {
+      "amphurID": "3016",
+      "amphurname": "ห้วยแถลง"
+    },
+    {
+      "amphurID": "3017",
+      "amphurname": "ชุมพวง"
+    },
+    {
+      "amphurID": "3018",
+      "amphurname": "สูงเนิน"
+    },
+    {
+      "amphurID": "3019",
+      "amphurname": "ขามทะเลสอ"
+    },
+    {
+      "amphurID": "3020",
+      "amphurname": "สีคิ้ว"
+    },
+    {
+      "amphurID": "3021",
+      "amphurname": "ปากช่อง"
+    },
+    {
+      "amphurID": "3022",
+      "amphurname": "หนองบุญมาก"
+    },
+    {
+      "amphurID": "3023",
+      "amphurname": "แก้งสนามนาง"
+    },
+    {
+      "amphurID": "3024",
+      "amphurname": "โนนแดง"
+    },
+    {
+      "amphurID": "3025",
+      "amphurname": "วังน้ำเขียว"
+    },
+    {
+      "amphurID": "3026",
+      "amphurname": "เทพารักษ์"
+    },
+    {
+      "amphurID": "3027",
+      "amphurname": "เมืองยาง"
+    },
+    {
+      "amphurID": "3028",
+      "amphurname": "พระทองคำ"
+    },
+    {
+      "amphurID": "3029",
+      "amphurname": "ลำทะเมนชัย"
+    },
+    {
+      "amphurID": "3030",
+      "amphurname": "บัวลาย"
+    },
+    {
+      "amphurID": "3031",
+      "amphurname": "สีดา"
+    },
+    {
+      "amphurID": "3032",
+      "amphurname": "เฉลิมพระเกียรติ"
+    },
+    {
+      "amphurID": "3049",
+      "amphurname": "ท้องถิ่นเทศบาลตำบลโพธิ์กลาง*"
+    },
+    {
+      "amphurID": "3051",
+      "amphurname": "สาขาตำบลมะค่า-พลสงคราม*"
+    },
+    {
+      "amphurID": "3081",
+      "amphurname": "*โนนลาว"
+    },
+    {
+      "amphurID": "3101",
+      "amphurname": "เมืองบุรีรัมย์"
+    },
+    {
+      "amphurID": "3102",
+      "amphurname": "คูเมือง"
+    },
+    {
+      "amphurID": "3103",
+      "amphurname": "กระสัง"
+    },
+    {
+      "amphurID": "3104",
+      "amphurname": "นางรอง"
+    },
+    {
+      "amphurID": "3105",
+      "amphurname": "หนองกี่"
+    },
+    {
+      "amphurID": "3106",
+      "amphurname": "ละหานทราย"
+    },
+    {
+      "amphurID": "3107",
+      "amphurname": "ประโคนชัย"
+    },
+    {
+      "amphurID": "3108",
+      "amphurname": "บ้านกรวด"
+    },
+    {
+      "amphurID": "3109",
+      "amphurname": "พุทไธสง"
+    },
+    {
+      "amphurID": "3110",
+      "amphurname": "ลำปลายมาศ"
+    },
+    {
+      "amphurID": "3111",
+      "amphurname": "สตึก"
+    },
+    {
+      "amphurID": "3112",
+      "amphurname": "ปะคำ"
+    },
+    {
+      "amphurID": "3113",
+      "amphurname": "นาโพธิ์"
+    },
+    {
+      "amphurID": "3114",
+      "amphurname": "หนองหงส์"
+    },
+    {
+      "amphurID": "3115",
+      "amphurname": "พลับพลาชัย"
+    },
+    {
+      "amphurID": "3116",
+      "amphurname": "ห้วยราช"
+    },
+    {
+      "amphurID": "3117",
+      "amphurname": "โนนสุวรรณ"
+    },
+    {
+      "amphurID": "3118",
+      "amphurname": "ชำนิ"
+    },
+    {
+      "amphurID": "3119",
+      "amphurname": "บ้านใหม่ไชยพจน์"
+    },
+    {
+      "amphurID": "3120",
+      "amphurname": "โนนดินแดง"
+    },
+    {
+      "amphurID": "3121",
+      "amphurname": "บ้านด่าน"
+    },
+    {
+      "amphurID": "3122",
+      "amphurname": "แคนดง"
+    },
+    {
+      "amphurID": "3123",
+      "amphurname": "เฉลิมพระเกียรติ"
+    },
+    {
+      "amphurID": "3201",
+      "amphurname": "เมืองสุรินทร์"
+    },
+    {
+      "amphurID": "3202",
+      "amphurname": "ชุมพลบุรี"
+    },
+    {
+      "amphurID": "3203",
+      "amphurname": "ท่าตูม"
+    },
+    {
+      "amphurID": "3204",
+      "amphurname": "จอมพระ"
+    },
+    {
+      "amphurID": "3205",
+      "amphurname": "ปราสาท"
+    },
+    {
+      "amphurID": "3206",
+      "amphurname": "กาบเชิง"
+    },
+    {
+      "amphurID": "3207",
+      "amphurname": "รัตนบุรี"
+    },
+    {
+      "amphurID": "3208",
+      "amphurname": "สนม"
+    },
+    {
+      "amphurID": "3209",
+      "amphurname": "ศีขรภูมิ"
+    },
+    {
+      "amphurID": "3210",
+      "amphurname": "สังขะ"
+    },
+    {
+      "amphurID": "3211",
+      "amphurname": "ลำดวน"
+    },
+    {
+      "amphurID": "3212",
+      "amphurname": "สำโรงทาบ"
+    },
+    {
+      "amphurID": "3213",
+      "amphurname": "บัวเชด"
+    },
+    {
+      "amphurID": "3214",
+      "amphurname": "พนมดงรัก"
+    },
+    {
+      "amphurID": "3215",
+      "amphurname": "ศรีณรงค์"
+    },
+    {
+      "amphurID": "3216",
+      "amphurname": "เขวาสินรินทร์"
+    },
+    {
+      "amphurID": "3217",
+      "amphurname": "โนนนารายณ์"
+    },
+    {
+      "amphurID": "3301",
+      "amphurname": "เมืองศรีสะเกษ"
+    },
+    {
+      "amphurID": "3302",
+      "amphurname": "ยางชุมน้อย"
+    },
+    {
+      "amphurID": "3303",
+      "amphurname": "กันทรารมย์"
+    },
+    {
+      "amphurID": "3304",
+      "amphurname": "กันทรลักษ์"
+    },
+    {
+      "amphurID": "3305",
+      "amphurname": "ขุขันธ์"
+    },
+    {
+      "amphurID": "3306",
+      "amphurname": "ไพรบึง"
+    },
+    {
+      "amphurID": "3307",
+      "amphurname": "ปรางค์กู่"
+    },
+    {
+      "amphurID": "3308",
+      "amphurname": "ขุนหาญ"
+    },
+    {
+      "amphurID": "3309",
+      "amphurname": "ราษีไศล"
+    },
+    {
+      "amphurID": "3310",
+      "amphurname": "อุทุมพรพิสัย"
+    },
+    {
+      "amphurID": "3311",
+      "amphurname": "บึงบูรพ์"
+    },
+    {
+      "amphurID": "3312",
+      "amphurname": "ห้วยทับทัน"
+    },
+    {
+      "amphurID": "3313",
+      "amphurname": "โนนคูณ"
+    },
+    {
+      "amphurID": "3314",
+      "amphurname": "ศรีรัตนะ"
+    },
+    {
+      "amphurID": "3315",
+      "amphurname": "น้ำเกลี้ยง"
+    },
+    {
+      "amphurID": "3316",
+      "amphurname": "วังหิน"
+    },
+    {
+      "amphurID": "3317",
+      "amphurname": "ภูสิงห์"
+    },
+    {
+      "amphurID": "3318",
+      "amphurname": "เมืองจันทร์"
+    },
+    {
+      "amphurID": "3319",
+      "amphurname": "เบญจลักษ์"
+    },
+    {
+      "amphurID": "3320",
+      "amphurname": "พยุห์"
+    },
+    {
+      "amphurID": "3321",
+      "amphurname": "โพธิ์ศรีสุวรรณ"
+    },
+    {
+      "amphurID": "3322",
+      "amphurname": "ศิลาลาด"
+    },
+    {
+      "amphurID": "3401",
+      "amphurname": "เมืองอุบลราชธานี"
+    },
+    {
+      "amphurID": "3402",
+      "amphurname": "ศรีเมืองใหม่"
+    },
+    {
+      "amphurID": "3403",
+      "amphurname": "โขงเจียม"
+    },
+    {
+      "amphurID": "3404",
+      "amphurname": "เขื่องใน"
+    },
+    {
+      "amphurID": "3405",
+      "amphurname": "เขมราฐ"
+    },
+    {
+      "amphurID": "3406",
+      "amphurname": "*ชานุมาน"
+    },
+    {
+      "amphurID": "3407",
+      "amphurname": "เดชอุดม"
+    },
+    {
+      "amphurID": "3408",
+      "amphurname": "นาจะหลวย"
+    },
+    {
+      "amphurID": "3409",
+      "amphurname": "น้ำยืน"
+    },
+    {
+      "amphurID": "3410",
+      "amphurname": "บุณฑริก"
+    },
+    {
+      "amphurID": "3411",
+      "amphurname": "ตระการพืชผล"
+    },
+    {
+      "amphurID": "3412",
+      "amphurname": "กุดข้าวปุ้น"
+    },
+    {
+      "amphurID": "3413",
+      "amphurname": "*พนา"
+    },
+    {
+      "amphurID": "3414",
+      "amphurname": "ม่วงสามสิบ"
+    },
+    {
+      "amphurID": "3415",
+      "amphurname": "วารินชำราบ"
+    },
+    {
+      "amphurID": "3416",
+      "amphurname": "*อำนาจเจริญ"
+    },
+    {
+      "amphurID": "3417",
+      "amphurname": "*เสนางคนิคม"
+    },
+    {
+      "amphurID": "3418",
+      "amphurname": "*หัวตะพาน"
+    },
+    {
+      "amphurID": "3419",
+      "amphurname": "พิบูลมังสาหาร"
+    },
+    {
+      "amphurID": "3420",
+      "amphurname": "ตาลสุม"
+    },
+    {
+      "amphurID": "3421",
+      "amphurname": "โพธิ์ไทร"
+    },
+    {
+      "amphurID": "3422",
+      "amphurname": "สำโรง"
+    },
+    {
+      "amphurID": "3423",
+      "amphurname": "*กิ่งอำเภอลืออำนาจ"
+    },
+    {
+      "amphurID": "3424",
+      "amphurname": "ดอนมดแดง"
+    },
+    {
+      "amphurID": "3425",
+      "amphurname": "สิรินธร"
+    },
+    {
+      "amphurID": "3426",
+      "amphurname": "ทุ่งศรีอุดม"
+    },
+    {
+      "amphurID": "3427",
+      "amphurname": "*ปทุมราชวงศา"
+    },
+    {
+      "amphurID": "3428",
+      "amphurname": "*กิ่งอำเภอศรีหลักชัย"
+    },
+    {
+      "amphurID": "3429",
+      "amphurname": "นาเยีย"
+    },
+    {
+      "amphurID": "3430",
+      "amphurname": "นาตาล"
+    },
+    {
+      "amphurID": "3431",
+      "amphurname": "เหล่าเสือโก้ก"
+    },
+    {
+      "amphurID": "3432",
+      "amphurname": "สว่างวีระวงศ์"
+    },
+    {
+      "amphurID": "3433",
+      "amphurname": "น้ำขุ่น"
+    },
+    {
+      "amphurID": "3481",
+      "amphurname": "*อ.สุวรรณวารี  จ.อุบลราชธานี"
+    },
+    {
+      "amphurID": "3501",
+      "amphurname": "เมืองยโสธร"
+    },
+    {
+      "amphurID": "3502",
+      "amphurname": "ทรายมูล"
+    },
+    {
+      "amphurID": "3503",
+      "amphurname": "กุดชุม"
+    },
+    {
+      "amphurID": "3504",
+      "amphurname": "คำเขื่อนแก้ว"
+    },
+    {
+      "amphurID": "3505",
+      "amphurname": "ป่าติ้ว"
+    },
+    {
+      "amphurID": "3506",
+      "amphurname": "มหาชนะชัย"
+    },
+    {
+      "amphurID": "3507",
+      "amphurname": "ค้อวัง"
+    },
+    {
+      "amphurID": "3508",
+      "amphurname": "เลิงนกทา"
+    },
+    {
+      "amphurID": "3509",
+      "amphurname": "ไทยเจริญ"
+    },
+    {
+      "amphurID": "3601",
+      "amphurname": "เมืองชัยภูมิ"
+    },
+    {
+      "amphurID": "3602",
+      "amphurname": "บ้านเขว้า"
+    },
+    {
+      "amphurID": "3603",
+      "amphurname": "คอนสวรรค์"
+    },
+    {
+      "amphurID": "3604",
+      "amphurname": "เกษตรสมบูรณ์"
+    },
+    {
+      "amphurID": "3605",
+      "amphurname": "หนองบัวแดง"
+    },
+    {
+      "amphurID": "3606",
+      "amphurname": "จัตุรัส"
+    },
+    {
+      "amphurID": "3607",
+      "amphurname": "บำเหน็จณรงค์"
+    },
+    {
+      "amphurID": "3608",
+      "amphurname": "หนองบัวระเหว"
+    },
+    {
+      "amphurID": "3609",
+      "amphurname": "เทพสถิต"
+    },
+    {
+      "amphurID": "3610",
+      "amphurname": "ภูเขียว"
+    },
+    {
+      "amphurID": "3611",
+      "amphurname": "บ้านแท่น"
+    },
+    {
+      "amphurID": "3612",
+      "amphurname": "แก้งคร้อ"
+    },
+    {
+      "amphurID": "3613",
+      "amphurname": "คอนสาร"
+    },
+    {
+      "amphurID": "3614",
+      "amphurname": "ภักดีชุมพล"
+    },
+    {
+      "amphurID": "3615",
+      "amphurname": "เนินสง่า"
+    },
+    {
+      "amphurID": "3616",
+      "amphurname": "ซับใหญ่"
+    },
+    {
+      "amphurID": "3651",
+      "amphurname": "เมืองชัยภูมิ (สาขาตำบลโนนสำราญ)*"
+    },
+    {
+      "amphurID": "3652",
+      "amphurname": "สาขาตำบลบ้านหว่าเฒ่า*"
+    },
+    {
+      "amphurID": "3653",
+      "amphurname": "หนองบัวแดง (สาขาตำบลวังชมภู)*"
+    },
+    {
+      "amphurID": "3654",
+      "amphurname": "กิ่งอำเภอซับใหญ่ (สาขาตำบลซับใหญ่)*"
+    },
+    {
+      "amphurID": "3655",
+      "amphurname": "สาขาตำบลโคกเพชร*"
+    },
+    {
+      "amphurID": "3656",
+      "amphurname": "เทพสถิต (สาขาตำบลนายางกลัก)*"
+    },
+    {
+      "amphurID": "3657",
+      "amphurname": "บ้านแท่น (สาขาตำบลบ้านเต่า)*"
+    },
+    {
+      "amphurID": "3658",
+      "amphurname": "แก้งคร้อ (สาขาตำบลท่ามะไฟหวาน)*"
+    },
+    {
+      "amphurID": "3659",
+      "amphurname": "คอนสาร (สาขาตำบลโนนคูณ)*"
+    },
+    {
+      "amphurID": "3701",
+      "amphurname": "เมืองอำนาจเจริญ"
+    },
+    {
+      "amphurID": "3702",
+      "amphurname": "ชานุมาน"
+    },
+    {
+      "amphurID": "3703",
+      "amphurname": "ปทุมราชวงศา"
+    },
+    {
+      "amphurID": "3704",
+      "amphurname": "พนา"
+    },
+    {
+      "amphurID": "3705",
+      "amphurname": "เสนางคนิคม"
+    },
+    {
+      "amphurID": "3706",
+      "amphurname": "หัวตะพาน"
+    },
+    {
+      "amphurID": "3707",
+      "amphurname": "ลืออำนาจ"
+    },
+    {
+      "amphurID": "3801",
+      "amphurname": "เมืองบึงกาฬ"
+    },
+    {
+      "amphurID": "3802",
+      "amphurname": "พรเจริญ"
+    },
+    {
+      "amphurID": "3803",
+      "amphurname": "โซ่พิสัย"
+    },
+    {
+      "amphurID": "3804",
+      "amphurname": "เซกา"
+    },
+    {
+      "amphurID": "3805",
+      "amphurname": "ปากคาด"
+    },
+    {
+      "amphurID": "3806",
+      "amphurname": "บึงโขงหลง"
+    },
+    {
+      "amphurID": "3807",
+      "amphurname": "ศรีวิไล"
+    },
+    {
+      "amphurID": "3808",
+      "amphurname": "บุ่งคล้า"
+    },
+    {
+      "amphurID": "3901",
+      "amphurname": "เมืองหนองบัวลำภู"
+    },
+    {
+      "amphurID": "3902",
+      "amphurname": "นากลาง"
+    },
+    {
+      "amphurID": "3903",
+      "amphurname": "โนนสัง"
+    },
+    {
+      "amphurID": "3904",
+      "amphurname": "ศรีบุญเรือง"
+    },
+    {
+      "amphurID": "3905",
+      "amphurname": "สุวรรณคูหา"
+    },
+    {
+      "amphurID": "3906",
+      "amphurname": "นาวัง"
+    },
+    {
+      "amphurID": "4001",
+      "amphurname": "เมืองขอนแก่น"
+    },
+    {
+      "amphurID": "4002",
+      "amphurname": "บ้านฝาง"
+    },
+    {
+      "amphurID": "4003",
+      "amphurname": "พระยืน"
+    },
+    {
+      "amphurID": "4004",
+      "amphurname": "หนองเรือ"
+    },
+    {
+      "amphurID": "4005",
+      "amphurname": "ชุมแพ"
+    },
+    {
+      "amphurID": "4006",
+      "amphurname": "สีชมพู"
+    },
+    {
+      "amphurID": "4007",
+      "amphurname": "น้ำพอง"
+    },
+    {
+      "amphurID": "4008",
+      "amphurname": "อุบลรัตน์"
+    },
+    {
+      "amphurID": "4009",
+      "amphurname": "กระนวน"
+    },
+    {
+      "amphurID": "4010",
+      "amphurname": "บ้านไผ่"
+    },
+    {
+      "amphurID": "4011",
+      "amphurname": "เปือยน้อย"
+    },
+    {
+      "amphurID": "4012",
+      "amphurname": "พล"
+    },
+    {
+      "amphurID": "4013",
+      "amphurname": "แวงใหญ่"
+    },
+    {
+      "amphurID": "4014",
+      "amphurname": "แวงน้อย"
+    },
+    {
+      "amphurID": "4015",
+      "amphurname": "หนองสองห้อง"
+    },
+    {
+      "amphurID": "4016",
+      "amphurname": "ภูเวียง"
+    },
+    {
+      "amphurID": "4017",
+      "amphurname": "มัญจาคีรี"
+    },
+    {
+      "amphurID": "4018",
+      "amphurname": "ชนบท"
+    },
+    {
+      "amphurID": "4019",
+      "amphurname": "เขาสวนกวาง"
+    },
+    {
+      "amphurID": "4020",
+      "amphurname": "ภูผาม่าน"
+    },
+    {
+      "amphurID": "4021",
+      "amphurname": "ซำสูง"
+    },
+    {
+      "amphurID": "4022",
+      "amphurname": "โคกโพธิ์ไชย"
+    },
+    {
+      "amphurID": "4023",
+      "amphurname": "หนองนาคำ"
+    },
+    {
+      "amphurID": "4024",
+      "amphurname": "บ้านแฮด"
+    },
+    {
+      "amphurID": "4025",
+      "amphurname": "โนนศิลา"
+    },
+    {
+      "amphurID": "4029",
+      "amphurname": "เวียงเก่า"
+    },
+    {
+      "amphurID": "4068",
+      "amphurname": "ท้องถิ่นเทศบาลตำบลบ้านเป็ด*"
+    },
+    {
+      "amphurID": "4098",
+      "amphurname": "เทศบาลตำบลเมืองพล*"
+    },
+    {
+      "amphurID": "4101",
+      "amphurname": "เมืองอุดรธานี"
+    },
+    {
+      "amphurID": "4102",
+      "amphurname": "กุดจับ"
+    },
+    {
+      "amphurID": "4103",
+      "amphurname": "หนองวัวซอ"
+    },
+    {
+      "amphurID": "4104",
+      "amphurname": "กุมภวาปี"
+    },
+    {
+      "amphurID": "4105",
+      "amphurname": "โนนสะอาด"
+    },
+    {
+      "amphurID": "4106",
+      "amphurname": "หนองหาน"
+    },
+    {
+      "amphurID": "4107",
+      "amphurname": "ทุ่งฝน"
+    },
+    {
+      "amphurID": "4108",
+      "amphurname": "ไชยวาน"
+    },
+    {
+      "amphurID": "4109",
+      "amphurname": "ศรีธาตุ"
+    },
+    {
+      "amphurID": "4110",
+      "amphurname": "วังสามหมอ"
+    },
+    {
+      "amphurID": "4111",
+      "amphurname": "บ้านดุง"
+    },
+    {
+      "amphurID": "4112",
+      "amphurname": "*หนองบัวลำภู"
+    },
+    {
+      "amphurID": "4113",
+      "amphurname": "*ศรีบุญเรือง"
+    },
+    {
+      "amphurID": "4114",
+      "amphurname": "*นากลาง"
+    },
+    {
+      "amphurID": "4115",
+      "amphurname": "*สุวรรณคูหา"
+    },
+    {
+      "amphurID": "4116",
+      "amphurname": "*โนนสัง"
+    },
+    {
+      "amphurID": "4117",
+      "amphurname": "บ้านผือ"
+    },
+    {
+      "amphurID": "4118",
+      "amphurname": "น้ำโสม"
+    },
+    {
+      "amphurID": "4119",
+      "amphurname": "เพ็ญ"
+    },
+    {
+      "amphurID": "4120",
+      "amphurname": "สร้างคอม"
+    },
+    {
+      "amphurID": "4121",
+      "amphurname": "หนองแสง"
+    },
+    {
+      "amphurID": "4122",
+      "amphurname": "นายูง"
+    },
+    {
+      "amphurID": "4123",
+      "amphurname": "พิบูลย์รักษ์"
+    },
+    {
+      "amphurID": "4124",
+      "amphurname": "กู่แก้ว"
+    },
+    {
+      "amphurID": "4125",
+      "amphurname": "ประจักษ์ศิลปาคม"
+    },
+    {
+      "amphurID": "4201",
+      "amphurname": "เมืองเลย"
+    },
+    {
+      "amphurID": "4202",
+      "amphurname": "นาด้วง"
+    },
+    {
+      "amphurID": "4203",
+      "amphurname": "เชียงคาน"
+    },
+    {
+      "amphurID": "4204",
+      "amphurname": "ปากชม"
+    },
+    {
+      "amphurID": "4205",
+      "amphurname": "ด่านซ้าย"
+    },
+    {
+      "amphurID": "4206",
+      "amphurname": "นาแห้ว"
+    },
+    {
+      "amphurID": "4207",
+      "amphurname": "ภูเรือ"
+    },
+    {
+      "amphurID": "4208",
+      "amphurname": "ท่าลี่"
+    },
+    {
+      "amphurID": "4209",
+      "amphurname": "วังสะพุง"
+    },
+    {
+      "amphurID": "4210",
+      "amphurname": "ภูกระดึง"
+    },
+    {
+      "amphurID": "4211",
+      "amphurname": "ภูหลวง"
+    },
+    {
+      "amphurID": "4212",
+      "amphurname": "ผาขาว"
+    },
+    {
+      "amphurID": "4213",
+      "amphurname": "เอราวัณ"
+    },
+    {
+      "amphurID": "4214",
+      "amphurname": "หนองหิน"
+    },
+    {
+      "amphurID": "4301",
+      "amphurname": "เมืองหนองคาย"
+    },
+    {
+      "amphurID": "4302",
+      "amphurname": "ท่าบ่อ"
+    },
+    {
+      "amphurID": "4303",
+      "amphurname": "บึงกาฬ*"
+    },
+    {
+      "amphurID": "4304",
+      "amphurname": "พรเจริญ*"
+    },
+    {
+      "amphurID": "4305",
+      "amphurname": "โพนพิสัย"
+    },
+    {
+      "amphurID": "4306",
+      "amphurname": "โซ่พิสัย*"
+    },
+    {
+      "amphurID": "4307",
+      "amphurname": "ศรีเชียงใหม่"
+    },
+    {
+      "amphurID": "4308",
+      "amphurname": "สังคม"
+    },
+    {
+      "amphurID": "4309",
+      "amphurname": "เซกา*"
+    },
+    {
+      "amphurID": "4310",
+      "amphurname": "ปากคาด*"
+    },
+    {
+      "amphurID": "4311",
+      "amphurname": "บึงโขงหลง*"
+    },
+    {
+      "amphurID": "4312",
+      "amphurname": "ศรีวิไล*"
+    },
+    {
+      "amphurID": "4313",
+      "amphurname": "บุ่งคล้า*"
+    },
+    {
+      "amphurID": "4314",
+      "amphurname": "สระใคร"
+    },
+    {
+      "amphurID": "4315",
+      "amphurname": "เฝ้าไร่"
+    },
+    {
+      "amphurID": "4316",
+      "amphurname": "รัตนวาปี"
+    },
+    {
+      "amphurID": "4317",
+      "amphurname": "โพธิ์ตาก"
+    },
+    {
+      "amphurID": "4401",
+      "amphurname": "เมืองมหาสารคาม"
+    },
+    {
+      "amphurID": "4402",
+      "amphurname": "แกดำ"
+    },
+    {
+      "amphurID": "4403",
+      "amphurname": "โกสุมพิสัย"
+    },
+    {
+      "amphurID": "4404",
+      "amphurname": "กันทรวิชัย"
+    },
+    {
+      "amphurID": "4405",
+      "amphurname": "เชียงยืน"
+    },
+    {
+      "amphurID": "4406",
+      "amphurname": "บรบือ"
+    },
+    {
+      "amphurID": "4407",
+      "amphurname": "นาเชือก"
+    },
+    {
+      "amphurID": "4408",
+      "amphurname": "พยัคฆภูมิพิสัย"
+    },
+    {
+      "amphurID": "4409",
+      "amphurname": "วาปีปทุม"
+    },
+    {
+      "amphurID": "4410",
+      "amphurname": "นาดูน"
+    },
+    {
+      "amphurID": "4411",
+      "amphurname": "ยางสีสุราช"
+    },
+    {
+      "amphurID": "4412",
+      "amphurname": "กุดรัง"
+    },
+    {
+      "amphurID": "4413",
+      "amphurname": "ชื่นชม"
+    },
+    {
+      "amphurID": "4481",
+      "amphurname": "*หลุบ"
+    },
+    {
+      "amphurID": "4501",
+      "amphurname": "เมืองร้อยเอ็ด"
+    },
+    {
+      "amphurID": "4502",
+      "amphurname": "เกษตรวิสัย"
+    },
+    {
+      "amphurID": "4503",
+      "amphurname": "ปทุมรัตต์"
+    },
+    {
+      "amphurID": "4504",
+      "amphurname": "จตุรพักตรพิมาน"
+    },
+    {
+      "amphurID": "4505",
+      "amphurname": "ธวัชบุรี"
+    },
+    {
+      "amphurID": "4506",
+      "amphurname": "พนมไพร"
+    },
+    {
+      "amphurID": "4507",
+      "amphurname": "โพนทอง"
+    },
+    {
+      "amphurID": "4508",
+      "amphurname": "โพธิ์ชัย"
+    },
+    {
+      "amphurID": "4509",
+      "amphurname": "หนองพอก"
+    },
+    {
+      "amphurID": "4510",
+      "amphurname": "เสลภูมิ"
+    },
+    {
+      "amphurID": "4511",
+      "amphurname": "สุวรรณภูมิ"
+    },
+    {
+      "amphurID": "4512",
+      "amphurname": "เมืองสรวง"
+    },
+    {
+      "amphurID": "4513",
+      "amphurname": "โพนทราย"
+    },
+    {
+      "amphurID": "4514",
+      "amphurname": "อาจสามารถ"
+    },
+    {
+      "amphurID": "4515",
+      "amphurname": "เมยวดี"
+    },
+    {
+      "amphurID": "4516",
+      "amphurname": "ศรีสมเด็จ"
+    },
+    {
+      "amphurID": "4517",
+      "amphurname": "จังหาร"
+    },
+    {
+      "amphurID": "4518",
+      "amphurname": "เชียงขวัญ"
+    },
+    {
+      "amphurID": "4519",
+      "amphurname": "หนองฮี"
+    },
+    {
+      "amphurID": "4520",
+      "amphurname": "ทุ่งเขาหลวง"
+    },
+    {
+      "amphurID": "4601",
+      "amphurname": "เมืองกาฬสินธุ์"
+    },
+    {
+      "amphurID": "4602",
+      "amphurname": "นามน"
+    },
+    {
+      "amphurID": "4603",
+      "amphurname": "กมลาไสย"
+    },
+    {
+      "amphurID": "4604",
+      "amphurname": "ร่องคำ"
+    },
+    {
+      "amphurID": "4605",
+      "amphurname": "กุฉินารายณ์"
+    },
+    {
+      "amphurID": "4606",
+      "amphurname": "เขาวง"
+    },
+    {
+      "amphurID": "4607",
+      "amphurname": "ยางตลาด"
+    },
+    {
+      "amphurID": "4608",
+      "amphurname": "ห้วยเม็ก"
+    },
+    {
+      "amphurID": "4609",
+      "amphurname": "สหัสขันธ์"
+    },
+    {
+      "amphurID": "4610",
+      "amphurname": "คำม่วง"
+    },
+    {
+      "amphurID": "4611",
+      "amphurname": "ท่าคันโท"
+    },
+    {
+      "amphurID": "4612",
+      "amphurname": "หนองกุงศรี"
+    },
+    {
+      "amphurID": "4613",
+      "amphurname": "สมเด็จ"
+    },
+    {
+      "amphurID": "4614",
+      "amphurname": "ห้วยผึ้ง"
+    },
+    {
+      "amphurID": "4615",
+      "amphurname": "สามชัย"
+    },
+    {
+      "amphurID": "4616",
+      "amphurname": "นาคู"
+    },
+    {
+      "amphurID": "4617",
+      "amphurname": "ดอนจาน"
+    },
+    {
+      "amphurID": "4618",
+      "amphurname": "ฆ้องชัย"
+    },
+    {
+      "amphurID": "4701",
+      "amphurname": "เมืองสกลนคร"
+    },
+    {
+      "amphurID": "4702",
+      "amphurname": "กุสุมาลย์"
+    },
+    {
+      "amphurID": "4703",
+      "amphurname": "กุดบาก"
+    },
+    {
+      "amphurID": "4704",
+      "amphurname": "พรรณานิคม"
+    },
+    {
+      "amphurID": "4705",
+      "amphurname": "พังโคน"
+    },
+    {
+      "amphurID": "4706",
+      "amphurname": "วาริชภูมิ"
+    },
+    {
+      "amphurID": "4707",
+      "amphurname": "นิคมน้ำอูน"
+    },
+    {
+      "amphurID": "4708",
+      "amphurname": "วานรนิวาส"
+    },
+    {
+      "amphurID": "4709",
+      "amphurname": "คำตากล้า"
+    },
+    {
+      "amphurID": "4710",
+      "amphurname": "บ้านม่วง"
+    },
+    {
+      "amphurID": "4711",
+      "amphurname": "อากาศอำนวย"
+    },
+    {
+      "amphurID": "4712",
+      "amphurname": "สว่างแดนดิน"
+    },
+    {
+      "amphurID": "4713",
+      "amphurname": "ส่องดาว"
+    },
+    {
+      "amphurID": "4714",
+      "amphurname": "เต่างอย"
+    },
+    {
+      "amphurID": "4715",
+      "amphurname": "โคกศรีสุพรรณ"
+    },
+    {
+      "amphurID": "4716",
+      "amphurname": "เจริญศิลป์"
+    },
+    {
+      "amphurID": "4717",
+      "amphurname": "โพนนาแก้ว"
+    },
+    {
+      "amphurID": "4718",
+      "amphurname": "ภูพาน"
+    },
+    {
+      "amphurID": "4751",
+      "amphurname": "วานรนิวาส (สาขาตำบลกุดเรือคำ)*"
+    },
+    {
+      "amphurID": "4781",
+      "amphurname": "*อ.บ้านหัน  จ.สกลนคร"
+    },
+    {
+      "amphurID": "4801",
+      "amphurname": "เมืองนครพนม"
+    },
+    {
+      "amphurID": "4802",
+      "amphurname": "ปลาปาก"
+    },
+    {
+      "amphurID": "4803",
+      "amphurname": "ท่าอุเทน"
+    },
+    {
+      "amphurID": "4804",
+      "amphurname": "บ้านแพง"
+    },
+    {
+      "amphurID": "4805",
+      "amphurname": "ธาตุพนม"
+    },
+    {
+      "amphurID": "4806",
+      "amphurname": "เรณูนคร"
+    },
+    {
+      "amphurID": "4807",
+      "amphurname": "นาแก"
+    },
+    {
+      "amphurID": "4808",
+      "amphurname": "ศรีสงคราม"
+    },
+    {
+      "amphurID": "4809",
+      "amphurname": "นาหว้า"
+    },
+    {
+      "amphurID": "4810",
+      "amphurname": "โพนสวรรค์"
+    },
+    {
+      "amphurID": "4811",
+      "amphurname": "นาทม"
+    },
+    {
+      "amphurID": "4812",
+      "amphurname": "วังยาง"
+    },
+    {
+      "amphurID": "4901",
+      "amphurname": "เมืองมุกดาหาร"
+    },
+    {
+      "amphurID": "4902",
+      "amphurname": "นิคมคำสร้อย"
+    },
+    {
+      "amphurID": "4903",
+      "amphurname": "ดอนตาล"
+    },
+    {
+      "amphurID": "4904",
+      "amphurname": "ดงหลวง"
+    },
+    {
+      "amphurID": "4905",
+      "amphurname": "คำชะอี"
+    },
+    {
+      "amphurID": "4906",
+      "amphurname": "หว้านใหญ่"
+    },
+    {
+      "amphurID": "4907",
+      "amphurname": "หนองสูง"
+    },
+    {
+      "amphurID": "5001",
+      "amphurname": "เมืองเชียงใหม่"
+    },
+    {
+      "amphurID": "5002",
+      "amphurname": "จอมทอง"
+    },
+    {
+      "amphurID": "5003",
+      "amphurname": "แม่แจ่ม"
+    },
+    {
+      "amphurID": "5004",
+      "amphurname": "เชียงดาว"
+    },
+    {
+      "amphurID": "5005",
+      "amphurname": "ดอยสะเก็ด"
+    },
+    {
+      "amphurID": "5006",
+      "amphurname": "แม่แตง"
+    },
+    {
+      "amphurID": "5007",
+      "amphurname": "แม่ริม"
+    },
+    {
+      "amphurID": "5008",
+      "amphurname": "สะเมิง"
+    },
+    {
+      "amphurID": "5009",
+      "amphurname": "ฝาง"
+    },
+    {
+      "amphurID": "5010",
+      "amphurname": "แม่อาย"
+    },
+    {
+      "amphurID": "5011",
+      "amphurname": "พร้าว"
+    },
+    {
+      "amphurID": "5012",
+      "amphurname": "สันป่าตอง"
+    },
+    {
+      "amphurID": "5013",
+      "amphurname": "สันกำแพง"
+    },
+    {
+      "amphurID": "5014",
+      "amphurname": "สันทราย"
+    },
+    {
+      "amphurID": "5015",
+      "amphurname": "หางดง"
+    },
+    {
+      "amphurID": "5016",
+      "amphurname": "ฮอด"
+    },
+    {
+      "amphurID": "5017",
+      "amphurname": "ดอยเต่า"
+    },
+    {
+      "amphurID": "5018",
+      "amphurname": "อมก๋อย"
+    },
+    {
+      "amphurID": "5019",
+      "amphurname": "สารภี"
+    },
+    {
+      "amphurID": "5020",
+      "amphurname": "เวียงแหง"
+    },
+    {
+      "amphurID": "5021",
+      "amphurname": "ไชยปราการ"
+    },
+    {
+      "amphurID": "5022",
+      "amphurname": "แม่วาง"
+    },
+    {
+      "amphurID": "5023",
+      "amphurname": "แม่ออน"
+    },
+    {
+      "amphurID": "5024",
+      "amphurname": "ดอยหล่อ"
+    },
+    {
+      "amphurID": "5025",
+      "amphurname": "กัลยาณิวัฒนา"
+    },
+    {
+      "amphurID": "5051",
+      "amphurname": "เทศบาลนครเชียงใหม่ (สาขาแขวงกาลวิละ*"
+    },
+    {
+      "amphurID": "5052",
+      "amphurname": "เทศบาลนครเชียงใหม่ (สาขาแขวงศรีวิชั*"
+    },
+    {
+      "amphurID": "5053",
+      "amphurname": "เทศบาลนครเชียงใหม่ (สาขาเม็งราย*"
+    },
+    {
+      "amphurID": "5101",
+      "amphurname": "เมืองลำพูน"
+    },
+    {
+      "amphurID": "5102",
+      "amphurname": "แม่ทา"
+    },
+    {
+      "amphurID": "5103",
+      "amphurname": "บ้านโฮ่ง"
+    },
+    {
+      "amphurID": "5104",
+      "amphurname": "ลี้"
+    },
+    {
+      "amphurID": "5105",
+      "amphurname": "ทุ่งหัวช้าง"
+    },
+    {
+      "amphurID": "5106",
+      "amphurname": "ป่าซาง"
+    },
+    {
+      "amphurID": "5107",
+      "amphurname": "บ้านธิ"
+    },
+    {
+      "amphurID": "5108",
+      "amphurname": "เวียงหนองล่อง"
+    },
+    {
+      "amphurID": "5201",
+      "amphurname": "เมืองลำปาง"
+    },
+    {
+      "amphurID": "5202",
+      "amphurname": "แม่เมาะ"
+    },
+    {
+      "amphurID": "5203",
+      "amphurname": "เกาะคา"
+    },
+    {
+      "amphurID": "5204",
+      "amphurname": "เสริมงาม"
+    },
+    {
+      "amphurID": "5205",
+      "amphurname": "งาว"
+    },
+    {
+      "amphurID": "5206",
+      "amphurname": "แจ้ห่ม"
+    },
+    {
+      "amphurID": "5207",
+      "amphurname": "วังเหนือ"
+    },
+    {
+      "amphurID": "5208",
+      "amphurname": "เถิน"
+    },
+    {
+      "amphurID": "5209",
+      "amphurname": "แม่พริก"
+    },
+    {
+      "amphurID": "5210",
+      "amphurname": "แม่ทะ"
+    },
+    {
+      "amphurID": "5211",
+      "amphurname": "สบปราบ"
+    },
+    {
+      "amphurID": "5212",
+      "amphurname": "ห้างฉัตร"
+    },
+    {
+      "amphurID": "5213",
+      "amphurname": "เมืองปาน"
+    },
+    {
+      "amphurID": "5301",
+      "amphurname": "เมืองอุตรดิตถ์"
+    },
+    {
+      "amphurID": "5302",
+      "amphurname": "ตรอน"
+    },
+    {
+      "amphurID": "5303",
+      "amphurname": "ท่าปลา"
+    },
+    {
+      "amphurID": "5304",
+      "amphurname": "น้ำปาด"
+    },
+    {
+      "amphurID": "5305",
+      "amphurname": "ฟากท่า"
+    },
+    {
+      "amphurID": "5306",
+      "amphurname": "บ้านโคก"
+    },
+    {
+      "amphurID": "5307",
+      "amphurname": "พิชัย"
+    },
+    {
+      "amphurID": "5308",
+      "amphurname": "ลับแล"
+    },
+    {
+      "amphurID": "5309",
+      "amphurname": "ทองแสนขัน"
+    },
+    {
+      "amphurID": "5401",
+      "amphurname": "เมืองแพร่"
+    },
+    {
+      "amphurID": "5402",
+      "amphurname": "ร้องกวาง"
+    },
+    {
+      "amphurID": "5403",
+      "amphurname": "ลอง"
+    },
+    {
+      "amphurID": "5404",
+      "amphurname": "สูงเม่น"
+    },
+    {
+      "amphurID": "5405",
+      "amphurname": "เด่นชัย"
+    },
+    {
+      "amphurID": "5406",
+      "amphurname": "สอง"
+    },
+    {
+      "amphurID": "5407",
+      "amphurname": "วังชิ้น"
+    },
+    {
+      "amphurID": "5408",
+      "amphurname": "หนองม่วงไข่"
+    },
+    {
+      "amphurID": "5501",
+      "amphurname": "เมืองน่าน"
+    },
+    {
+      "amphurID": "5502",
+      "amphurname": "แม่จริม"
+    },
+    {
+      "amphurID": "5503",
+      "amphurname": "บ้านหลวง"
+    },
+    {
+      "amphurID": "5504",
+      "amphurname": "นาน้อย"
+    },
+    {
+      "amphurID": "5505",
+      "amphurname": "ปัว"
+    },
+    {
+      "amphurID": "5506",
+      "amphurname": "ท่าวังผา"
+    },
+    {
+      "amphurID": "5507",
+      "amphurname": "เวียงสา"
+    },
+    {
+      "amphurID": "5508",
+      "amphurname": "ทุ่งช้าง"
+    },
+    {
+      "amphurID": "5509",
+      "amphurname": "เชียงกลาง"
+    },
+    {
+      "amphurID": "5510",
+      "amphurname": "นาหมื่น"
+    },
+    {
+      "amphurID": "5511",
+      "amphurname": "สันติสุข"
+    },
+    {
+      "amphurID": "5512",
+      "amphurname": "บ่อเกลือ"
+    },
+    {
+      "amphurID": "5513",
+      "amphurname": "สองแคว"
+    },
+    {
+      "amphurID": "5514",
+      "amphurname": "ภูเพียง"
+    },
+    {
+      "amphurID": "5515",
+      "amphurname": "เฉลิมพระเกียรติ"
+    },
+    {
+      "amphurID": "5601",
+      "amphurname": "เมืองพะเยา"
+    },
+    {
+      "amphurID": "5602",
+      "amphurname": "จุน"
+    },
+    {
+      "amphurID": "5603",
+      "amphurname": "เชียงคำ"
+    },
+    {
+      "amphurID": "5604",
+      "amphurname": "เชียงม่วน"
+    },
+    {
+      "amphurID": "5605",
+      "amphurname": "ดอกคำใต้"
+    },
+    {
+      "amphurID": "5606",
+      "amphurname": "ปง"
+    },
+    {
+      "amphurID": "5607",
+      "amphurname": "แม่ใจ"
+    },
+    {
+      "amphurID": "5608",
+      "amphurname": "ภูซาง"
+    },
+    {
+      "amphurID": "5609",
+      "amphurname": "ภูกามยาว"
+    },
+    {
+      "amphurID": "5701",
+      "amphurname": "เมืองเชียงราย"
+    },
+    {
+      "amphurID": "5702",
+      "amphurname": "เวียงชัย"
+    },
+    {
+      "amphurID": "5703",
+      "amphurname": "เชียงของ"
+    },
+    {
+      "amphurID": "5704",
+      "amphurname": "เทิง"
+    },
+    {
+      "amphurID": "5705",
+      "amphurname": "พาน"
+    },
+    {
+      "amphurID": "5706",
+      "amphurname": "ป่าแดด"
+    },
+    {
+      "amphurID": "5707",
+      "amphurname": "แม่จัน"
+    },
+    {
+      "amphurID": "5708",
+      "amphurname": "เชียงแสน"
+    },
+    {
+      "amphurID": "5709",
+      "amphurname": "แม่สาย"
+    },
+    {
+      "amphurID": "5710",
+      "amphurname": "แม่สรวย"
+    },
+    {
+      "amphurID": "5711",
+      "amphurname": "เวียงป่าเป้า"
+    },
+    {
+      "amphurID": "5712",
+      "amphurname": "พญาเม็งราย"
+    },
+    {
+      "amphurID": "5713",
+      "amphurname": "เวียงแก่น"
+    },
+    {
+      "amphurID": "5714",
+      "amphurname": "ขุนตาล"
+    },
+    {
+      "amphurID": "5715",
+      "amphurname": "แม่ฟ้าหลวง"
+    },
+    {
+      "amphurID": "5716",
+      "amphurname": "แม่ลาว"
+    },
+    {
+      "amphurID": "5717",
+      "amphurname": "เวียงเชียงรุ้ง"
+    },
+    {
+      "amphurID": "5718",
+      "amphurname": "ดอยหลวง"
+    },
+    {
+      "amphurID": "5801",
+      "amphurname": "เมืองแม่ฮ่องสอน"
+    },
+    {
+      "amphurID": "5802",
+      "amphurname": "ขุนยวม"
+    },
+    {
+      "amphurID": "5803",
+      "amphurname": "ปาย"
+    },
+    {
+      "amphurID": "5804",
+      "amphurname": "แม่สะเรียง"
+    },
+    {
+      "amphurID": "5805",
+      "amphurname": "แม่ลาน้อย"
+    },
+    {
+      "amphurID": "5806",
+      "amphurname": "สบเมย"
+    },
+    {
+      "amphurID": "5807",
+      "amphurname": "ปางมะผ้า"
+    },
+    {
+      "amphurID": "5881",
+      "amphurname": "*อ.ม่วยต่อ  จ.แม่ฮ่องสอน"
+    },
+    {
+      "amphurID": "6001",
+      "amphurname": "เมืองนครสวรรค์"
+    },
+    {
+      "amphurID": "6002",
+      "amphurname": "โกรกพระ"
+    },
+    {
+      "amphurID": "6003",
+      "amphurname": "ชุมแสง"
+    },
+    {
+      "amphurID": "6004",
+      "amphurname": "หนองบัว"
+    },
+    {
+      "amphurID": "6005",
+      "amphurname": "บรรพตพิสัย"
+    },
+    {
+      "amphurID": "6006",
+      "amphurname": "เก้าเลี้ยว"
+    },
+    {
+      "amphurID": "6007",
+      "amphurname": "ตาคลี"
+    },
+    {
+      "amphurID": "6008",
+      "amphurname": "ท่าตะโก"
+    },
+    {
+      "amphurID": "6009",
+      "amphurname": "ไพศาลี"
+    },
+    {
+      "amphurID": "6010",
+      "amphurname": "พยุหะคีรี"
+    },
+    {
+      "amphurID": "6011",
+      "amphurname": "ลาดยาว"
+    },
+    {
+      "amphurID": "6012",
+      "amphurname": "ตากฟ้า"
+    },
+    {
+      "amphurID": "6013",
+      "amphurname": "แม่วงก์"
+    },
+    {
+      "amphurID": "6014",
+      "amphurname": "แม่เปิน"
+    },
+    {
+      "amphurID": "6015",
+      "amphurname": "ชุมตาบง"
+    },
+    {
+      "amphurID": "6051",
+      "amphurname": "สาขาตำบลห้วยน้ำหอม*"
+    },
+    {
+      "amphurID": "6052",
+      "amphurname": "กิ่งอำเภอชุมตาบง (สาขาตำบลชุมตาบง)*"
+    },
+    {
+      "amphurID": "6053",
+      "amphurname": "แม่วงก์ (สาขาตำบลแม่เล่ย์)*"
+    },
+    {
+      "amphurID": "6101",
+      "amphurname": "เมืองอุทัยธานี"
+    },
+    {
+      "amphurID": "6102",
+      "amphurname": "ทัพทัน"
+    },
+    {
+      "amphurID": "6103",
+      "amphurname": "สว่างอารมณ์"
+    },
+    {
+      "amphurID": "6104",
+      "amphurname": "หนองฉาง"
+    },
+    {
+      "amphurID": "6105",
+      "amphurname": "หนองขาหย่าง"
+    },
+    {
+      "amphurID": "6106",
+      "amphurname": "บ้านไร่"
+    },
+    {
+      "amphurID": "6107",
+      "amphurname": "ลานสัก"
+    },
+    {
+      "amphurID": "6108",
+      "amphurname": "ห้วยคต"
+    },
+    {
+      "amphurID": "6201",
+      "amphurname": "เมืองกำแพงเพชร"
+    },
+    {
+      "amphurID": "6202",
+      "amphurname": "ไทรงาม"
+    },
+    {
+      "amphurID": "6203",
+      "amphurname": "คลองลาน"
+    },
+    {
+      "amphurID": "6204",
+      "amphurname": "ขาณุวรลักษบุรี"
+    },
+    {
+      "amphurID": "6205",
+      "amphurname": "คลองขลุง"
+    },
+    {
+      "amphurID": "6206",
+      "amphurname": "พรานกระต่าย"
+    },
+    {
+      "amphurID": "6207",
+      "amphurname": "ลานกระบือ"
+    },
+    {
+      "amphurID": "6208",
+      "amphurname": "ทรายทองวัฒนา"
+    },
+    {
+      "amphurID": "6209",
+      "amphurname": "ปางศิลาทอง"
+    },
+    {
+      "amphurID": "6210",
+      "amphurname": "บึงสามัคคี"
+    },
+    {
+      "amphurID": "6211",
+      "amphurname": "โกสัมพีนคร"
+    },
+    {
+      "amphurID": "6301",
+      "amphurname": "เมืองตาก"
+    },
+    {
+      "amphurID": "6302",
+      "amphurname": "บ้านตาก"
+    },
+    {
+      "amphurID": "6303",
+      "amphurname": "สามเงา"
+    },
+    {
+      "amphurID": "6304",
+      "amphurname": "แม่ระมาด"
+    },
+    {
+      "amphurID": "6305",
+      "amphurname": "ท่าสองยาง"
+    },
+    {
+      "amphurID": "6306",
+      "amphurname": "แม่สอด"
+    },
+    {
+      "amphurID": "6307",
+      "amphurname": "พบพระ"
+    },
+    {
+      "amphurID": "6308",
+      "amphurname": "อุ้มผาง"
+    },
+    {
+      "amphurID": "6309",
+      "amphurname": "วังเจ้า"
+    },
+    {
+      "amphurID": "6381",
+      "amphurname": "*กิ่ง อ.ท่าปุย  จ.ตาก"
+    },
+    {
+      "amphurID": "6401",
+      "amphurname": "เมืองสุโขทัย"
+    },
+    {
+      "amphurID": "6402",
+      "amphurname": "บ้านด่านลานหอย"
+    },
+    {
+      "amphurID": "6403",
+      "amphurname": "คีรีมาศ"
+    },
+    {
+      "amphurID": "6404",
+      "amphurname": "กงไกรลาศ"
+    },
+    {
+      "amphurID": "6405",
+      "amphurname": "ศรีสัชนาลัย"
+    },
+    {
+      "amphurID": "6406",
+      "amphurname": "ศรีสำโรง"
+    },
+    {
+      "amphurID": "6407",
+      "amphurname": "สวรรคโลก"
+    },
+    {
+      "amphurID": "6408",
+      "amphurname": "ศรีนคร"
+    },
+    {
+      "amphurID": "6409",
+      "amphurname": "ทุ่งเสลี่ยม"
+    },
+    {
+      "amphurID": "6501",
+      "amphurname": "เมืองพิษณุโลก"
+    },
+    {
+      "amphurID": "6502",
+      "amphurname": "นครไทย"
+    },
+    {
+      "amphurID": "6503",
+      "amphurname": "ชาติตระการ"
+    },
+    {
+      "amphurID": "6504",
+      "amphurname": "บางระกำ"
+    },
+    {
+      "amphurID": "6505",
+      "amphurname": "บางกระทุ่ม"
+    },
+    {
+      "amphurID": "6506",
+      "amphurname": "พรหมพิราม"
+    },
+    {
+      "amphurID": "6507",
+      "amphurname": "วัดโบสถ์"
+    },
+    {
+      "amphurID": "6508",
+      "amphurname": "วังทอง"
+    },
+    {
+      "amphurID": "6509",
+      "amphurname": "เนินมะปราง"
+    },
+    {
+      "amphurID": "6601",
+      "amphurname": "เมืองพิจิตร"
+    },
+    {
+      "amphurID": "6602",
+      "amphurname": "วังทรายพูน"
+    },
+    {
+      "amphurID": "6603",
+      "amphurname": "โพธิ์ประทับช้าง"
+    },
+    {
+      "amphurID": "6604",
+      "amphurname": "ตะพานหิน"
+    },
+    {
+      "amphurID": "6605",
+      "amphurname": "บางมูลนาก"
+    },
+    {
+      "amphurID": "6606",
+      "amphurname": "โพทะเล"
+    },
+    {
+      "amphurID": "6607",
+      "amphurname": "สามง่าม"
+    },
+    {
+      "amphurID": "6608",
+      "amphurname": "ทับคล้อ"
+    },
+    {
+      "amphurID": "6609",
+      "amphurname": "สากเหล็ก"
+    },
+    {
+      "amphurID": "6610",
+      "amphurname": "บึงนาราง"
+    },
+    {
+      "amphurID": "6611",
+      "amphurname": "ดงเจริญ"
+    },
+    {
+      "amphurID": "6612",
+      "amphurname": "วชิรบารมี"
+    },
+    {
+      "amphurID": "6701",
+      "amphurname": "เมืองเพชรบูรณ์"
+    },
+    {
+      "amphurID": "6702",
+      "amphurname": "ชนแดน"
+    },
+    {
+      "amphurID": "6703",
+      "amphurname": "หล่มสัก"
+    },
+    {
+      "amphurID": "6704",
+      "amphurname": "หล่มเก่า"
+    },
+    {
+      "amphurID": "6705",
+      "amphurname": "วิเชียรบุรี"
+    },
+    {
+      "amphurID": "6706",
+      "amphurname": "ศรีเทพ"
+    },
+    {
+      "amphurID": "6707",
+      "amphurname": "หนองไผ่"
+    },
+    {
+      "amphurID": "6708",
+      "amphurname": "บึงสามพัน"
+    },
+    {
+      "amphurID": "6709",
+      "amphurname": "น้ำหนาว"
+    },
+    {
+      "amphurID": "6710",
+      "amphurname": "วังโป่ง"
+    },
+    {
+      "amphurID": "6711",
+      "amphurname": "เขาค้อ"
+    },
+    {
+      "amphurID": "7001",
+      "amphurname": "เมืองราชบุรี"
+    },
+    {
+      "amphurID": "7002",
+      "amphurname": "จอมบึง"
+    },
+    {
+      "amphurID": "7003",
+      "amphurname": "สวนผึ้ง"
+    },
+    {
+      "amphurID": "7004",
+      "amphurname": "ดำเนินสะดวก"
+    },
+    {
+      "amphurID": "7005",
+      "amphurname": "บ้านโป่ง"
+    },
+    {
+      "amphurID": "7006",
+      "amphurname": "บางแพ"
+    },
+    {
+      "amphurID": "7007",
+      "amphurname": "โพธาราม"
+    },
+    {
+      "amphurID": "7008",
+      "amphurname": "ปากท่อ"
+    },
+    {
+      "amphurID": "7009",
+      "amphurname": "วัดเพลง"
+    },
+    {
+      "amphurID": "7010",
+      "amphurname": "บ้านคา"
+    },
+    {
+      "amphurID": "7074",
+      "amphurname": "ท้องถิ่นเทศบาลตำบลบ้านฆ้อง*"
+    },
+    {
+      "amphurID": "7101",
+      "amphurname": "เมืองกาญจนบุรี"
+    },
+    {
+      "amphurID": "7102",
+      "amphurname": "ไทรโยค"
+    },
+    {
+      "amphurID": "7103",
+      "amphurname": "บ่อพลอย"
+    },
+    {
+      "amphurID": "7104",
+      "amphurname": "ศรีสวัสดิ์"
+    },
+    {
+      "amphurID": "7105",
+      "amphurname": "ท่ามะกา"
+    },
+    {
+      "amphurID": "7106",
+      "amphurname": "ท่าม่วง"
+    },
+    {
+      "amphurID": "7107",
+      "amphurname": "ทองผาภูมิ"
+    },
+    {
+      "amphurID": "7108",
+      "amphurname": "สังขละบุรี"
+    },
+    {
+      "amphurID": "7109",
+      "amphurname": "พนมทวน"
+    },
+    {
+      "amphurID": "7110",
+      "amphurname": "เลาขวัญ"
+    },
+    {
+      "amphurID": "7111",
+      "amphurname": "ด่านมะขามเตี้ย"
+    },
+    {
+      "amphurID": "7112",
+      "amphurname": "หนองปรือ"
+    },
+    {
+      "amphurID": "7113",
+      "amphurname": "ห้วยกระเจา"
+    },
+    {
+      "amphurID": "7151",
+      "amphurname": "สาขาตำบลท่ากระดาน*"
+    },
+    {
+      "amphurID": "7181",
+      "amphurname": "*บ้านทวน  จ.กาญจนบุรี"
+    },
+    {
+      "amphurID": "7201",
+      "amphurname": "เมืองสุพรรณบุรี"
+    },
+    {
+      "amphurID": "7202",
+      "amphurname": "เดิมบางนางบวช"
+    },
+    {
+      "amphurID": "7203",
+      "amphurname": "ด่านช้าง"
+    },
+    {
+      "amphurID": "7204",
+      "amphurname": "บางปลาม้า"
+    },
+    {
+      "amphurID": "7205",
+      "amphurname": "ศรีประจันต์"
+    },
+    {
+      "amphurID": "7206",
+      "amphurname": "ดอนเจดีย์"
+    },
+    {
+      "amphurID": "7207",
+      "amphurname": "สองพี่น้อง"
+    },
+    {
+      "amphurID": "7208",
+      "amphurname": "สามชุก"
+    },
+    {
+      "amphurID": "7209",
+      "amphurname": "อู่ทอง"
+    },
+    {
+      "amphurID": "7210",
+      "amphurname": "หนองหญ้าไซ"
+    },
+    {
+      "amphurID": "7301",
+      "amphurname": "เมืองนครปฐม"
+    },
+    {
+      "amphurID": "7302",
+      "amphurname": "กำแพงแสน"
+    },
+    {
+      "amphurID": "7303",
+      "amphurname": "นครชัยศรี"
+    },
+    {
+      "amphurID": "7304",
+      "amphurname": "ดอนตูม"
+    },
+    {
+      "amphurID": "7305",
+      "amphurname": "บางเลน"
+    },
+    {
+      "amphurID": "7306",
+      "amphurname": "สามพราน"
+    },
+    {
+      "amphurID": "7307",
+      "amphurname": "พุทธมณฑล"
+    },
+    {
+      "amphurID": "7401",
+      "amphurname": "เมืองสมุทรสาคร"
+    },
+    {
+      "amphurID": "7402",
+      "amphurname": "กระทุ่มแบน"
+    },
+    {
+      "amphurID": "7403",
+      "amphurname": "บ้านแพ้ว"
+    },
+    {
+      "amphurID": "7501",
+      "amphurname": "เมืองสมุทรสงคราม"
+    },
+    {
+      "amphurID": "7502",
+      "amphurname": "บางคนที"
+    },
+    {
+      "amphurID": "7503",
+      "amphurname": "อัมพวา"
+    },
+    {
+      "amphurID": "7601",
+      "amphurname": "เมืองเพชรบุรี"
+    },
+    {
+      "amphurID": "7602",
+      "amphurname": "เขาย้อย"
+    },
+    {
+      "amphurID": "7603",
+      "amphurname": "หนองหญ้าปล้อง"
+    },
+    {
+      "amphurID": "7604",
+      "amphurname": "ชะอำ"
+    },
+    {
+      "amphurID": "7605",
+      "amphurname": "ท่ายาง"
+    },
+    {
+      "amphurID": "7606",
+      "amphurname": "บ้านลาด"
+    },
+    {
+      "amphurID": "7607",
+      "amphurname": "บ้านแหลม"
+    },
+    {
+      "amphurID": "7608",
+      "amphurname": "แก่งกระจาน"
+    },
+    {
+      "amphurID": "7701",
+      "amphurname": "เมืองประจวบคีรีขันธ์"
+    },
+    {
+      "amphurID": "7702",
+      "amphurname": "กุยบุรี"
+    },
+    {
+      "amphurID": "7703",
+      "amphurname": "ทับสะแก"
+    },
+    {
+      "amphurID": "7704",
+      "amphurname": "บางสะพาน"
+    },
+    {
+      "amphurID": "7705",
+      "amphurname": "บางสะพานน้อย"
+    },
+    {
+      "amphurID": "7706",
+      "amphurname": "ปราณบุรี"
+    },
+    {
+      "amphurID": "7707",
+      "amphurname": "หัวหิน"
+    },
+    {
+      "amphurID": "7708",
+      "amphurname": "สามร้อยยอด"
+    },
+    {
+      "amphurID": "8001",
+      "amphurname": "เมืองนครศรีธรรมราช"
+    },
+    {
+      "amphurID": "8002",
+      "amphurname": "พรหมคีรี"
+    },
+    {
+      "amphurID": "8003",
+      "amphurname": "ลานสกา"
+    },
+    {
+      "amphurID": "8004",
+      "amphurname": "ฉวาง"
+    },
+    {
+      "amphurID": "8005",
+      "amphurname": "พิปูน"
+    },
+    {
+      "amphurID": "8006",
+      "amphurname": "เชียรใหญ่"
+    },
+    {
+      "amphurID": "8007",
+      "amphurname": "ชะอวด"
+    },
+    {
+      "amphurID": "8008",
+      "amphurname": "ท่าศาลา"
+    },
+    {
+      "amphurID": "8009",
+      "amphurname": "ทุ่งสง"
+    },
+    {
+      "amphurID": "8010",
+      "amphurname": "นาบอน"
+    },
+    {
+      "amphurID": "8011",
+      "amphurname": "ทุ่งใหญ่"
+    },
+    {
+      "amphurID": "8012",
+      "amphurname": "ปากพนัง"
+    },
+    {
+      "amphurID": "8013",
+      "amphurname": "ร่อนพิบูลย์"
+    },
+    {
+      "amphurID": "8014",
+      "amphurname": "สิชล"
+    },
+    {
+      "amphurID": "8015",
+      "amphurname": "ขนอม"
+    },
+    {
+      "amphurID": "8016",
+      "amphurname": "หัวไทร"
+    },
+    {
+      "amphurID": "8017",
+      "amphurname": "บางขัน"
+    },
+    {
+      "amphurID": "8018",
+      "amphurname": "ถ้ำพรรณรา"
+    },
+    {
+      "amphurID": "8019",
+      "amphurname": "จุฬาภรณ์"
+    },
+    {
+      "amphurID": "8020",
+      "amphurname": "พระพรหม"
+    },
+    {
+      "amphurID": "8021",
+      "amphurname": "นบพิตำ"
+    },
+    {
+      "amphurID": "8022",
+      "amphurname": "ช้างกลาง"
+    },
+    {
+      "amphurID": "8023",
+      "amphurname": "เฉลิมพระเกียรติ"
+    },
+    {
+      "amphurID": "8051",
+      "amphurname": "เชียรใหญ่ (สาขาตำบลเสือหึง)*"
+    },
+    {
+      "amphurID": "8052",
+      "amphurname": "สาขาตำบลสวนหลวง**"
+    },
+    {
+      "amphurID": "8053",
+      "amphurname": "ร่อนพิบูลย์ (สาขาตำบลหินตก)*"
+    },
+    {
+      "amphurID": "8054",
+      "amphurname": "หัวไทร (สาขาตำบลควนชะลิก)*"
+    },
+    {
+      "amphurID": "8055",
+      "amphurname": "ทุ่งสง (สาขาตำบลกะปาง)*"
+    },
+    {
+      "amphurID": "8101",
+      "amphurname": "เมืองกระบี่"
+    },
+    {
+      "amphurID": "8102",
+      "amphurname": "เขาพนม"
+    },
+    {
+      "amphurID": "8103",
+      "amphurname": "เกาะลันตา"
+    },
+    {
+      "amphurID": "8104",
+      "amphurname": "คลองท่อม"
+    },
+    {
+      "amphurID": "8105",
+      "amphurname": "อ่าวลึก"
+    },
+    {
+      "amphurID": "8106",
+      "amphurname": "ปลายพระยา"
+    },
+    {
+      "amphurID": "8107",
+      "amphurname": "ลำทับ"
+    },
+    {
+      "amphurID": "8108",
+      "amphurname": "เหนือคลอง"
+    },
+    {
+      "amphurID": "8201",
+      "amphurname": "เมืองพังงา"
+    },
+    {
+      "amphurID": "8202",
+      "amphurname": "เกาะยาว"
+    },
+    {
+      "amphurID": "8203",
+      "amphurname": "กะปง"
+    },
+    {
+      "amphurID": "8204",
+      "amphurname": "ตะกั่วทุ่ง"
+    },
+    {
+      "amphurID": "8205",
+      "amphurname": "ตะกั่วป่า"
+    },
+    {
+      "amphurID": "8206",
+      "amphurname": "คุระบุรี"
+    },
+    {
+      "amphurID": "8207",
+      "amphurname": "ทับปุด"
+    },
+    {
+      "amphurID": "8208",
+      "amphurname": "ท้ายเหมือง"
+    },
+    {
+      "amphurID": "8301",
+      "amphurname": "เมืองภูเก็ต"
+    },
+    {
+      "amphurID": "8302",
+      "amphurname": "กะทู้"
+    },
+    {
+      "amphurID": "8303",
+      "amphurname": "ถลาง"
+    },
+    {
+      "amphurID": "8381",
+      "amphurname": "*ทุ่งคา"
+    },
+    {
+      "amphurID": "8401",
+      "amphurname": "เมืองสุราษฎร์ธานี"
+    },
+    {
+      "amphurID": "8402",
+      "amphurname": "กาญจนดิษฐ์"
+    },
+    {
+      "amphurID": "8403",
+      "amphurname": "ดอนสัก"
+    },
+    {
+      "amphurID": "8404",
+      "amphurname": "เกาะสมุย"
+    },
+    {
+      "amphurID": "8405",
+      "amphurname": "เกาะพะงัน"
+    },
+    {
+      "amphurID": "8406",
+      "amphurname": "ไชยา"
+    },
+    {
+      "amphurID": "8407",
+      "amphurname": "ท่าชนะ"
+    },
+    {
+      "amphurID": "8408",
+      "amphurname": "คีรีรัฐนิคม"
+    },
+    {
+      "amphurID": "8409",
+      "amphurname": "บ้านตาขุน"
+    },
+    {
+      "amphurID": "8410",
+      "amphurname": "พนม"
+    },
+    {
+      "amphurID": "8411",
+      "amphurname": "ท่าฉาง"
+    },
+    {
+      "amphurID": "8412",
+      "amphurname": "บ้านนาสาร"
+    },
+    {
+      "amphurID": "8413",
+      "amphurname": "บ้านนาเดิม"
+    },
+    {
+      "amphurID": "8414",
+      "amphurname": "เคียนซา"
+    },
+    {
+      "amphurID": "8415",
+      "amphurname": "เวียงสระ"
+    },
+    {
+      "amphurID": "8416",
+      "amphurname": "พระแสง"
+    },
+    {
+      "amphurID": "8417",
+      "amphurname": "พุนพิน"
+    },
+    {
+      "amphurID": "8418",
+      "amphurname": "ชัยบุรี"
+    },
+    {
+      "amphurID": "8419",
+      "amphurname": "วิภาวดี"
+    },
+    {
+      "amphurID": "8451",
+      "amphurname": "เกาะพงัน (สาขาตำบลเกาะเต่า)*"
+    },
+    {
+      "amphurID": "8481",
+      "amphurname": "*อ.บ้านดอน  จ.สุราษฎร์ธานี"
+    },
+    {
+      "amphurID": "8501",
+      "amphurname": "เมืองระนอง"
+    },
+    {
+      "amphurID": "8502",
+      "amphurname": "ละอุ่น"
+    },
+    {
+      "amphurID": "8503",
+      "amphurname": "กะเปอร์"
+    },
+    {
+      "amphurID": "8504",
+      "amphurname": "กระบุรี"
+    },
+    {
+      "amphurID": "8505",
+      "amphurname": "สุขสำราญ"
+    },
+    {
+      "amphurID": "8601",
+      "amphurname": "เมืองชุมพร"
+    },
+    {
+      "amphurID": "8602",
+      "amphurname": "ท่าแซะ"
+    },
+    {
+      "amphurID": "8603",
+      "amphurname": "ปะทิว"
+    },
+    {
+      "amphurID": "8604",
+      "amphurname": "หลังสวน"
+    },
+    {
+      "amphurID": "8605",
+      "amphurname": "ละแม"
+    },
+    {
+      "amphurID": "8606",
+      "amphurname": "พะโต๊ะ"
+    },
+    {
+      "amphurID": "8607",
+      "amphurname": "สวี"
+    },
+    {
+      "amphurID": "8608",
+      "amphurname": "ทุ่งตะโก"
+    },
+    {
+      "amphurID": "9001",
+      "amphurname": "เมืองสงขลา"
+    },
+    {
+      "amphurID": "9002",
+      "amphurname": "สทิงพระ"
+    },
+    {
+      "amphurID": "9003",
+      "amphurname": "จะนะ"
+    },
+    {
+      "amphurID": "9004",
+      "amphurname": "นาทวี"
+    },
+    {
+      "amphurID": "9005",
+      "amphurname": "เทพา"
+    },
+    {
+      "amphurID": "9006",
+      "amphurname": "สะบ้าย้อย"
+    },
+    {
+      "amphurID": "9007",
+      "amphurname": "ระโนด"
+    },
+    {
+      "amphurID": "9008",
+      "amphurname": "กระแสสินธุ์"
+    },
+    {
+      "amphurID": "9009",
+      "amphurname": "รัตภูมิ"
+    },
+    {
+      "amphurID": "9010",
+      "amphurname": "สะเดา"
+    },
+    {
+      "amphurID": "9011",
+      "amphurname": "หาดใหญ่"
+    },
+    {
+      "amphurID": "9012",
+      "amphurname": "นาหม่อม"
+    },
+    {
+      "amphurID": "9013",
+      "amphurname": "ควนเนียง"
+    },
+    {
+      "amphurID": "9014",
+      "amphurname": "บางกล่ำ"
+    },
+    {
+      "amphurID": "9015",
+      "amphurname": "สิงหนคร"
+    },
+    {
+      "amphurID": "9016",
+      "amphurname": "คลองหอยโข่ง"
+    },
+    {
+      "amphurID": "9077",
+      "amphurname": "ท้องถิ่นเทศบาลตำบลสำนักขาม"
+    },
+    {
+      "amphurID": "9096",
+      "amphurname": "เทศบาลตำบลบ้านพรุ*"
+    },
+    {
+      "amphurID": "9101",
+      "amphurname": "เมืองสตูล"
+    },
+    {
+      "amphurID": "9102",
+      "amphurname": "ควนโดน"
+    },
+    {
+      "amphurID": "9103",
+      "amphurname": "ควนกาหลง"
+    },
+    {
+      "amphurID": "9104",
+      "amphurname": "ท่าแพ"
+    },
+    {
+      "amphurID": "9105",
+      "amphurname": "ละงู"
+    },
+    {
+      "amphurID": "9106",
+      "amphurname": "ทุ่งหว้า"
+    },
+    {
+      "amphurID": "9107",
+      "amphurname": "มะนัง"
+    },
+    {
+      "amphurID": "9201",
+      "amphurname": "เมืองตรัง"
+    },
+    {
+      "amphurID": "9202",
+      "amphurname": "กันตัง"
+    },
+    {
+      "amphurID": "9203",
+      "amphurname": "ย่านตาขาว"
+    },
+    {
+      "amphurID": "9204",
+      "amphurname": "ปะเหลียน"
+    },
+    {
+      "amphurID": "9205",
+      "amphurname": "สิเกา"
+    },
+    {
+      "amphurID": "9206",
+      "amphurname": "ห้วยยอด"
+    },
+    {
+      "amphurID": "9207",
+      "amphurname": "วังวิเศษ"
+    },
+    {
+      "amphurID": "9208",
+      "amphurname": "นาโยง"
+    },
+    {
+      "amphurID": "9209",
+      "amphurname": "รัษฎา"
+    },
+    {
+      "amphurID": "9210",
+      "amphurname": "หาดสำราญ"
+    },
+    {
+      "amphurID": "9251",
+      "amphurname": "อำเภอเมืองตรัง(สาขาคลองเต็ง)**"
+    },
+    {
+      "amphurID": "9301",
+      "amphurname": "เมืองพัทลุง"
+    },
+    {
+      "amphurID": "9302",
+      "amphurname": "กงหรา"
+    },
+    {
+      "amphurID": "9303",
+      "amphurname": "เขาชัยสน"
+    },
+    {
+      "amphurID": "9304",
+      "amphurname": "ตะโหมด"
+    },
+    {
+      "amphurID": "9305",
+      "amphurname": "ควนขนุน"
+    },
+    {
+      "amphurID": "9306",
+      "amphurname": "ปากพะยูน"
+    },
+    {
+      "amphurID": "9307",
+      "amphurname": "ศรีบรรพต"
+    },
+    {
+      "amphurID": "9308",
+      "amphurname": "ป่าบอน"
+    },
+    {
+      "amphurID": "9309",
+      "amphurname": "บางแก้ว"
+    },
+    {
+      "amphurID": "9310",
+      "amphurname": "ป่าพะยอม"
+    },
+    {
+      "amphurID": "9311",
+      "amphurname": "ศรีนครินทร์"
+    },
+    {
+      "amphurID": "9401",
+      "amphurname": "เมืองปัตตานี"
+    },
+    {
+      "amphurID": "9402",
+      "amphurname": "โคกโพธิ์"
+    },
+    {
+      "amphurID": "9403",
+      "amphurname": "หนองจิก"
+    },
+    {
+      "amphurID": "9404",
+      "amphurname": "ปะนาเระ"
+    },
+    {
+      "amphurID": "9405",
+      "amphurname": "มายอ"
+    },
+    {
+      "amphurID": "9406",
+      "amphurname": "ทุ่งยางแดง"
+    },
+    {
+      "amphurID": "9407",
+      "amphurname": "สายบุรี"
+    },
+    {
+      "amphurID": "9408",
+      "amphurname": "ไม้แก่น"
+    },
+    {
+      "amphurID": "9409",
+      "amphurname": "ยะหริ่ง"
+    },
+    {
+      "amphurID": "9410",
+      "amphurname": "ยะรัง"
+    },
+    {
+      "amphurID": "9411",
+      "amphurname": "กะพ้อ"
+    },
+    {
+      "amphurID": "9412",
+      "amphurname": "แม่ลาน"
+    },
+    {
+      "amphurID": "9501",
+      "amphurname": "เมืองยะลา"
+    },
+    {
+      "amphurID": "9502",
+      "amphurname": "เบตง"
+    },
+    {
+      "amphurID": "9503",
+      "amphurname": "บันนังสตา"
+    },
+    {
+      "amphurID": "9504",
+      "amphurname": "ธารโต"
+    },
+    {
+      "amphurID": "9505",
+      "amphurname": "ยะหา"
+    },
+    {
+      "amphurID": "9506",
+      "amphurname": "รามัน"
+    },
+    {
+      "amphurID": "9507",
+      "amphurname": "กาบัง"
+    },
+    {
+      "amphurID": "9508",
+      "amphurname": "กรงปินัง"
+    },
+    {
+      "amphurID": "9601",
+      "amphurname": "เมืองนราธิวาส"
+    },
+    {
+      "amphurID": "9602",
+      "amphurname": "ตากใบ"
+    },
+    {
+      "amphurID": "9603",
+      "amphurname": "บาเจาะ"
+    },
+    {
+      "amphurID": "9604",
+      "amphurname": "ยี่งอ"
+    },
+    {
+      "amphurID": "9605",
+      "amphurname": "ระแงะ"
+    },
+    {
+      "amphurID": "9606",
+      "amphurname": "รือเสาะ"
+    },
+    {
+      "amphurID": "9607",
+      "amphurname": "ศรีสาคร"
+    },
+    {
+      "amphurID": "9608",
+      "amphurname": "แว้ง"
+    },
+    {
+      "amphurID": "9609",
+      "amphurname": "สุคิริน"
+    },
+    {
+      "amphurID": "9610",
+      "amphurname": "สุไหงโก-ลก"
+    },
+    {
+      "amphurID": "9611",
+      "amphurname": "สุไหงปาดี"
+    },
+    {
+      "amphurID": "9612",
+      "amphurname": "จะแนะ"
+    },
+    {
+      "amphurID": "9613",
+      "amphurname": "เจาะไอร้อง"
+    },
+    {
+      "amphurID": "9681",
+      "amphurname": "*อ.บางนรา  จ.นราธิวาส"
+    }
+  ],
+  "total": 1004
+}
