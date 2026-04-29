@@ -66,8 +66,7 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 
 | ฟิลด์ | ค่าที่ใช้ | เงื่อนไข | บวก modifier? |
 |------|---------|----------|---------------|
-| `tab1_SUR_INVEST` | `tbl.SUR_INVEST_12` | SE + MtypeID ∈ {1,2} | ✓ outOfArea + outOfHours |
-| `tab1_SUR_INVEST` | `tbl.SUR_INVEST_34` | SE + MtypeID ∈ {3,4} | ✓ outOfArea + outOfHours |
+| `tab1_SUR_INVEST` | `tbl.SUR_INVEST` | SE (surveyor name ขึ้นต้น `se`) — ค่าเดียวต่ออำเภอ ทุก MtypeID | ✓ outOfArea + outOfHours |
 | `tab1_INS_INVEST` | `tbl.INS_INVEST_12` | MtypeID ∈ {1,2} | — |
 | `tab1_INS_INVEST` | `tbl.INS_INVEST_34` | MtypeID ∈ {3,4} | — |
 | `tab1_INS_TRANS`  | `tbl.INS_TRANS` | ทุก MtypeID | — |
@@ -76,11 +75,12 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 
 > non-SE: `SUR_INVEST` ไม่ถูกแตะ (เก็บไว้ใน config สำหรับการเติมในอนาคต) ส่วน `INS_*` ยังเติมตาม MtypeID ปกติ
 
-**ตารางตัวอย่าง [`AMPHUR_FEE_TABLE`](./config.js) (ระยอง — บริษัท 1-2 = 500, บริษัท 3-4 = 400 ทุกอำเภอ):**
+**ตารางตัวอย่าง [`AMPHUR_FEE_TABLE`](./config.js) (ระยอง):**
 ```js
-"2101": { SUR_INVEST_12: 500, SUR_INVEST_34: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 350, INS_PHOTO_12: 50 }, // เมืองระยอง
-"2104": { SUR_INVEST_12: 500, SUR_INVEST_34: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 800, INS_PHOTO_12: 50 }, // วังจันทร์
-"2107": { SUR_INVEST_12: 500, SUR_INVEST_34: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 950, INS_PHOTO_12: 50 }, // เขาชะเมา
+// SUR_INVEST = column "พนักงาน" (ต่างกันต่ออำเภอ), INS_INVEST = column "บริษัท" (500/400 ทุกอำเภอ)
+"2101": { SUR_INVEST: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 350, INS_PHOTO_12: 50 }, // เมืองระยอง
+"2104": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 800, INS_PHOTO_12: 50 }, // วังจันทร์
+"2107": { SUR_INVEST: 900, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 950, INS_PHOTO_12: 50 }, // เขาชะเมา
 ```
 
 ### Modifier (เปิด/ปิด/ปรับจำนวนเงินได้ใน config.js → `modifierFees`)
@@ -127,14 +127,20 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 
 **Multi-field mode — ระยอง / เมืองระยอง (`amphurID 2101`):**
 
+ผลทดสอบจริงที่ได้ (`SUR_INVEST = 400` ทุก MtypeID เพราะมาจาก column "พนักงาน" ของเมืองระยอง):
+
 | สภาพฟอร์ม | SUR_INVEST | INS_INVEST | INS_TRANS | INS_PHOTO |
 |-----------|------------|------------|-----------|-----------|
-| SE + เคลมสด (1) | **500** | 500 | 350 | 50 |
-| SE + เคลมแห้ง (2) + นอกเวลา | **600** (+100) | 500 | 350 | 50 |
-| SE + ติดตาม (3) | **400** | 400 | 350 | *(clear)* |
-| SE + เจรจา (4) + นอกพื้นที่ (กรอก 80) | **480** (+80) | 400 | 350 | *(clear)* |
+| SE + เคลมสด (1) | 400 | 500 | 350 | 50 |
+| SE + เคลมแห้ง (2) | 400 | 500 | 350 | 50 |
+| SE + เคลมแห้ง (2) + นอกเวลา | 400 (+100) | 500 | 350 | 50 |
+| SE + ติดตาม (3) | 400 | 400 | 350 | *(clear)* |
+| SE + เจรจา (4) | 400 | 400 | 350 | *(clear)* |
+| SE + เจรจา (4) + นอกพื้นที่ (กรอก 80) | 480 (+80) | 400 | 350 | *(clear)* |
+| สลับ MtypeID 1 → 3 | 400 (เท่าเดิม) | 500 → 400 | 350 (เท่าเดิม) | 50 → *(clear)* |
 | non-SE + เคลมสด (1) | (ไม่แตะ) | 500 | 350 | 50 |
-| สลับ MtypeID 1 → 3 | 500 → 400 | 500 → 400 | 350 (เท่าเดิม) | 50 → *(clear)* |
+
+> หมายเหตุ: อำเภออื่นในระยอง `SUR_INVEST` จะต่างกันตาม column "พนักงาน" ของอำเภอนั้น เช่น วังจันทร์ = 800, เขาชะเมา = 900 — ส่วน `INS_INVEST` (500/400) ใช้ค่าเดียวกันทุกอำเภอ
 
 ---
 
@@ -164,8 +170,8 @@ window.TUMBON_FEE_MAP = {
 // ใส่อำเภอที่นี่ → override ตาราง _FEE_MAP ข้างบน (ไม่ใช้ทั้ง precedence เก่า)
 window.AMPHUR_FEE_TABLE = {
   "2101": {
-    SUR_INVEST_12: 500, SUR_INVEST_34: 400,   // SE only — แยกตาม MtypeID
-    INS_INVEST_12: 500, INS_INVEST_34: 400,   // ทุก surveyor
+    SUR_INVEST: 400,                           // SE only — ค่าเดียวต่ออำเภอ ทุก MtypeID
+    INS_INVEST_12: 500, INS_INVEST_34: 400,    // ทุก surveyor — แยกตาม MtypeID
     INS_TRANS: 350,                            // ทุก MtypeID
     INS_PHOTO_12: 50,                          // 1-2 only; 3-4 auto-clear
   }, // เมืองระยอง
@@ -323,7 +329,8 @@ isurvey-helper/
 
 | Version | การเปลี่ยนแปลง |
 |---------|--------------|
-| **1.4.1** | Schema: แยก `SUR_INVEST` ใน `AMPHUR_FEE_TABLE` เป็น `SUR_INVEST_12` / `SUR_INVEST_34` (SE ได้ค่าตาม MtypeID เหมือน INS_INVEST); เพิ่ม **auto-clear** `INS_PHOTO` เมื่อ MtypeID เปลี่ยนเป็น 3-4 (กันค่าเก่าค้าง) |
+| **1.4.2** | Fix: `SUR_INVEST` ใน `AMPHUR_FEE_TABLE` กลับเป็นค่าเดียวต่ออำเภอ (ตาม column "พนักงาน" ในชีต) — รอบ 1.4.1 แยก 1-2/3-4 ผิด |
+| **1.4.1** | Schema: แยก `SUR_INVEST` ใน `AMPHUR_FEE_TABLE` เป็น `SUR_INVEST_12` / `SUR_INVEST_34`; เพิ่ม **auto-clear** `INS_PHOTO` เมื่อ MtypeID เปลี่ยนเป็น 3-4 *(SUR แยก revert ใน 1.4.2)* |
 | **1.4.0** | Multi-field mode: เพิ่ม `AMPHUR_FEE_TABLE` รองรับการเติม `INS_INVEST` / `INS_TRANS` / `INS_PHOTO` แยกตาม MtypeID + SE/non-SE; เปิดใช้งานระยอง (provinceID 21, 8 อำเภอ); ผูก listener กับ `tab1_claim_MtypeID` + `tab1_surveyor_name` |
 | **1.3.0** | เพิ่ม `feature-out-of-hours-amount.js` — numberfield "ยอดเงิน (บาท)" สำหรับ outOfHours (โผล่เมื่อเลือก radio "นอก") เหมือน outOfArea; ค่าใน field override default `+100` |
 | **1.2.1** | Bridge ISOLATED→MAIN ด้วย `postMessage` แทน inline `<script>` injection (CSP fix); `feature-out-of-area-amount.js` poll ตลอดเวลาแทนยอมแพ้หลัง 20 วิ |

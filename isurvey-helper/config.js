@@ -54,8 +54,8 @@ window.TUMBON_FEE_MAP = {
  * Precedence: ถ้า amphurID อยู่ใน TABLE นี้ → ใช้ TABLE (override *_FEE_MAP)
  *
  * Schema (ค่าใส่ได้บางตัวก็ได้ ตัวที่ไม่ใส่ = ไม่กรอก/ไม่ clear ฟิลด์นั้น):
- *   SUR_INVEST_12 : SUR_INVEST เมื่อ MtypeID 1, 2 (เฉพาะพนักงาน SE) + บวก modifier
- *   SUR_INVEST_34 : SUR_INVEST เมื่อ MtypeID 3, 4 (เฉพาะพนักงาน SE) + บวก modifier
+ *   SUR_INVEST    : SUR_INVEST (เฉพาะพนักงาน SE) — ค่าเดียวต่ออำเภอ ทุก MtypeID
+ *                   + บวก modifier "นอกพื้นที่"/"นอกเวลา"
  *   INS_INVEST_12 : INS_INVEST เมื่อ MtypeID 1, 2 (เคลมสด/แห้ง) — ทุก surveyor
  *   INS_INVEST_34 : INS_INVEST เมื่อ MtypeID 3, 4 (ติดตาม/เจรจา)  — ทุก surveyor
  *   INS_TRANS     : INS_TRANS  ทุก MtypeID
@@ -63,22 +63,23 @@ window.TUMBON_FEE_MAP = {
  *
  * MtypeID  1=เคลมสด, 2=เคลมแห้ง, 3=ติดตาม, 4=เจรจาสินไหม
  *
- * ค่าตัวเลขจาก Google Sheet (ตารางตัวอย่าง field-mapping ของระยอง):
- *   SUR_INVEST_12 = INS_INVEST_12 = column "บริษัท (1 2)"
- *   SUR_INVEST_34 = INS_INVEST_34 = column "บริษัท (3 4)"
+ * ค่าตัวเลขจาก Google Sheet ของระยอง:
+ *   SUR_INVEST    = column "พนักงาน" (ค่าเดียวต่ออำเภอ ไม่แยก MtypeID)
+ *   INS_INVEST_12 = column "บริษัท (1 2)"
+ *   INS_INVEST_34 = column "บริษัท (3 4)"
  *   INS_TRANS     = column "ค่าพาหนะ"
  *   INS_PHOTO_12  = column "ค่ารูป"
  */
 window.AMPHUR_FEE_TABLE = {
   // === จังหวัดระยอง (provinceID 21) — บริษัท 1-2 = 500, บริษัท 3-4 = 400 ทุกอำเภอ ===
-  "2101": { SUR_INVEST_12: 500, SUR_INVEST_34: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 350, INS_PHOTO_12: 50 }, // เมืองระยอง
-  "2102": { SUR_INVEST_12: 500, SUR_INVEST_34: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 550, INS_PHOTO_12: 50 }, // บ้านฉาง
-  "2103": { SUR_INVEST_12: 500, SUR_INVEST_34: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 600, INS_PHOTO_12: 50 }, // แกลง
-  "2104": { SUR_INVEST_12: 500, SUR_INVEST_34: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 800, INS_PHOTO_12: 50 }, // วังจันทร์
-  "2105": { SUR_INVEST_12: 500, SUR_INVEST_34: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 350, INS_PHOTO_12: 50 }, // บ้านค่าย
-  "2106": { SUR_INVEST_12: 500, SUR_INVEST_34: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 600, INS_PHOTO_12: 50 }, // ปลวกแดง
-  "2107": { SUR_INVEST_12: 500, SUR_INVEST_34: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 950, INS_PHOTO_12: 50 }, // เขาชะเมา
-  "2108": { SUR_INVEST_12: 500, SUR_INVEST_34: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 550, INS_PHOTO_12: 50 }, // นิคมพัฒนา
+  "2101": { SUR_INVEST: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 350, INS_PHOTO_12: 50 }, // เมืองระยอง
+  "2102": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 550, INS_PHOTO_12: 50 }, // บ้านฉาง
+  "2103": { SUR_INVEST: 600, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 600, INS_PHOTO_12: 50 }, // แกลง
+  "2104": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 800, INS_PHOTO_12: 50 }, // วังจันทร์
+  "2105": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 350, INS_PHOTO_12: 50 }, // บ้านค่าย
+  "2106": { SUR_INVEST: 600, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 600, INS_PHOTO_12: 50 }, // ปลวกแดง
+  "2107": { SUR_INVEST: 900, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 950, INS_PHOTO_12: 50 }, // เขาชะเมา
+  "2108": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 550, INS_PHOTO_12: 50 }, // นิคมพัฒนา
 };
 
 /**

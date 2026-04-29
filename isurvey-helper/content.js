@@ -376,21 +376,15 @@
     const mt12  = (mtype === "1" || mtype === "2");
     const mt34  = (mtype === "3" || mtype === "4");
 
-    // SUR_INVEST: เฉพาะ SE + แยกตาม MtypeID — บวก modifier "นอกพื้นที่"/"นอกเวลา"
-    if (isSE) {
-      let surBase;
-      if (mt12 && tbl.SUR_INVEST_12 !== undefined)      surBase = tbl.SUR_INVEST_12;
-      else if (mt34 && tbl.SUR_INVEST_34 !== undefined) surBase = tbl.SUR_INVEST_34;
-
-      if (surBase !== undefined) {
-        const mods = getActiveModifiers();
-        const total = mods.reduce((sum, m) => sum + m.amount, surBase);
-        const modLabel = mods.length
-          ? " " + mods.map(m => `+${m.amount} ${m.label}`).join(" ")
-          : "";
-        setOneField(SEL.feeCmpId, SEL.feeInput, total,
-          `SUR_INVEST [amphur ${amphurId}, MtypeID ${mtype}] (base ${surBase}${modLabel})`);
-      }
+    // SUR_INVEST: เฉพาะ SE — ค่าเดียวต่ออำเภอ ทุก MtypeID + บวก modifier "นอกพื้นที่"/"นอกเวลา"
+    if (isSE && tbl.SUR_INVEST !== undefined) {
+      const mods = getActiveModifiers();
+      const total = mods.reduce((sum, m) => sum + m.amount, tbl.SUR_INVEST);
+      const modLabel = mods.length
+        ? " " + mods.map(m => `+${m.amount} ${m.label}`).join(" ")
+        : "";
+      setOneField(SEL.feeCmpId, SEL.feeInput, total,
+        `SUR_INVEST [amphur ${amphurId}] (base ${tbl.SUR_INVEST}${modLabel})`);
     }
 
     // INS_INVEST: เลือกตาม MtypeID (1-2 vs 3-4)
