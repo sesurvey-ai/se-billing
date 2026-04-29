@@ -68,6 +68,8 @@
       insTransInput:       'input#tab1_INS_TRANS-inputEl',
       insPhotoCmpId:       'tab1_INS_PHOTO',
       insPhotoInput:       'input#tab1_INS_PHOTO-inputEl',
+      deductAmountCmpId:   'tab1_deduct_amount',           // numberfield ที่ user กรอกยอด "หักเงิน"
+      deductAmountInputId: 'tab1_deduct_amount-inputEl',
     },
     CFG.selectors || {}
   );
@@ -285,6 +287,23 @@
     return { amount: defaultAmt, source: "default" };
   }
 
+  /**
+   * อ่านยอด "หักเงิน" ที่ user กรอกในแถว 7 (inject โดย feature-deduct-amount.js)
+   * คืน amount > 0 เมื่อ user กรอก, 0 เมื่อว่าง/ไม่มี field
+   * (ไม่มี toggle — field value = 0 หมายความว่า "ไม่หัก")
+   */
+  function getDeductAmount() {
+    const cmp = getExtCmp(SEL.deductAmountCmpId);
+    if (cmp && typeof cmp.getValue === "function") {
+      const v = cmp.getValue();
+      if (v !== null && v !== undefined && v !== "" && !isNaN(v)) {
+        const n = Number(v);
+        if (n > 0) return n;
+      }
+    }
+    return 0;
+  }
+
   function isOutOfHoursSelected() {
     // Ext path: radiogroup.getValue() = { tab1_rd-in_out: "ใน" | "นอก" }
     const grp = getExtCmp(SEL.inOutGroupCmpId);
@@ -326,6 +345,11 @@
           amount: amount,
         });
       }
+    }
+    // หักเงิน: ไม่มี toggle — value > 0 ก็หัก (negative modifier)
+    const deduct = getDeductAmount();
+    if (deduct > 0) {
+      list.push({ key: "deduct", label: "หักเงิน", amount: -deduct });
     }
     return list;
   }
@@ -381,7 +405,7 @@
       const mods = getActiveModifiers();
       const total = mods.reduce((sum, m) => sum + m.amount, tbl.SUR_INVEST);
       const modLabel = mods.length
-        ? " " + mods.map(m => `+${m.amount} ${m.label}`).join(" ")
+        ? " " + mods.map(m => `${m.amount >= 0 ? "+" : ""}${m.amount} ${m.label}`).join(" ")
         : "";
       setOneField(SEL.feeCmpId, SEL.feeInput, total,
         `SUR_INVEST [amphur ${amphurId}] (base ${tbl.SUR_INVEST}${modLabel})`);
@@ -512,6 +536,7 @@
         t.id === SEL.outOfAreaInputId ||
         t.id === SEL.outOfAreaAmountInputId ||
         t.id === SEL.outOfHoursAmountInputId ||
+        t.id === SEL.deductAmountInputId ||
         t.id === SEL.mtypeIdInputId ||
         t.id === SEL.surveyorNameInputId ||
         (t.type === "radio" && t.name === SEL.inOutRadioName);
@@ -524,7 +549,11 @@
     // 'input' = ขณะ user พิมพ์ใน numberfield (live update)
     document.addEventListener("input", (ev) => {
       const t = ev.target;
-      if (t && (t.id === SEL.outOfAreaAmountInputId || t.id === SEL.outOfHoursAmountInputId)) {
+      if (t && (
+        t.id === SEL.outOfAreaAmountInputId ||
+        t.id === SEL.outOfHoursAmountInputId ||
+        t.id === SEL.deductAmountInputId
+      )) {
         setTimeout(syncFeeFromLocation, 0);
       }
     }, true);

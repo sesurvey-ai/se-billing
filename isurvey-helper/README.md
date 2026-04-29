@@ -89,6 +89,7 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 |----------|---------|---------|----------|
 | `outOfArea` | checkbox "นอกพื้นที่" (`tab1_chk_co_area`) ถูกติ๊ก | +50 | ถ้า user กรอกยอดเอง ใน numberfield ที่โผล่ขึ้นข้างหลัง checkbox จะใช้ค่านั้นแทน default |
 | `outOfHours` | radio "นอก" ใน group `tab1_grd-in_out` ถูกเลือก | +100 | ถ้า user กรอกยอดเอง ใน numberfield ที่โผล่ขึ้นต่อท้าย radiogroup จะใช้ค่านั้นแทน default |
+| `deduct` | numberfield "หักเงิน" (`tab1_deduct_amount`) มีค่า > 0 | — | inject เป็น **แถวที่ 7** ในตารางรายการค่าใช้จ่าย; **หัก** ออกจาก SUR_INVEST (ทำงานทั้ง simple และ multi-field mode) |
 
 ตั้ง `modifierFees.outOfArea = 0` หรือ `outOfHours = 0` เพื่อปิด default amount (numberfield ยังโผล่ขึ้นให้กรอกเองได้)
 
@@ -101,6 +102,15 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 - โผล่อัตโนมัติเมื่อเลือก radio "นอก" (จัดการโดย [feature-out-of-hours-amount.js](./feature-out-of-hours-amount.js))
 - หายเมื่อเลือก radio "ใน"
 - ค่าใน field จะถูก feed กลับเข้า fee คำนวณทันที (ทั้ง `change` และ `input` event)
+
+**Numberfield "หักเงิน (บาท)" — แถวที่ 7:**
+- inject เป็นแถวใหม่ในตารางรายการค่าใช้จ่ายอัตโนมัติ (จัดการโดย [feature-deduct-amount.js](./feature-deduct-amount.js))
+- anchor หา table panel: `Ext.getCmp("tab1_SUR_INVEST").ownerCt.ownerCt`
+- หา row 6 (ค่าเรียกร้อง) ใน `table.items` ด้วย textContent → `table.insert(idx+1, {...})` แทรกต่อท้ายแถว 6 (ไม่ใช่ append ท้าย table — มี totals/หมายเหตุ ต่อท้ายอีก)
+- ทุก poll 500ms verify ตำแหน่ง — ถ้าผิด (เช่น row ค้างจาก version เก่า) จะ destroy + re-insert ที่ idx ถูก
+- ว่าง = ไม่หัก, มีค่า > 0 = หักออกจาก SUR_INVEST (negative modifier)
+- ค่าใน field feed กลับเข้า SUR_INVEST ทันที (ทั้ง `change` และ `input` event)
+- ทำงานทั้ง simple mode (กทม., ฯลฯ) และ multi-field mode (ระยอง — เฉพาะ SE)
 
 ### Whitelist จังหวัด (ทดสอบทีละจังหวัด)
 
@@ -203,6 +213,7 @@ window.AMPHUR_FEE_TABLE = {
 | ค่ารูปถ่าย (อนุมัติ) | `tab1_INS_PHOTO` |
 | checkbox "นอกพื้นที่" | `tab1_chk_co_area` |
 | radiogroup "ใน/นอกเวลา" | `tab1_grd-in_out` (radio name `tab1_rd-in_out`) |
+| **หักเงิน** (inject แถว 7) | `tab1_deduct_amount` (numberfield) |
 
 **วิธีที่ 2 — เปิดไฟล์ reference (ค้นจากชื่อ):**
 - [`data/provinces.json`](./data/provinces.json) — 77 จังหวัด
@@ -231,6 +242,7 @@ isurvey-helper/
 ├── loader.js                            ← Bridge (ISOLATED world): fetch JSON → postMessage → MAIN
 ├── feature-out-of-area-amount.js        ← UI: numberfield "ยอดเงิน" คู่กับ checkbox "นอกพื้นที่"
 ├── feature-out-of-hours-amount.js       ← UI: numberfield "ยอดเงิน" ต่อท้าย radio "นอก" (นอกเวลา)
+├── feature-deduct-amount.js             ← UI: แถวที่ 7 "หักเงิน" — inject เข้าตารางค่าใช้จ่าย
 ├── data/
 │   ├── provinces.json                   ← 77 จังหวัด (reference)
 │   ├── amphurs.json                     ← อำเภอทั้งประเทศ (reference)
@@ -249,6 +261,7 @@ isurvey-helper/
 | `content.js` | MAIN | อ่าน hidden inputs / modifier inputs, lookup fee, set ผ่าน `Ext.getCmp().setValue()` |
 | `feature-out-of-area-amount.js` | MAIN | สร้าง/ลบ numberfield "ยอดเงิน (บาท)" ตามสถานะ checkbox "นอกพื้นที่" (poll ทุก 500ms) |
 | `feature-out-of-hours-amount.js` | MAIN | สร้าง/ลบ numberfield "ยอดเงิน (บาท)" ตามสถานะ radio "นอก" ใน group ใน/นอกเวลา (poll ทุก 500ms) |
+| `feature-deduct-amount.js` | MAIN | inject แถวที่ 7 "หักเงิน" + numberfield ลงใน table panel ที่ครอบ `tab1_SUR_INVEST` (poll ทุก 500ms; ค่าหัก = negative modifier ของ SUR_INVEST) |
 | `data/*.json` | — | ข้อมูล reference จาก API I Survey ใช้ทั้ง runtime (log) และ developer (เปิดอ่าน) |
 
 ---
@@ -357,6 +370,7 @@ isurvey-helper/
 
 | Version | การเปลี่ยนแปลง |
 |---------|--------------|
+| **1.5.0** | เพิ่มแถวที่ 7 "หักเงิน" (`tab1_deduct_amount`) — inject ต่อท้ายแถวที่ 6 (ค่าเรียกร้อง) ในตารางค่าใช้จ่ายผ่าน `table.insert(idx+1, ...)` + position-check ทุก poll; ค่า > 0 = หักออกจาก SUR_INVEST (negative modifier); ทำงานทั้ง simple + multi-field mode; เพิ่ม [`feature-deduct-amount.js`](./feature-deduct-amount.js) |
 | **1.4.2** | Fix: `SUR_INVEST` ใน `AMPHUR_FEE_TABLE` กลับเป็นค่าเดียวต่ออำเภอ (ตาม column "พนักงาน" ในชีต) — รอบ 1.4.1 แยก 1-2/3-4 ผิด |
 | **1.4.1** | Schema: แยก `SUR_INVEST` ใน `AMPHUR_FEE_TABLE` เป็น `SUR_INVEST_12` / `SUR_INVEST_34`; เพิ่ม **auto-clear** `INS_PHOTO` เมื่อ MtypeID เปลี่ยนเป็น 3-4 *(SUR แยก revert ใน 1.4.2)* |
 | **1.4.0** | Multi-field mode: เพิ่ม `AMPHUR_FEE_TABLE` รองรับการเติม `INS_INVEST` / `INS_TRANS` / `INS_PHOTO` แยกตาม MtypeID + SE/non-SE; เปิดใช้งานระยอง (provinceID 21, 8 อำเภอ); ผูก listener กับ `tab1_claim_MtypeID` + `tab1_surveyor_name` |

@@ -148,5 +148,9 @@ window.ISURVEY_HELPER_CONFIG = {
     insTransInput:       'input#tab1_INS_TRANS-inputEl',
     insPhotoCmpId:       'tab1_INS_PHOTO',              // ค่ารูปถ่าย (อนุมัติ)
     insPhotoInput:       'input#tab1_INS_PHOTO-inputEl',
+
+    // === Deduct (แถวที่ 7 "หักเงิน" — inject โดย feature-deduct-amount.js) ===
+    deductAmountCmpId:   'tab1_deduct_amount',
+    deductAmountInputId: 'tab1_deduct_amount-inputEl',
   },
 };
