@@ -190,6 +190,20 @@ window.AMPHUR_FEE_TABLE = {
    - `tab1_survey_tumbonID`
 3. ค่า `value` คือ ID ที่ต้องใส่เป็น key (ใส่ในเครื่องหมายคำพูดเสมอ)
 
+**Field IDs ที่ extension ใช้** (ทั้งหมดอยู่ใน [`config.js`](./config.js) → `selectors`):
+
+| หน้าที่ | Field / Component ID |
+|--------|---------------------|
+| province / amphur / tumbon | `tab1_survey_provinceID` / `_amphurID` / `_tumbonID` (hidden inputs) |
+| ประเภทเคลม (combobox) | `tab1_claim_MtypeID` — ค่า 1/2/3/4 |
+| ชื่อผู้สำรวจ (text readonly) | `tab1_surveyor_name` — ขึ้นต้น `se` = SE |
+| ค่าบริการเสนอ | `tab1_SUR_INVEST` |
+| ค่าบริการอนุมัติ | `tab1_INS_INVEST` |
+| ค่าเดินทาง/พาหนะ (อนุมัติ) | `tab1_INS_TRANS` |
+| ค่ารูปถ่าย (อนุมัติ) | `tab1_INS_PHOTO` |
+| checkbox "นอกพื้นที่" | `tab1_chk_co_area` |
+| radiogroup "ใน/นอกเวลา" | `tab1_grd-in_out` (radio name `tab1_rd-in_out`) |
+
 **วิธีที่ 2 — เปิดไฟล์ reference (ค้นจากชื่อ):**
 - [`data/provinces.json`](./data/provinces.json) — 77 จังหวัด
 - [`data/amphurs.json`](./data/amphurs.json) — อำเภอครบทั้งประเทศ
@@ -257,16 +271,30 @@ isurvey-helper/
 ### Auto-fill ค่าบริการ (`content.js` MAIN, document_idle)
 - ผูก `MutationObserver` กับ hidden inputs ของ province / amphur / tumbon
 - ผูก delegated `change` + `input` listener สำหรับ checkbox "นอกพื้นที่",
-  radio "ใน/นอก", และ numberfield "ยอดเงิน"
+  radio "ใน/นอก", numberfield "ยอดเงิน", **combobox `tab1_claim_MtypeID`**,
+  และ **input `tab1_surveyor_name`**
 - มี `setInterval` 500ms เป็น safety-net (re-attach observer ถ้า DOM ถูก
-  re-render และ re-sync ค่าเผื่อ Ext set `.value` โดยไม่แตะ attribute)
-- ทุกครั้งที่ trigger:
-  1. lookup base fee ตาม precedence (tumbon > amphur > province)
-  2. รวม modifier ที่ active (outOfArea + outOfHours)
-  3. ถ้า `tab1_SUR_INVEST` ไม่ตรง → `Ext.getCmp(...).setValue(total)`
-  4. ไฮไลต์ช่องสีเหลือง 1.5 วิ
-  5. log breakdown:
-     `[ISurveyHelper] Set ค่าบริการ = 850 (base 700 [province: 10 - กรุงเทพฯ] +50 นอกพื้นที่ +100 นอกเวลา) [ext]`
+  re-render และ re-sync ค่าเผื่อ Ext set `.value` โดยไม่แตะ attribute) —
+  สำคัญสำหรับ `surveyor_name` (readonly input — ไม่ trigger DOM event เอง)
+- `syncFeeFromLocation()` เป็น dispatcher เลือก mode:
+  - ถ้า `amphurId` อยู่ใน `AMPHUR_FEE_TABLE` → **Multi-field mode**
+  - ถ้าไม่อยู่ → **Simple mode**
+
+**Simple mode flow:**
+1. lookup base fee ตาม precedence (tumbon > amphur > province)
+2. รวม modifier ที่ active (outOfArea + outOfHours)
+3. ถ้า `tab1_SUR_INVEST` ไม่ตรง → `Ext.getCmp(...).setValue(total)` + flash + log
+
+**Multi-field mode flow** (`syncMultiFields`):
+1. อ่าน MtypeID จาก `Ext.getCmp("tab1_claim_MtypeID").getValue()` (fallback: map text label → ID)
+2. เช็ค SE จาก `tab1_surveyor_name` ขึ้นต้น `se` (case insensitive)
+3. ลำดับเติม (skip ถ้า field config ไม่มีค่า):
+   - `SUR_INVEST` ← `tbl.SUR_INVEST` + modifiers (เฉพาะ SE)
+   - `INS_INVEST` ← `tbl.INS_INVEST_12` หรือ `_34` ตาม MtypeID
+   - `INS_TRANS`  ← `tbl.INS_TRANS` (ทุก MtypeID)
+   - `INS_PHOTO`  ← `tbl.INS_PHOTO_12` (1-2) หรือ `""` (3-4 → auto-clear)
+4. แต่ละ field flash + log breakdown แยก เช่น
+   `[ISurveyHelper] Set INS_INVEST [amphur 2101, MtypeID 1=เคลมสด] = 500 [ext]`
 
 ถ้าไม่เจอ base fee ใน mapping เลย → extension ไม่ทำอะไร ปล่อยให้ผู้ใช้กรอกเอง
 
