@@ -126,6 +126,68 @@ window.AMPHUR_FEE_TABLE = {
   "2208": { SUR_INVEST: 1000, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1000, INS_PHOTO_12: 50 }, // แก่งหางแมว
   "2207": { SUR_INVEST: 1000, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1000, INS_PHOTO_12: 50 }, // สอยดาว
 
+  // === นครราชสีมา (provinceID 30) ===
+  "3001": { SUR_INVEST: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 300, INS_PHOTO_12: 50 }, // เมืองนครราชสีมา
+  "3032": { SUR_INVEST: 450, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 350, INS_PHOTO_12: 50 }, // เฉลิมพระเกียรติ
+  "3018": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 400, INS_PHOTO_12: 50 }, // สูงเนิน
+  "3009": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 400, INS_PHOTO_12: 50 }, // โนนไทย
+  "3014": { SUR_INVEST: 550, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 450, INS_PHOTO_12: 50 }, // ปักธงชัย
+  "3019": { SUR_INVEST: 600, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 450, INS_PHOTO_12: 50 }, // ขามทะเลสอ
+  "3007": { SUR_INVEST: 550, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 450, INS_PHOTO_12: 50 }, // โชคชัย
+  "3010": { SUR_INVEST: 550, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 450, INS_PHOTO_12: 50 }, // โนนสูง
+  "3028": { SUR_INVEST: 600, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 550, INS_PHOTO_12: 50 }, // พระทองคำ
+  "3022": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 900, INS_PHOTO_12: 50 }, // หนองบุญมาก
+  "3015": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 650, INS_PHOTO_12: 50 }, // พิมาย
+  "3011": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 650, INS_PHOTO_12: 50 }, // ขามสะแกแสง
+  "3008": { SUR_INVEST: 750, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 700, INS_PHOTO_12: 50 }, // ด่านขุนทด
+  "3006": { SUR_INVEST: 750, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 700, INS_PHOTO_12: 50 }, // จักราช
+  "3020": { SUR_INVEST: 750, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 700, INS_PHOTO_12: 50 }, // สีคิ้ว
+  "3016": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 750, INS_PHOTO_12: 50 }, // ห้วยแถลง
+  "3025": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 800, INS_PHOTO_12: 50 }, // วังน้ำเขียว
+  "3002": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 800, INS_PHOTO_12: 50 }, // ครบุรี
+  "3024": { SUR_INVEST: 850, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 700, INS_PHOTO_12: 50 }, // โนนแดง
+  "3005": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 850, INS_PHOTO_12: 50 }, // บ้านเหลื่อม
+  "3004": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 850, INS_PHOTO_12: 50 }, // คง
+  "3021": { SUR_INVEST: 850, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 900, INS_PHOTO_12: 50 }, // ปากช่อง
+  "3031": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 900, INS_PHOTO_12: 50 }, // สีดา
+  "3023": { SUR_INVEST: 850, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 950, INS_PHOTO_12: 50 }, // แก้งสนามนาง
+  "3012": { SUR_INVEST: 850, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1000, INS_PHOTO_12: 50 }, // บัวใหญ่
+  "3026": { SUR_INVEST: 950, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1000, INS_PHOTO_12: 50 }, // เทพารักษ์
+  "3017": { SUR_INVEST: 850, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 850, INS_PHOTO_12: 50 }, // ชุมพวง
+  "3003": { SUR_INVEST: 1000, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1100, INS_PHOTO_12: 50 }, // เสิงสาง
+  "3013": { SUR_INVEST: 900, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1100, INS_PHOTO_12: 50 }, // ประทาย
+  "3027": { SUR_INVEST: 1200, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1250, INS_PHOTO_12: 50 }, // เมืองยาง
+  "3029": { SUR_INVEST: 1300, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1300, INS_PHOTO_12: 50 }, // ลำทะเมนชัย
+  "3030": { SUR_INVEST: 1000, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1400, INS_PHOTO_12: 50 }, // บัวลาย
+
+  // === ขอนแก่น (provinceID 40) ===
+  "4001": { SUR_INVEST: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 300, INS_PHOTO_12: 50 }, // เมืองขอนแก่น
+  "4003": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 350, INS_PHOTO_12: 50 }, // พระยืน
+  "4002": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 350, INS_PHOTO_12: 50 }, // บ้านฝาง
+  "4024": { SUR_INVEST: 450, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 450, INS_PHOTO_12: 50 }, // บ้านแฮด
+  "4007": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 450, INS_PHOTO_12: 50 }, // น้ำพอง
+  "4021": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 500, INS_PHOTO_12: 50 }, // ซำสูง
+  "4004": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 500, INS_PHOTO_12: 50 }, // หนองเรือ
+  "4017": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 600, INS_PHOTO_12: 50 }, // มัญจาคีรี
+  "4008": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 600, INS_PHOTO_12: 50 }, // อุบลรัตน์
+  "4009": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 600, INS_PHOTO_12: 50 }, // กระนวน
+  "4016": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 700, INS_PHOTO_12: 50 }, // ภูเวียง
+  "4023": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 900, INS_PHOTO_12: 50 }, // หนองนาคำ
+  "4005": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 900, INS_PHOTO_12: 50 }, // ชุมแพ
+  "4019": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 900, INS_PHOTO_12: 50 }, // เขาสวนกวาง
+  "4006": { SUR_INVEST: 900, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1200, INS_PHOTO_12: 50 }, // สีชมพู
+  "4020": { SUR_INVEST: 900, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1200, INS_PHOTO_12: 50 }, // ภูผาม่าน
+  "4029": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 900, INS_PHOTO_12: 50 }, // เวียงเก่า
+  "4010": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 600, INS_PHOTO_12: 50 }, // บ้านไผ่
+  "4025": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 700, INS_PHOTO_12: 50 }, // โนนศิลา
+  "4018": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 700, INS_PHOTO_12: 50 }, // ชนบท
+  "4013": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 800, INS_PHOTO_12: 50 }, // แวงใหญ่
+  "4012": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 900, INS_PHOTO_12: 50 }, // พล
+  "4015": { SUR_INVEST: 850, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 800, INS_PHOTO_12: 50 }, // หนองสองห้อง
+  "4014": { SUR_INVEST: 850, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1050, INS_PHOTO_12: 50 }, // แวงน้อย
+  "4022": { SUR_INVEST: 700, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1000, INS_PHOTO_12: 50 }, // โคกโพธิ์ไชย (sheet พิมพ์ ชัย, db ใช้ ไชย)
+  "4011": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 900, INS_PHOTO_12: 50 }, // เปือยน้อย
+
   // === ฉะเชิงเทรา (provinceID 24) ===
   "2401": { SUR_INVEST: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 300, INS_PHOTO_12: 50 }, // เมืองฉะเชิงเทรา
   "2403": { SUR_INVEST: 500, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 350, INS_PHOTO_12: 50 }, // บางน้ำเปรี้ยว
@@ -288,9 +350,6 @@ window.AMPHUR_FEE_TABLE = {
   "9005": { SUR_INVEST: 1450, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1500, INS_PHOTO_12: 50 }, // เทพา
   "9006": { SUR_INVEST: 1600, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 1700, INS_PHOTO_12: 50 }, // สะบ้าย้อย
 
-  // TODO: นครราชสีมา (provinceID 30) + ขอนแก่น (provinceID 40) — pending data clarification
-  //   ใน sheet มี header "ขอนแก่น" 2 ครั้ง (1 ครั้งเป็น typo ของ นครราชสีมา) + อำเภอบางแห่งซ้ำหลาย sections ด้วย rate ต่างกัน
-  //   รอ user confirm structure ก่อน integrate
 };
 
 /**
@@ -317,17 +376,18 @@ window.ISURVEY_HELPER_CONFIG = {
    *   ["10","11"] = กทม. + สมุทรปราการ
    * เมื่อจังหวัดที่เลือกไม่อยู่ใน list → extension จะไม่แตะ tab1_SUR_INVEST เลย
    *
-   * Provinces ที่ enabled ตอนนี้:
+   * Provinces ที่ enabled ตอนนี้ (3 simple + 17 multi-field):
    *   10 กรุงเทพฯ (simple mode), 11 สมุทรปราการ (simple), 12 นนทบุรี (simple)
    *   14 พระนครศรีอยุธยา, 19 สระบุรี, 21 ระยอง, 22 จันทบุรี, 24 ฉะเชิงเทรา
-   *   34 อุบลราชธานี, 50 เชียงใหม่, 64 สุโขทัย, 65 พิษณุโลก, 66 พิจิตร
+   *   30 นครราชสีมา, 34 อุบลราชธานี, 40 ขอนแก่น
+   *   50 เชียงใหม่, 64 สุโขทัย, 65 พิษณุโลก, 66 พิจิตร
    *   71 กาญจนบุรี, 72 สุพรรณบุรี, 80 นครศรีธรรมราช, 83 ภูเก็ต, 90 สงขลา
-   *   (ยังไม่ enable: 30 นครราชสีมา, 40 ขอนแก่น — รอ data clarification)
    */
   enabledProvinces: [
     "10", "11", "12",
     "14", "19", "21", "22", "24",
-    "34", "50", "64", "65", "66",
+    "30", "34", "40",
+    "50", "64", "65", "66",
     "71", "72", "80", "83", "90",
   ],
 
