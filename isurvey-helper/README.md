@@ -75,13 +75,20 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 
 > non-SE: `SUR_INVEST` ไม่ถูกแตะ (เก็บไว้ใน config สำหรับการเติมในอนาคต) ส่วน `INS_*` ยังเติมตาม MtypeID ปกติ
 
-**ตารางตัวอย่าง [`AMPHUR_FEE_TABLE`](./config.js) (ระยอง):**
+**ตารางตัวอย่าง [`AMPHUR_FEE_TABLE`](./config.js):**
 ```js
 // SUR_INVEST = column "พนักงาน" (ต่างกันต่ออำเภอ), INS_INVEST = column "บริษัท" (500/400 ทุกอำเภอ)
+// === ระยอง ===
 "2101": { SUR_INVEST: 400, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 350, INS_PHOTO_12: 50 }, // เมืองระยอง
 "2104": { SUR_INVEST: 800, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 800, INS_PHOTO_12: 50 }, // วังจันทร์
 "2107": { SUR_INVEST: 900, INS_INVEST_12: 500, INS_INVEST_34: 400, INS_TRANS: 950, INS_PHOTO_12: 50 }, // เขาชะเมา
+// === นครศรีธรรมราช (rate INS แตกต่าง — ไม่ใช่ 500/400) ===
+"8001": { SUR_INVEST: 400, INS_INVEST_12: 800, INS_INVEST_34: 650, INS_TRANS: 350, INS_PHOTO_12: 50 }, // เมืองนครศรีธรรมราช
+"8015": { SUR_INVEST: 1100, INS_INVEST_12: 1650, INS_INVEST_34: 1500, INS_TRANS: 1200, INS_PHOTO_12: 50 }, // ขนอม
 ```
+
+**Provinces ที่รองรับใน multi-field mode (15 จังหวัด, 187 อำเภอ):**
+ระยอง (21), พระนครศรีอยุธยา (14), สระบุรี (19), จันทบุรี (22), ฉะเชิงเทรา (24), อุบลราชธานี (34), เชียงใหม่ (50), สุโขทัย (64), พิษณุโลก (65), พิจิตร (66), กาญจนบุรี (71), สุพรรณบุรี (72), นครศรีธรรมราช (80), ภูเก็ต (83), สงขลา (90)
 
 ### Modifier (เปิด/ปิด/ปรับจำนวนเงินได้ใน config.js → `modifierFees`)
 
@@ -370,6 +377,7 @@ isurvey-helper/
 
 | Version | การเปลี่ยนแปลง |
 |---------|--------------|
+| **1.6.0** | ขยาย `AMPHUR_FEE_TABLE` เพิ่ม 14 จังหวัด (179 อำเภอ) จาก Google Sheet ของผู้ใช้: พระนครศรีอยุธยา, สระบุรี, จันทบุรี, ฉะเชิงเทรา, อุบลราชธานี, เชียงใหม่, สุโขทัย, พิษณุโลก, พิจิตร, กาญจนบุรี, สุพรรณบุรี, นครศรีธรรมราช (rate INS แตกต่าง), ภูเก็ต, สงขลา; รวมเป็น 187 อำเภอ 15 จังหวัด multi-field. เพิ่ม `enabledProvinces` ทั้งหมดเป็น 18 จังหวัด (รวม 10/11/12 ที่เป็น simple mode). ยังไม่รวม นครราชสีมา (30) + ขอนแก่น (40) — รอ data clarification |
 | **1.5.0** | เพิ่มแถวที่ 7 "หักเงิน" (`tab1_deduct_amount`) — inject ต่อท้ายแถวที่ 6 (ค่าเรียกร้อง) ในตารางค่าใช้จ่ายผ่าน `table.insert(idx+1, ...)` + position-check ทุก poll; ค่า > 0 = หักออกจาก SUR_INVEST (negative modifier); ทำงานทั้ง simple + multi-field mode; เพิ่ม [`feature-deduct-amount.js`](./feature-deduct-amount.js) |
 | **1.4.2** | Fix: `SUR_INVEST` ใน `AMPHUR_FEE_TABLE` กลับเป็นค่าเดียวต่ออำเภอ (ตาม column "พนักงาน" ในชีต) — รอบ 1.4.1 แยก 1-2/3-4 ผิด |
 | **1.4.1** | Schema: แยก `SUR_INVEST` ใน `AMPHUR_FEE_TABLE` เป็น `SUR_INVEST_12` / `SUR_INVEST_34`; เพิ่ม **auto-clear** `INS_PHOTO` เมื่อ MtypeID เปลี่ยนเป็น 3-4 *(SUR แยก revert ใน 1.4.2)* |
