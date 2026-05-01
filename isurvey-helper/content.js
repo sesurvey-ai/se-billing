@@ -20,13 +20,15 @@
   if (window.__iSurveyHelperLoaded) return;
   window.__iSurveyHelperLoaded = true;
 
-  // ── ดึง config จาก config.js (รันก่อนหน้าใน MAIN world) ──
-  const PROVINCE_MAP = window.PROVINCE_FEE_MAP || {};
-  const AMPHUR_MAP   = window.AMPHUR_FEE_MAP   || {};
-  const TUMBON_MAP   = window.TUMBON_FEE_MAP   || {};
-  const AMPHUR_TABLE = window.AMPHUR_FEE_TABLE || {};
-
-  const CFG = Object.assign(
+  // ── Live readers — อ่าน window.X ทุกครั้ง เพื่อรับ live update จาก admin ──
+  // Maps + dynamic fields (modifierFees, enabledProvinces) มาจาก chrome.storage
+  // ผ่าน config-bridge.js → set window.X. Static fields (selectors, debug, ฯลฯ)
+  // อยู่ใน window.ISURVEY_HELPER_CONFIG ตลอดเพราะ config-bridge.js seed ก่อน content.js
+  const getProvinceMap  = () => window.PROVINCE_FEE_MAP || {};
+  const getAmphurMap    = () => window.AMPHUR_FEE_MAP   || {};
+  const getTumbonMap    = () => window.TUMBON_FEE_MAP   || {};
+  const getAmphurTable  = () => window.AMPHUR_FEE_TABLE || {};
+  const getCFG = () => Object.assign(
     {
       pollIntervalMs: 500,
       highlightColor: "#fff59d",
@@ -38,6 +40,9 @@
     },
     window.ISURVEY_HELPER_CONFIG || {}
   );
+
+  // ── Static config snapshot สำหรับการ init/poll (modifier/whitelist อ่านสด) ──
+  const CFG = getCFG();
 
   const SEL = Object.assign(
     {
@@ -226,6 +231,9 @@
   // ─────────────────────────────────────────────────────────
 
   function lookupFee(provinceId, amphurId, tumbonId) {
+    const TUMBON_MAP   = getTumbonMap();
+    const AMPHUR_MAP   = getAmphurMap();
+    const PROVINCE_MAP = getProvinceMap();
     if (tumbonId && Object.prototype.hasOwnProperty.call(TUMBON_MAP, tumbonId)) {
       return { fee: TUMBON_MAP[tumbonId], level: "tumbon", id: tumbonId };
     }
@@ -260,7 +268,7 @@
    * - field มีค่าตัวเลขถูกต้อง (รวม 0) → ใช้ค่านั้น
    */
   function getOutOfAreaAmount() {
-    const defaultAmt = CFG.modifierFees.outOfArea;
+    const defaultAmt = (getCFG().modifierFees || {}).outOfArea || 0;
     const cmp = getExtCmp(SEL.outOfAreaAmountCmpId);
     if (cmp && typeof cmp.getValue === "function") {
       const v = cmp.getValue();
@@ -276,7 +284,7 @@
    * คืน { amount, source } โดย source = "custom" ถ้าได้จาก field, "default" ถ้า fallback
    */
   function getOutOfHoursAmount() {
-    const defaultAmt = CFG.modifierFees.outOfHours;
+    const defaultAmt = (getCFG().modifierFees || {}).outOfHours || 0;
     const cmp = getExtCmp(SEL.outOfHoursAmountCmpId);
     if (cmp && typeof cmp.getValue === "function") {
       const v = cmp.getValue();
@@ -322,7 +330,6 @@
   }
 
   function getActiveModifiers() {
-    const m = CFG.modifierFees || {};
     const list = [];
     if (isOutOfAreaChecked()) {
       // ค่ามาจาก numberfield ก่อน → fallback default จาก config
@@ -359,7 +366,7 @@
   // ─────────────────────────────────────────────────────────
 
   function isProvinceEnabled(provinceId) {
-    const allow = CFG.enabledProvinces || [];
+    const allow = getCFG().enabledProvinces || [];
     if (!allow.length) return true;          // [] = อนุญาตทุกจังหวัด
     return allow.includes(String(provinceId));
   }
@@ -480,7 +487,7 @@
 
     if (!isProvinceEnabled(provinceId)) return; // นอก whitelist → ไม่แตะ
 
-    const tbl = AMPHUR_TABLE[amphurId];
+    const tbl = getAmphurTable()[amphurId];
     if (tbl) {
       syncMultiFields(amphurId, tbl);
       return;
@@ -571,18 +578,30 @@
   // Bootstrap
   // ─────────────────────────────────────────────────────────
 
-  function init() {
-    const allow = CFG.enabledProvinces || [];
+  function logConfigSnapshot(prefix) {
+    const cfg = getCFG();
+    const allow = cfg.enabledProvinces || [];
+    const mods = cfg.modifierFees || {};
     log(
-      `Loaded. mappings: ` +
-        `province=${Object.keys(PROVINCE_MAP).length}, ` +
-        `amphur=${Object.keys(AMPHUR_MAP).length}, ` +
-        `tumbon=${Object.keys(TUMBON_MAP).length}, ` +
-        `amphurTable=${Object.keys(AMPHUR_TABLE).length}, ` +
+      `${prefix} mappings: ` +
+        `province=${Object.keys(getProvinceMap()).length}, ` +
+        `amphur=${Object.keys(getAmphurMap()).length}, ` +
+        `tumbon=${Object.keys(getTumbonMap()).length}, ` +
+        `amphurTable=${Object.keys(getAmphurTable()).length}, ` +
         `enabledProvinces=${allow.length ? "[" + allow.join(",") + "]" : "ALL"}, ` +
-        `modifiers={outOfArea:+${CFG.modifierFees.outOfArea}, outOfHours:+${CFG.modifierFees.outOfHours}}, ` +
-        `poll=${CFG.pollIntervalMs}ms`
+        `modifiers={outOfArea:+${mods.outOfArea || 0}, outOfHours:+${mods.outOfHours || 0}}, ` +
+        `poll=${cfg.pollIntervalMs}ms`
     );
+  }
+
+  function init() {
+    logConfigSnapshot("Loaded.");
+
+    // ฟัง config update จาก admin → log + sync ทันที (ไม่ต้องรอ poll)
+    window.addEventListener("isurvey-config-updated", () => {
+      logConfigSnapshot("Config updated.");
+      syncFeeFromLocation();
+    });
 
     if (window.__ISURVEY_REF__) {
       const c = window.__ISURVEY_REF__.counts;

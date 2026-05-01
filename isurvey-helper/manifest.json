@@ -1,12 +1,17 @@
 {
   "manifest_version": 3,
   "name": "I Survey Auto-Fill Helper",
-  "version": "1.6.1",
-  "description": "Auto-fill ค่าบริการในระบบ I Survey (cloud.isurvey.mobi) ตามจังหวัด/อำเภอ/ตำบล/ประเภทเคลม/พนักงาน — รองรับหลายช่อง (SUR_INVEST + INS_INVEST/TRANS/PHOTO)",
+  "version": "1.7.0",
+  "description": "Auto-fill ค่าบริการในระบบ I Survey (cloud.isurvey.mobi) ตามจังหวัด/อำเภอ/ตำบล/ประเภทเคลม/พนักงาน + Admin page สำหรับจัดการข้อมูล (เพิ่ม/แก้/ลบ)",
   "icons": {
     "16": "icon-16.png",
     "48": "icon-48.png",
     "128": "icon-128.png"
+  },
+  "permissions": ["storage"],
+  "options_ui": {
+    "page": "admin.html",
+    "open_in_tab": true
   },
   "content_scripts": [
     {
@@ -18,7 +23,7 @@
     },
     {
       "matches": ["https://cloud.isurvey.mobi/*"],
-      "js": ["config.js", "content.js", "feature-out-of-area-amount.js", "feature-out-of-hours-amount.js", "feature-deduct-amount.js"],
+      "js": ["config-bridge.js", "content.js", "feature-out-of-area-amount.js", "feature-out-of-hours-amount.js", "feature-deduct-amount.js"],
       "run_at": "document_idle",
       "world": "MAIN",
       "all_frames": false
@@ -26,7 +31,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["data/provinces.json", "data/amphurs.json", "data/tumbons.json"],
+      "resources": ["data/provinces.json", "data/amphurs.json", "data/tumbons.json", "default-data.json"],
       "matches": ["https://cloud.isurvey.mobi/*"]
     }
   ]

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>I Survey Auto-Fill Helper — Admin</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <header>
+    <h1>I Survey Auto-Fill Helper — Admin</h1>
+    <div class="header-actions">
+      <span id="status" class="status"></span>
+      <button id="btn-export" class="btn">Export JSON</button>
+      <button id="btn-import" class="btn">Import JSON</button>
+      <input type="file" id="import-file" accept="application/json" hidden />
+      <button id="btn-reset" class="btn btn-danger">Reset to defaults</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="amphur-table">ตารางหลายช่อง (Multi-field)</button>
+    <button class="tab" data-tab="province-map">จังหวัด (Simple)</button>
+    <button class="tab" data-tab="amphur-map">อำเภอ override (Simple)</button>
+    <button class="tab" data-tab="tumbon-map">ตำบล override (Simple)</button>
+    <button class="tab" data-tab="enabled">Whitelist จังหวัด</button>
+    <button class="tab" data-tab="modifiers">Modifier defaults</button>
+  </nav>
+
+  <main>
+    <!-- AMPHUR_FEE_TABLE — multi-field rates -->
+    <section class="panel" data-panel="amphur-table">
+      <div class="panel-header">
+        <h2>ตารางหลายช่อง (Multi-field)</h2>
+        <p class="hint">SUR_INVEST = ค่าบริการเสนอ (เฉพาะ SE), INS_INVEST_12/_34 = บริษัท 1-2/3-4, INS_TRANS = ค่าเดินทาง, INS_PHOTO_12 = ค่ารูปถ่าย</p>
+        <div class="panel-actions">
+          <input type="search" id="search-amphur-table" placeholder="ค้น ID หรือชื่ออำเภอ..." class="search" />
+          <button id="add-amphur-table" class="btn btn-primary">+ เพิ่มอำเภอ</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="table-amphur-table">
+          <thead>
+            <tr>
+              <th>amphurID</th>
+              <th>จังหวัด</th>
+              <th>อำเภอ</th>
+              <th>SUR</th>
+              <th>INS_12</th>
+              <th>INS_34</th>
+              <th>TRANS</th>
+              <th>PHOTO</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-amphur-table">ยังไม่มีรายการ — กด "+ เพิ่มอำเภอ"</div>
+      </div>
+    </section>
+
+    <!-- PROVINCE_FEE_MAP — simple mode -->
+    <section class="panel hidden" data-panel="province-map">
+      <div class="panel-header">
+        <h2>จังหวัด (Simple mode)</h2>
+        <p class="hint">ใช้ตอนผู้ใช้เลือกจังหวัดที่ไม่อยู่ในตาราง multi-field — กรอก SUR_INVEST อย่างเดียว</p>
+        <div class="panel-actions">
+          <button id="add-province-map" class="btn btn-primary">+ เพิ่มจังหวัด</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="table-province-map">
+          <thead>
+            <tr><th>provinceID</th><th>ชื่อจังหวัด</th><th>SUR_INVEST</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-province-map">ยังไม่มีรายการ</div>
+      </div>
+    </section>
+
+    <!-- AMPHUR_FEE_MAP — simple amphur override -->
+    <section class="panel hidden" data-panel="amphur-map">
+      <div class="panel-header">
+        <h2>อำเภอ override (Simple mode)</h2>
+        <p class="hint">override SUR_INVEST รายอำเภอ — ใช้เฉพาะอำเภอที่ <em>ไม่อยู่ใน</em> ตารางหลายช่อง</p>
+        <div class="panel-actions">
+          <button id="add-amphur-map" class="btn btn-primary">+ เพิ่มอำเภอ</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="table-amphur-map">
+          <thead>
+            <tr><th>amphurID</th><th>จังหวัด</th><th>อำเภอ</th><th>SUR_INVEST</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-amphur-map">ยังไม่มีรายการ</div>
+      </div>
+    </section>
+
+    <!-- TUMBON_FEE_MAP — simple tumbon override -->
+    <section class="panel hidden" data-panel="tumbon-map">
+      <div class="panel-header">
+        <h2>ตำบล override (Simple mode)</h2>
+        <p class="hint">override SUR_INVEST รายตำบล (เฉพาะเจาะจงสุด — ชนะทั้ง amphur/province)</p>
+        <div class="panel-actions">
+          <button id="add-tumbon-map" class="btn btn-primary">+ เพิ่มตำบล</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="table-tumbon-map">
+          <thead>
+            <tr><th>tumbonID</th><th>จังหวัด</th><th>อำเภอ</th><th>ตำบล</th><th>SUR_INVEST</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-tumbon-map">ยังไม่มีรายการ</div>
+      </div>
+    </section>
+
+    <!-- enabledProvinces -->
+    <section class="panel hidden" data-panel="enabled">
+      <div class="panel-header">
+        <h2>Whitelist จังหวัด (enabledProvinces)</h2>
+        <p class="hint">ติ๊กจังหวัดที่อนุญาตให้ extension ทำงาน — ถ้าไม่ติ๊กเลย = ทำงานทุกจังหวัด</p>
+      </div>
+      <div id="enabled-list" class="checkbox-grid"></div>
+    </section>
+
+    <!-- modifierFees -->
+    <section class="panel hidden" data-panel="modifiers">
+      <div class="panel-header">
+        <h2>Modifier defaults</h2>
+        <p class="hint">ค่าเริ่มต้นเมื่อ user ติ๊กนอกพื้นที่/นอกเวลา (กรอกเองในฟอร์ม override default)</p>
+      </div>
+      <div class="modifier-form">
+        <label>
+          <span>นอกพื้นที่ (outOfArea)</span>
+          <input type="number" id="mod-outOfArea" min="0" />
+          <span class="unit">บาท</span>
+        </label>
+        <label>
+          <span>นอกเวลา (outOfHours)</span>
+          <input type="number" id="mod-outOfHours" min="0" />
+          <span class="unit">บาท</span>
+        </label>
+        <button id="save-modifiers" class="btn btn-primary">บันทึก</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ─────────────── Modal: Add/Edit Entry ─────────────── -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <h3 id="modal-title">เพิ่ม</h3>
+      <div id="modal-body"></div>
+      <div class="modal-actions">
+        <button id="modal-cancel" class="btn">ยกเลิก</button>
+        <button id="modal-save" class="btn btn-primary">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

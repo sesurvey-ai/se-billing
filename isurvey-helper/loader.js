@@ -1,37 +1,53 @@
 /**
  * loader.js  —  ISOLATED-world bridge
  * ─────────────────────────────────────────────────────────────
- * Content scripts ใน MAIN world ไม่มีสิทธิ์เรียก chrome.runtime.getURL()
- * ตัวนี้เลยทำหน้าที่:
- *   1) อยู่ใน ISOLATED world → เรียก chrome.runtime.getURL ได้
- *   2) fetch ไฟล์ JSON อ้างอิง (provinces / amphurs / tumbons)
- *   3) ส่งข้อมูลให้ MAIN world ผ่าน window.postMessage
- *      (ใช้ postMessage แทนการ inject <script> เพราะหน้าเว็บมี CSP เข้ม
- *       ไม่อนุญาต inline script — แม้แต่จาก content script)
+ * Content scripts ใน MAIN world ไม่มีสิทธิ์เรียก chrome.* APIs
+ * loader.js อยู่ใน ISOLATED world เลยเป็นตัวกลางสำหรับ:
  *
- * Protocol:
- *   - ISOLATED → MAIN: { __isurveyHelper: true, type: "ref-data-response", payload }
- *   - MAIN → ISOLATED: { __isurveyHelper: true, type: "ref-data-request" }
+ *   1) Reference data (provinces / amphurs / tumbons JSON)
+ *      → fetch ผ่าน chrome.runtime.getURL → broadcast เป็น "ref-data-response"
  *
- * Loader ทำ 2 อย่าง:
- *   - Auto-broadcast หนึ่งครั้งเมื่อโหลดเสร็จ (กรณี MAIN listener พร้อมแล้ว)
- *   - ตอบกลับเมื่อ MAIN ขอ (กรณี MAIN ยังไม่ได้ผูก listener ตอน auto-broadcast)
+ *   2) Config data (rates, modifiers, whitelist) — เก็บใน chrome.storage.local
+ *      → ครั้งแรก: seed จาก default-data.json → write storage
+ *      → อ่าน storage → broadcast เป็น "config-data-response"
+ *      → ฟัง chrome.storage.onChanged → re-broadcast (live update)
+ *
+ * Protocols:
+ *   ISOLATED → MAIN: { __isurveyHelper, type: "ref-data-response", payload }
+ *                    { __isurveyHelper, type: "config-data-response", payload }
+ *   MAIN → ISOLATED: { __isurveyHelper, type: "ref-data-request" }
+ *                    { __isurveyHelper, type: "config-data-request" }
+ *
+ * ใช้ postMessage แทน inline script เพราะ cloud.isurvey.mobi มี CSP เข้ม
  */
 (function () {
   "use strict";
 
-  const FILES = {
+  const REF_FILES = {
     provinces: "data/provinces.json",
     amphurs: "data/amphurs.json",
     tumbons: "data/tumbons.json",
   };
+  const CONFIG_KEYS = [
+    "PROVINCE_FEE_MAP",
+    "AMPHUR_FEE_MAP",
+    "TUMBON_FEE_MAP",
+    "AMPHUR_FEE_TABLE",
+    "modifierFees",
+    "enabledProvinces",
+  ];
   const ORIGIN = window.location.origin;
   const TAG = "[ISurveyHelper/loader]";
 
-  let payload = null;
-  let ready = false;
+  let refPayload = null;
+  let refReady = false;
+  let configPayload = null;
+  let configReady = false;
 
-  /** อ่าน JSON แล้วแปลงเป็น lookup map { id: name } */
+  // ─────────────────────────────────────────────────────────
+  // Reference data (provinces / amphurs / tumbons)
+  // ─────────────────────────────────────────────────────────
+
   async function loadAsMap(path, idKey, nameKey) {
     const url = chrome.runtime.getURL(path);
     const res = await fetch(url);
@@ -45,33 +61,90 @@
     return map;
   }
 
-  function broadcast() {
-    if (!ready || !payload) return;
+  function broadcastRef() {
+    if (!refReady || !refPayload) return;
     window.postMessage(
-      { __isurveyHelper: true, type: "ref-data-response", payload: payload },
+      { __isurveyHelper: true, type: "ref-data-response", payload: refPayload },
       ORIGIN
     );
   }
 
-  // ── ตอบกลับเมื่อ MAIN content.js ขอ ──
+  // ─────────────────────────────────────────────────────────
+  // Config data (chrome.storage.local + default-data.json seed)
+  // ─────────────────────────────────────────────────────────
+
+  /** อ่าน defaults จาก default-data.json */
+  async function loadDefaults() {
+    const url = chrome.runtime.getURL("default-data.json");
+    const res = await fetch(url);
+    return await res.json();
+  }
+
+  /** อ่าน config ปัจจุบันจาก chrome.storage; ถ้า key ใดยังไม่มี → seed จาก defaults */
+  async function loadConfigWithSeed() {
+    const stored = await chrome.storage.local.get(CONFIG_KEYS);
+    const missing = CONFIG_KEYS.filter(k => stored[k] === undefined);
+    if (missing.length > 0) {
+      const defaults = await loadDefaults();
+      const seed = {};
+      for (const k of missing) {
+        seed[k] = defaults[k];
+        stored[k] = defaults[k];
+      }
+      await chrome.storage.local.set(seed);
+      console.log(TAG, "Seeded missing keys to storage:", missing.join(", "));
+    }
+    return stored;
+  }
+
+  function broadcastConfig() {
+    if (!configReady || !configPayload) return;
+    window.postMessage(
+      { __isurveyHelper: true, type: "config-data-response", payload: configPayload },
+      ORIGIN
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Message listener (request handler)
+  // ─────────────────────────────────────────────────────────
+
   window.addEventListener("message", (ev) => {
     if (ev.source !== window) return;
     const d = ev.data;
     if (!d || d.__isurveyHelper !== true) return;
-    if (d.type === "ref-data-request") {
-      broadcast(); // no-op ถ้ายังไม่ ready (MAIN จะ retry เอง)
-    }
+    if (d.type === "ref-data-request") broadcastRef();
+    if (d.type === "config-data-request") broadcastConfig();
   });
 
-  // ── โหลดข้อมูล → set ready → auto-broadcast ──
+  // ─────────────────────────────────────────────────────────
+  // Live reload: ฟัง chrome.storage.onChanged → re-broadcast
+  // ─────────────────────────────────────────────────────────
+
+  chrome.storage.onChanged.addListener(async (changes, areaName) => {
+    if (areaName !== "local") return;
+    const relevant = Object.keys(changes).some(k => CONFIG_KEYS.includes(k));
+    if (!relevant) return;
+
+    // อ่าน state ใหม่ทั้งก้อน — เพื่อให้ payload สมบูรณ์
+    const stored = await chrome.storage.local.get(CONFIG_KEYS);
+    configPayload = stored;
+    broadcastConfig();
+    console.log(TAG, "Config storage changed → re-broadcasted");
+  });
+
+  // ─────────────────────────────────────────────────────────
+  // Bootstrap: load both ref + config in parallel, broadcast when ready
+  // ─────────────────────────────────────────────────────────
+
   (async function () {
     try {
       const [provinces, amphurs, tumbons] = await Promise.all([
-        loadAsMap(FILES.provinces, "provinceID", "provincename"),
-        loadAsMap(FILES.amphurs,   "amphurID",   "amphurname"),
-        loadAsMap(FILES.tumbons,   "tumbonID",   "tumbonname"),
+        loadAsMap(REF_FILES.provinces, "provinceID", "provincename"),
+        loadAsMap(REF_FILES.amphurs,   "amphurID",   "amphurname"),
+        loadAsMap(REF_FILES.tumbons,   "tumbonID",   "tumbonname"),
       ]);
-      payload = {
+      refPayload = {
         byProvinceId: provinces,
         byAmphurId: amphurs,
         byTumbonId: tumbons,
@@ -82,10 +155,20 @@
         },
         loadedAt: new Date().toISOString(),
       };
-      ready = true;
-      broadcast();
+      refReady = true;
+      broadcastRef();
     } catch (e) {
       console.warn(TAG, "failed to load reference JSON:", e);
+    }
+  })();
+
+  (async function () {
+    try {
+      configPayload = await loadConfigWithSeed();
+      configReady = true;
+      broadcastConfig();
+    } catch (e) {
+      console.warn(TAG, "failed to load config from storage:", e);
     }
   })();
 })();
