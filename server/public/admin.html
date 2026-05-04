@@ -2,14 +2,18 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <title>I Survey Auto-Fill Helper — Admin</title>
-  <link rel="stylesheet" href="admin.css" />
+  <title>I Survey Helper — Admin</title>
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <header>
-    <h1>I Survey Auto-Fill Helper — Admin</h1>
+    <h1>I Survey Helper — Admin</h1>
     <div class="header-actions">
       <span id="status" class="status"></span>
+      <div class="nav-links">
+        <a href="/admin" class="active">เรทราคา</a>
+        <a href="/admin/captures">รายละเอียด</a>
+      </div>
       <button id="btn-export" class="btn">Export JSON</button>
       <button id="btn-import" class="btn">Import JSON</button>
       <input type="file" id="import-file" accept="application/json" hidden />
@@ -27,7 +31,6 @@
   </nav>
 
   <main>
-    <!-- AMPHUR_FEE_TABLE — multi-field rates -->
     <section class="panel" data-panel="amphur-table">
       <div class="panel-header">
         <h2>ตารางหลายช่อง (Multi-field)</h2>
@@ -41,15 +44,8 @@
         <table id="table-amphur-table">
           <thead>
             <tr>
-              <th>amphurID</th>
-              <th>จังหวัด</th>
-              <th>อำเภอ</th>
-              <th>SUR</th>
-              <th>INS_12</th>
-              <th>INS_34</th>
-              <th>TRANS</th>
-              <th>PHOTO</th>
-              <th></th>
+              <th>amphurID</th><th>จังหวัด</th><th>อำเภอ</th>
+              <th class="center">พนักงาน</th><th class="center">ค่าบริการ_12</th><th class="center">ค่าบริการ_34</th><th class="center">ค่าพาหนะ</th><th class="center">รูป</th><th></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -58,7 +54,6 @@
       </div>
     </section>
 
-    <!-- PROVINCE_FEE_MAP — simple mode -->
     <section class="panel hidden" data-panel="province-map">
       <div class="panel-header">
         <h2>จังหวัด (Simple mode)</h2>
@@ -69,16 +64,13 @@
       </div>
       <div class="table-wrap">
         <table id="table-province-map">
-          <thead>
-            <tr><th>provinceID</th><th>ชื่อจังหวัด</th><th>SUR_INVEST</th><th></th></tr>
-          </thead>
+          <thead><tr><th>provinceID</th><th>ชื่อจังหวัด</th><th>SUR_INVEST</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
         <div class="empty-state hidden" id="empty-province-map">ยังไม่มีรายการ</div>
       </div>
     </section>
 
-    <!-- AMPHUR_FEE_MAP — simple amphur override -->
     <section class="panel hidden" data-panel="amphur-map">
       <div class="panel-header">
         <h2>อำเภอ override (Simple mode)</h2>
@@ -89,16 +81,13 @@
       </div>
       <div class="table-wrap">
         <table id="table-amphur-map">
-          <thead>
-            <tr><th>amphurID</th><th>จังหวัด</th><th>อำเภอ</th><th>SUR_INVEST</th><th></th></tr>
-          </thead>
+          <thead><tr><th>amphurID</th><th>จังหวัด</th><th>อำเภอ</th><th>SUR_INVEST</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
         <div class="empty-state hidden" id="empty-amphur-map">ยังไม่มีรายการ</div>
       </div>
     </section>
 
-    <!-- TUMBON_FEE_MAP — simple tumbon override -->
     <section class="panel hidden" data-panel="tumbon-map">
       <div class="panel-header">
         <h2>ตำบล override (Simple mode)</h2>
@@ -109,16 +98,13 @@
       </div>
       <div class="table-wrap">
         <table id="table-tumbon-map">
-          <thead>
-            <tr><th>tumbonID</th><th>จังหวัด</th><th>อำเภอ</th><th>ตำบล</th><th>SUR_INVEST</th><th></th></tr>
-          </thead>
+          <thead><tr><th>tumbonID</th><th>จังหวัด</th><th>อำเภอ</th><th>ตำบล</th><th>SUR_INVEST</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
         <div class="empty-state hidden" id="empty-tumbon-map">ยังไม่มีรายการ</div>
       </div>
     </section>
 
-    <!-- enabledProvinces -->
     <section class="panel hidden" data-panel="enabled">
       <div class="panel-header">
         <h2>Whitelist จังหวัด (enabledProvinces)</h2>
@@ -127,7 +113,6 @@
       <div id="enabled-list" class="checkbox-grid"></div>
     </section>
 
-    <!-- modifierFees -->
     <section class="panel hidden" data-panel="modifiers">
       <div class="panel-header">
         <h2>Modifier defaults</h2>
@@ -149,7 +134,6 @@
     </section>
   </main>
 
-  <!-- ─────────────── Modal: Add/Edit Entry ─────────────── -->
   <div id="modal" class="modal hidden">
     <div class="modal-backdrop"></div>
     <div class="modal-content">
@@ -162,6 +146,7 @@
     </div>
   </div>
 
-  <script src="admin.js"></script>
+  <script src="/api.js"></script>
+  <script src="/admin.js"></script>
 </body>
 </html>

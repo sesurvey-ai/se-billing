@@ -1,4 +1,4 @@
-/* admin.css — ไม่มี dependency framework */
+/* Shared styles for viewer + admin + captures */
 * { box-sizing: border-box; }
 
 body {
@@ -20,12 +20,23 @@ header {
   gap: 8px;
 }
 header h1 { margin: 0; font-size: 18px; font-weight: 500; }
-.header-actions { display: flex; gap: 8px; align-items: center; }
+header h1 a { color: inherit; text-decoration: none; }
+.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.nav-links { display: flex; gap: 4px; align-items: center; }
+.nav-links a {
+  color: #d1d5db;
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.nav-links a:hover, .nav-links a.active { background: #374151; color: white; }
 
 .status {
   font-size: 12px;
   color: #aaffaa;
   margin-right: 8px;
+  min-height: 14px;
 }
 .status.error { color: #ffaaaa; }
 
@@ -56,9 +67,9 @@ nav.tabs {
   font-weight: 500;
 }
 
-main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+main { padding: 20px; margin: 0 auto; }
 
-.panel { background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; }
+.panel { background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 16px; }
 .panel.hidden { display: none; }
 
 .panel-header { margin-bottom: 16px; }
@@ -86,14 +97,23 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
 .table-wrap { overflow-x: auto; max-height: calc(100vh - 280px); overflow-y: auto; border: 1px solid #eee; border-radius: 4px; }
 
-table { width: 100%; border-collapse: collapse; }
+table { width: 100%; border-collapse: collapse; background: white; }
 thead { position: sticky; top: 0; background: #f9fafb; z-index: 1; }
 th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #eee; }
 th { font-weight: 500; color: #555; font-size: 13px; white-space: nowrap; }
 tbody tr:hover { background: #fafafa; }
 td.numeric { text-align: right; font-variant-numeric: tabular-nums; }
+th.center, td.center { text-align: center; font-variant-numeric: tabular-nums; }
 td.actions { white-space: nowrap; }
 td.actions button { padding: 2px 8px; margin-left: 4px; font-size: 12px; }
+td.timestamp { font-size: 12px; color: #555; white-space: nowrap; }
+
+.amount-pos { color: #15803d; font-weight: 500; font-variant-numeric: tabular-nums; }
+.amount-neg { color: #dc2626; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* หน้า /captures + /admin/captures: ค่าทุกคอลัมน์อยู่กลาง (override .numeric) */
+.captures-table th,
+.captures-table td { text-align: center; font-variant-numeric: tabular-nums; }
 
 .empty-state { padding: 40px; text-align: center; color: #999; }
 .hidden { display: none !important; }
@@ -134,3 +154,18 @@ td.actions button { padding: 2px 8px; margin-left: 4px; font-size: 12px; }
 .form-row .error-msg { color: #dc2626; font-size: 12px; min-height: 14px; }
 
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Viewer summary cards */
+.summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.summary-card {
+  background: white;
+  border-radius: 6px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.summary-card .label { color: #6b7280; font-size: 12px; }
+.summary-card .value { font-size: 22px; font-weight: 600; margin-top: 4px; }
+
+/* Pagination */
+.pager { display: flex; gap: 8px; align-items: center; padding: 12px 0; flex-wrap: wrap; }
+.pager .info { color: #666; font-size: 13px; }

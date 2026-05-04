@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>I Survey Helper — รายละเอียด</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1><a href="/">I Survey Helper</a></h1>
+    <div class="header-actions">
+      <span id="status" class="status"></span>
+      <div class="nav-links" id="nav-public">
+        <a href="/">เรทราคา</a>
+        <a href="/captures" class="active">รายละเอียด</a>
+      </div>
+      <div class="nav-links hidden" id="nav-admin">
+        <a href="/admin">เรทราคา</a>
+        <a href="/admin/captures" class="active">รายละเอียด</a>
+      </div>
+      <button id="btn-refresh" class="btn">Refresh</button>
+      <button id="btn-export" class="btn">Export Excel</button>
+      <button id="btn-clear" class="btn btn-danger admin-only">Clear all</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>ข้อมูลที่บันทึกจากหน้าเว็บ</h2>
+        <p class="hint">รายการที่ extension จับจากการกรอกฟอร์มบน cloud.isurvey.mobi (เก็บอัตโนมัติเมื่อ user submit หรือเปลี่ยนค่าหลัก)</p>
+        <div class="panel-actions">
+          <input type="search" id="search" placeholder="ค้นจังหวัด/อำเภอ/surveyor..." class="search" />
+          <select id="filter-province">
+            <option value="">ทุกจังหวัด</option>
+          </select>
+          <span class="info" id="count"></span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="captures-table">
+          <thead>
+            <tr>
+              <th>เวลา</th>
+              <th>จังหวัด</th>
+              <th>อำเภอ</th>
+              <th>ตำบล</th>
+              <th>MType</th>
+              <th>Surveyor</th>
+              <th>เจ้าหน้าที่ตรวจ</th>
+              <th class="numeric">SUR</th>
+              <th class="numeric">INS</th>
+              <th class="numeric">TRANS</th>
+              <th class="numeric">PHOTO</th>
+              <th>นอกพื้นที่</th>
+              <th>นอกเวลา</th>
+              <th class="numeric">หัก</th>
+              <th>ส่งช้า</th>
+              <th>เอกสารไม่ครบ</th>
+              <th class="numeric">รวม</th>
+              <th class="admin-only"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty">ยังไม่มีรายการ</div>
+      </div>
+      <div class="pager">
+        <button id="prev" class="btn">« ก่อน</button>
+        <span class="info" id="page-info"></span>
+        <button id="next" class="btn">ถัด »</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="/api.js"></script>
+  <script src="/captures.js"></script>
+</body>
+</html>

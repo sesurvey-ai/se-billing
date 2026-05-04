@@ -75,6 +75,11 @@
       insPhotoInput:       'input#tab1_INS_PHOTO-inputEl',
       deductAmountCmpId:   'tab1_deduct_amount',           // numberfield ที่ user กรอกยอด "หักเงิน"
       deductAmountInputId: 'tab1_deduct_amount-inputEl',
+      lateSubmitCmpId:     'tab1_deduct_late_submit',      // checkbox "ส่งช้า"
+      lateSubmitInputId:   'tab1_deduct_late_submit-inputEl',
+      incompleteDocsCmpId: 'tab1_deduct_incomplete_docs',  // checkbox "เอกสารไม่ครบ"
+      incompleteDocsInputId:'tab1_deduct_incomplete_docs-inputEl',
+      deductWarningCmpId:  'tab1_deduct_warning',          // label เตือน deduct ไม่ระบุเหตุผล
     },
     CFG.selectors || {}
   );
@@ -200,19 +205,37 @@
   }
 
   /**
-   * พนักงาน SE? — ตรวจชื่อ surveyor ขึ้นต้นด้วย "se" (case insensitive)
+   * อ่านชื่อ "เจ้าหน้าที่ตรวจงาน" จาก header (user ที่ login)
+   * จาก <div id="main-tab_header-title-textEl">…Hi, นายนพดล สมบูรณ์กุล</div>
+   * → ตัด "Hi, " + ตัดคำนำหน้าไทย (นาย/นาง/นางสาว/ด.ช./ด.ญ./เด็กชาย/เด็กหญิง)
+   * คืน "นพดล สมบูรณ์กุล" หรือ null ถ้าไม่เจอ element
+   *
+   * Note: เรียงคำนำหน้ายาว→สั้น เพราะ JS regex alternation match ตัวแรกที่เจอ
+   * (นางสาว ก่อน นาง — ไม่งั้น "นางสาวสมศรี" จะถูกตัดเหลือ "สาวสมศรี")
    */
+  const TITLE_PREFIX_RE = /^(นางสาว|นาง|นาย|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/;
+  function readInspectorName() {
+    const el = document.getElementById("main-tab_header-title-textEl");
+    if (!el) return null;
+    let text = (el.textContent || "").trim();
+    if (!text) return null;
+    text = text.replace(/^Hi\s*,?\s*/i, "").trim(); // ตัด "Hi, " (มี/ไม่มี comma + spaces)
+    text = text.replace(TITLE_PREFIX_RE, "").trim();
+    return text || null;
+  }
+
+  /**
+   * อ่านชื่อ surveyor จาก DOM input โดยตรง (`tab1_surveyor_name-inputEl`) —
+   * ไม่ใช้ Ext.getValue() เพราะอาจคืนค่าภายใน (ID/code) ไม่ใช่ชื่อที่แสดง
+   */
+  function readSurveyorName() {
+    const el = document.getElementById(SEL.surveyorNameInputId);
+    return (el && el.value ? String(el.value) : "").trim();
+  }
+
+  /** พนักงาน SE? — ตรวจชื่อ surveyor ขึ้นต้นด้วย "se" (case insensitive) */
   function isSurveyorSE() {
-    let name = "";
-    const cmp = getExtCmp(SEL.surveyorNameCmpId);
-    if (cmp && typeof cmp.getValue === "function") {
-      name = cmp.getValue() || "";
-    }
-    if (!name) {
-      const el = document.querySelector(SEL.surveyorNameInput);
-      name = el ? (el.value || "") : "";
-    }
-    return /^se/i.test(String(name).trim());
+    return /^se/i.test(readSurveyorName());
   }
 
   function lookupName(level, id) {
@@ -310,6 +333,35 @@
       }
     }
     return 0;
+  }
+
+  function readDeductFlag(cmpId, fallbackInputId) {
+    const cmp = getExtCmp(cmpId);
+    if (cmp && typeof cmp.getValue === "function") return cmp.getValue() === true;
+    const el = document.getElementById(fallbackInputId);
+    return !!(el && el.checked);
+  }
+  const isLateSubmit     = () => readDeductFlag(SEL.lateSubmitCmpId,     SEL.lateSubmitInputId);
+  const isIncompleteDocs = () => readDeductFlag(SEL.incompleteDocsCmpId, SEL.incompleteDocsInputId);
+
+  /**
+   * Validate deduct: ถ้ากรอกยอด > 0 ต้องติ๊กอย่างน้อย 1 ใน 2 (ส่งช้า / เอกสารไม่ครบ)
+   * คืน { valid, deduct, late, docs }
+   */
+  function checkDeductValid() {
+    const deduct = getDeductAmount();
+    const late   = isLateSubmit();
+    const docs   = isIncompleteDocs();
+    const valid  = deduct === 0 || late || docs;
+    return { valid, deduct, late, docs };
+  }
+
+  /** อัพเดท visibility ของ warning label ให้ตรงกับสถานะ */
+  function updateDeductWarning() {
+    const { valid, deduct } = checkDeductValid();
+    const cmp = getExtCmp(SEL.deductWarningCmpId);
+    if (!cmp || typeof cmp.setVisible !== "function") return;
+    cmp.setVisible(deduct > 0 && !valid);
   }
 
   function isOutOfHoursSelected() {
@@ -490,10 +542,122 @@
     const tbl = getAmphurTable()[amphurId];
     if (tbl) {
       syncMultiFields(amphurId, tbl);
-      return;
+    } else {
+      syncSurInvestSimple(provinceId, amphurId, tumbonId);
     }
 
-    syncSurInvestSimple(provinceId, amphurId, tumbonId);
+    // อัพเดท warning label (ตอบสนองทันที — ไม่ต้องรอ debounce)
+    updateDeductWarning();
+
+    // หลัง sync: schedule capture (debounced) — เก็บข้อมูลส่งให้ server
+    scheduleCapture();
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Capture: snapshot ของฟอร์ม → ส่งไป ISOLATED → background → server
+  // ─────────────────────────────────────────────────────────
+
+  let captureTimer = null;
+  let lastCaptureSig = "";
+  const CAPTURE_DEBOUNCE_MS = 1500;
+
+  function readExtNumber(cmpId, sel) {
+    const cmp = getExtCmp(cmpId);
+    if (cmp && typeof cmp.getValue === "function") {
+      const v = cmp.getValue();
+      if (v !== null && v !== undefined && v !== "") {
+        const n = Number(String(v).replace(/,/g, ""));
+        if (!isNaN(n)) return n;
+      }
+    }
+    if (sel) {
+      const el = document.querySelector(sel);
+      if (el && el.value) {
+        const n = Number(String(el.value).replace(/,/g, ""));
+        if (!isNaN(n)) return n;
+      }
+    }
+    return null;
+  }
+
+  function buildCapture() {
+    const provinceId = readHiddenValue(SEL.provinceHidden);
+    const amphurId   = readHiddenValue(SEL.amphurHidden);
+    const tumbonId   = readHiddenValue(SEL.tumbonHidden);
+    if (!provinceId && !amphurId) return null; // ยังไม่เลือกอะไร — ไม่ capture
+    if (!isProvinceEnabled(provinceId)) return null;
+
+    // กฎ: ถ้ากรอกยอดหัก ต้องระบุเหตุผล (ส่งช้า / เอกสารไม่ครบ) อย่างน้อย 1 ข้อ
+    // ไม่งั้น skip capture เพื่อกัน DB เก็บ deduct โดยไม่มีเหตุผล
+    const dv = checkDeductValid();
+    if (!dv.valid) {
+      log(`Capture skipped: หักเงิน ${dv.deduct} บาท แต่ยังไม่ติ๊กเหตุผล`);
+      return null;
+    }
+
+    const surveyorName = readSurveyorName();
+
+    const outOfArea  = isOutOfAreaChecked();
+    const outOfHours = isOutOfHoursSelected();
+    const outOfAreaInfo  = outOfArea  ? getOutOfAreaAmount()  : null;
+    const outOfHoursInfo = outOfHours ? getOutOfHoursAmount() : null;
+    const deduct = getDeductAmount();
+
+    const tbl = getAmphurTable()[amphurId];
+    const mode = tbl ? "multi-field" : "simple";
+
+    return {
+      ts: new Date().toISOString(),
+      province_id: provinceId || null,
+      province_name: lookupName("province", provinceId) || null,
+      amphur_id: amphurId || null,
+      amphur_name: lookupName("amphur", amphurId) || null,
+      tumbon_id: tumbonId || null,
+      tumbon_name: lookupName("tumbon", tumbonId) || null,
+      mtype_id: readMtypeId() || null,
+      surveyor_name: surveyorName || null,
+      is_se: isSurveyorSE(),
+      inspector_name: readInspectorName(),
+      sur_invest: readExtNumber(SEL.feeCmpId, SEL.feeInput),
+      ins_invest: readExtNumber(SEL.insInvestCmpId, SEL.insInvestInput),
+      ins_trans:  readExtNumber(SEL.insTransCmpId, SEL.insTransInput),
+      ins_photo:  readExtNumber(SEL.insPhotoCmpId, SEL.insPhotoInput),
+      out_of_area: outOfArea,
+      out_of_area_amt: outOfAreaInfo ? outOfAreaInfo.amount : null,
+      out_of_hours: outOfHours,
+      out_of_hours_amt: outOfHoursInfo ? outOfHoursInfo.amount : null,
+      deduct_amt: deduct > 0 ? deduct : null,
+      late_submit: isLateSubmit(),
+      incomplete_docs: isIncompleteDocs(),
+      mode,
+    };
+  }
+
+  function sendCapture(rec) {
+    try {
+      window.postMessage(
+        { __isurveyHelper: true, type: "capture-data", payload: rec },
+        window.location.origin
+      );
+    } catch (e) {
+      warn("capture postMessage failed:", e);
+    }
+  }
+
+  function scheduleCapture() {
+    if (captureTimer) clearTimeout(captureTimer);
+    captureTimer = setTimeout(() => {
+      captureTimer = null;
+      const rec = buildCapture();
+      if (!rec) return;
+      // de-dup: skip ถ้าเหมือน snapshot ก่อนหน้า (ไม่นับ ts)
+      const { ts, ...rest } = rec;
+      const sig = JSON.stringify(rest);
+      if (sig === lastCaptureSig) return;
+      lastCaptureSig = sig;
+      sendCapture(rec);
+      log("Capture sent:", rec.province_id, rec.amphur_id, "mode=" + rec.mode);
+    }, CAPTURE_DEBOUNCE_MS);
   }
 
   // ─────────────────────────────────────────────────────────
@@ -544,6 +708,8 @@
         t.id === SEL.outOfAreaAmountInputId ||
         t.id === SEL.outOfHoursAmountInputId ||
         t.id === SEL.deductAmountInputId ||
+        t.id === SEL.lateSubmitInputId ||
+        t.id === SEL.incompleteDocsInputId ||
         t.id === SEL.mtypeIdInputId ||
         t.id === SEL.surveyorNameInputId ||
         (t.type === "radio" && t.name === SEL.inOutRadioName);

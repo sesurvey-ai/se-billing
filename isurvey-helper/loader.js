@@ -1,51 +1,51 @@
 /**
- * loader.js  —  ISOLATED-world bridge
- * ─────────────────────────────────────────────────────────────
- * Content scripts ใน MAIN world ไม่มีสิทธิ์เรียก chrome.* APIs
- * loader.js อยู่ใน ISOLATED world เลยเป็นตัวกลางสำหรับ:
+ * loader.js  —  ISOLATED-world bridge between MAIN-world content scripts and the
+ * extension's service worker (background.js)
  *
- *   1) Reference data (provinces / amphurs / tumbons JSON)
- *      → fetch ผ่าน chrome.runtime.getURL → broadcast เป็น "ref-data-response"
+ * Responsibilities (post v2.0 — server-backed):
  *
- *   2) Config data (rates, modifiers, whitelist) — เก็บใน chrome.storage.local
- *      → ครั้งแรก: seed จาก default-data.json → write storage
- *      → อ่าน storage → broadcast เป็น "config-data-response"
- *      → ฟัง chrome.storage.onChanged → re-broadcast (live update)
+ *   1) Reference data (provinces / amphurs / tumbons)
+ *      → fetch ผ่าน chrome.runtime.getURL (local files in extension)
+ *      → ส่ง MAIN ผ่าน postMessage("ref-data-response")
  *
- * Protocols:
- *   ISOLATED → MAIN: { __isurveyHelper, type: "ref-data-response", payload }
- *                    { __isurveyHelper, type: "config-data-response", payload }
+ *   2) Config data (rates, modifiers, whitelist) — มาจาก backend server
+ *      → ขอจาก background.js (ซึ่ง fetch จาก http://<serverUrl>/api/config)
+ *      → broadcast เป็น "config-data-response" ไป MAIN
+ *      → poll ทุก 30s เพื่อ pick up การแก้ไขจาก /admin (live update)
+ *
+ *   3) Capture forwarding — รับ "capture-data" จาก MAIN
+ *      → forward ไป background.js → POST /api/captures
+ *
+ * MAIN ห้าม fetch http server ตรงเพราะ mixed-content (HTTPS → HTTP).
+ * Background service worker ทำได้เพราะอยู่ใน extension origin (chrome-extension://).
+ *
+ * Protocol:
+ *   ISOLATED → MAIN: { __isurveyHelper, type: "ref-data-response",     payload }
+ *                    { __isurveyHelper, type: "config-data-response",  payload }
  *   MAIN → ISOLATED: { __isurveyHelper, type: "ref-data-request" }
  *                    { __isurveyHelper, type: "config-data-request" }
- *
- * ใช้ postMessage แทน inline script เพราะ cloud.isurvey.mobi มี CSP เข้ม
+ *                    { __isurveyHelper, type: "capture-data", payload }
  */
 (function () {
   "use strict";
 
   const REF_FILES = {
     provinces: "data/provinces.json",
-    amphurs: "data/amphurs.json",
-    tumbons: "data/tumbons.json",
+    amphurs:   "data/amphurs.json",
+    tumbons:   "data/tumbons.json",
   };
-  const CONFIG_KEYS = [
-    "PROVINCE_FEE_MAP",
-    "AMPHUR_FEE_MAP",
-    "TUMBON_FEE_MAP",
-    "AMPHUR_FEE_TABLE",
-    "modifierFees",
-    "enabledProvinces",
-  ];
   const ORIGIN = window.location.origin;
   const TAG = "[ISurveyHelper/loader]";
+  const CONFIG_POLL_MS = 30000; // poll every 30s for live update
 
   let refPayload = null;
   let refReady = false;
   let configPayload = null;
   let configReady = false;
+  let lastConfigSig = "";
 
   // ─────────────────────────────────────────────────────────
-  // Reference data (provinces / amphurs / tumbons)
+  // Reference data (local extension files)
   // ─────────────────────────────────────────────────────────
 
   async function loadAsMap(path, idKey, nameKey) {
@@ -70,32 +70,8 @@
   }
 
   // ─────────────────────────────────────────────────────────
-  // Config data (chrome.storage.local + default-data.json seed)
+  // Config data (from backend via background.js)
   // ─────────────────────────────────────────────────────────
-
-  /** อ่าน defaults จาก default-data.json */
-  async function loadDefaults() {
-    const url = chrome.runtime.getURL("default-data.json");
-    const res = await fetch(url);
-    return await res.json();
-  }
-
-  /** อ่าน config ปัจจุบันจาก chrome.storage; ถ้า key ใดยังไม่มี → seed จาก defaults */
-  async function loadConfigWithSeed() {
-    const stored = await chrome.storage.local.get(CONFIG_KEYS);
-    const missing = CONFIG_KEYS.filter(k => stored[k] === undefined);
-    if (missing.length > 0) {
-      const defaults = await loadDefaults();
-      const seed = {};
-      for (const k of missing) {
-        seed[k] = defaults[k];
-        stored[k] = defaults[k];
-      }
-      await chrome.storage.local.set(seed);
-      console.log(TAG, "Seeded missing keys to storage:", missing.join(", "));
-    }
-    return stored;
-  }
 
   function broadcastConfig() {
     if (!configReady || !configPayload) return;
@@ -105,36 +81,66 @@
     );
   }
 
+  async function fetchConfigFromServer() {
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage({ type: "fetch-config" }, (r) => {
+          if (chrome.runtime.lastError) {
+            resolve({ ok: false, error: chrome.runtime.lastError.message });
+            return;
+          }
+          resolve(r || { ok: false, error: "no response" });
+        });
+      } catch (e) {
+        resolve({ ok: false, error: String(e?.message || e) });
+      }
+    });
+  }
+
+  async function refreshConfig({ initial = false } = {}) {
+    const r = await fetchConfigFromServer();
+    if (!r.ok) {
+      if (initial) console.warn(TAG, "Initial config fetch failed:", r.error);
+      return;
+    }
+    const sig = JSON.stringify(r.config);
+    if (sig === lastConfigSig) return; // no change
+    lastConfigSig = sig;
+    configPayload = r.config;
+    configReady = true;
+    broadcastConfig();
+    console.log(TAG, initial ? "Config loaded from server" : "Config updated from server (poll)");
+  }
+
   // ─────────────────────────────────────────────────────────
-  // Message listener (request handler)
+  // Message listener (request handler + capture forwarding)
   // ─────────────────────────────────────────────────────────
 
   window.addEventListener("message", (ev) => {
     if (ev.source !== window) return;
     const d = ev.data;
     if (!d || d.__isurveyHelper !== true) return;
+
     if (d.type === "ref-data-request") broadcastRef();
     if (d.type === "config-data-request") broadcastConfig();
+
+    if (d.type === "capture-data" && d.payload) {
+      try {
+        chrome.runtime.sendMessage({ type: "send-capture", data: d.payload }, (r) => {
+          if (chrome.runtime.lastError) {
+            console.warn(TAG, "Capture send failed:", chrome.runtime.lastError.message);
+          } else if (r && r.ok === false) {
+            console.warn(TAG, "Capture rejected:", r.error);
+          }
+        });
+      } catch (e) {
+        console.warn(TAG, "Capture send error:", e);
+      }
+    }
   });
 
   // ─────────────────────────────────────────────────────────
-  // Live reload: ฟัง chrome.storage.onChanged → re-broadcast
-  // ─────────────────────────────────────────────────────────
-
-  chrome.storage.onChanged.addListener(async (changes, areaName) => {
-    if (areaName !== "local") return;
-    const relevant = Object.keys(changes).some(k => CONFIG_KEYS.includes(k));
-    if (!relevant) return;
-
-    // อ่าน state ใหม่ทั้งก้อน — เพื่อให้ payload สมบูรณ์
-    const stored = await chrome.storage.local.get(CONFIG_KEYS);
-    configPayload = stored;
-    broadcastConfig();
-    console.log(TAG, "Config storage changed → re-broadcasted");
-  });
-
-  // ─────────────────────────────────────────────────────────
-  // Bootstrap: load both ref + config in parallel, broadcast when ready
+  // Bootstrap: fetch ref data + initial config + start polling
   // ─────────────────────────────────────────────────────────
 
   (async function () {
@@ -162,13 +168,7 @@
     }
   })();
 
-  (async function () {
-    try {
-      configPayload = await loadConfigWithSeed();
-      configReady = true;
-      broadcastConfig();
-    } catch (e) {
-      console.warn(TAG, "failed to load config from storage:", e);
-    }
-  })();
+  // Initial config fetch + polling
+  refreshConfig({ initial: true });
+  setInterval(() => refreshConfig(), CONFIG_POLL_MS);
 })();

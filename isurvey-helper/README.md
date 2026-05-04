@@ -2,49 +2,69 @@
 
 Chrome Extension (Manifest V3) สำหรับเติม "ค่าบริการ" อัตโนมัติบนหน้าฟอร์ม
 ของระบบ I Survey (`https://cloud.isurvey.mobi/main.php`) ตาม
-**จังหวัด / อำเภอ / ตำบล** ที่ผู้ใช้เลือก
+**จังหวัด / อำเภอ / ตำบล** ที่ผู้ใช้เลือก พร้อม **จับข้อมูลที่กรอก** ส่งไปเก็บที่ backend server
 
-โค้ดถูกฉีดเข้า **MAIN world** ของหน้าเว็บ จึงเรียก `Ext.getCmp().setValue()`
-ของ Ext JS ได้โดยตรง ทำให้ระบบคำนวณยอดรวมต่อให้ถูกต้อง
+ตั้งแต่ **v2.0.0** ข้อมูล rate + capture log ย้ายไปอยู่ใน **backend server**
+(โฟลเดอร์ [`../server/`](../server/)) — เพื่อ:
+
+- จัดการเรตจาก **เครื่องเดียว** สำหรับหลาย client ใน LAN เดียวกัน
+- เก็บประวัติการกรอกฟอร์ม (capture log) ลง SQLite database
+- มีหน้าเว็บ Viewer / Admin / Captures พร้อมใช้
+
+โค้ด extension ยังคงฉีดเข้า **MAIN world** ของหน้าเว็บเหมือนเดิม จึงเรียก
+`Ext.getCmp().setValue()` ของ Ext JS ได้โดยตรง
 
 ---
 
-## วิธีติดตั้ง (Load unpacked)
+## ข้อกำหนดก่อนติดตั้ง
+
+ต้องมี **backend server** รันอยู่ก่อน — ดูคู่มือใน [`../server/README.md`](../server/README.md)
+สรุปย่อ:
+
+```bash
+cd ../server
+npm install
+node server.js     # ฟัง http://localhost:3200
+```
+
+---
+
+## วิธีติดตั้ง extension (Load unpacked)
 
 1. เปิด Chrome → ไปที่ `chrome://extensions`
 2. เปิดสวิตช์ **Developer mode** (มุมขวาบน)
 3. กด **Load unpacked** → เลือกโฟลเดอร์ `isurvey-helper/` นี้
-4. เปิด/รีเฟรชหน้า `https://cloud.isurvey.mobi/main.php`
-5. ลองเลือกจังหวัด → ช่อง "ค่าบริการ" จะถูกเติมและไฮไลต์เหลืองสั้น ๆ
+4. ตั้งค่า server URL:
+   - คลิก **Details** ของ extension → คลิก **Extension options**
+   - กรอก Server URL (default `http://localhost:3200`) → "บันทึก" → "ทดสอบเชื่อมต่อ"
+5. เปิด/รีเฟรชหน้า `https://cloud.isurvey.mobi/main.php`
+6. ลองเลือกจังหวัด → ช่อง "ค่าบริการ" จะถูกเติมและไฮไลต์เหลืองสั้น ๆ
 
 > หากแก้ไขไฟล์ในโฟลเดอร์นี้ ต้องกดปุ่ม **reload** ที่ extension card
 > ใน `chrome://extensions` แล้วรีเฟรชหน้าเว็บอีกครั้ง
 
 ---
 
-## Admin Page (จัดการข้อมูลเอง — ไม่ต้องแตะโค้ด)
+## หน้าเว็บจัดการข้อมูล (อยู่ที่ server)
 
-ตั้งแต่ **v1.7.0** มี Admin UI สำหรับเพิ่ม/แก้/ลบข้อมูลทั้งหมดผ่านเบราว์เซอร์ ไม่ต้องแก้ `default-data.json` หรือ commit git
+| URL | หน้าที่ |
+|-----|--------|
+| `http://<server>:3200/`         | Viewer — อ่านอย่างเดียว สรุปข้อมูลทุก section |
+| `http://<server>:3200/admin`    | Admin CRUD — เพิ่ม/แก้/ลบ ทุกตาราง + Import/Export/Reset |
+| `http://<server>:3200/captures` | Captures — ข้อมูลที่ extension จับจากฟอร์ม (timestamp + state ทั้งหมด) |
 
-**วิธีเปิด Admin:**
-1. `chrome://extensions` → หา "I Survey Auto-Fill Helper" → คลิก **Details**
-2. เลื่อนลง → คลิก **Extension options** → admin page เปิดในแท็บใหม่
-
-**สิ่งที่จัดการได้:**
+**สิ่งที่จัดการที่หน้า /admin:**
 - **ตารางหลายช่อง (Multi-field)** — เพิ่ม/แก้/ลบรายอำเภอ + 5 ค่า (SUR_INVEST, INS_INVEST_12/_34, INS_TRANS, INS_PHOTO_12)
-- **จังหวัด (Simple)** — SUR_INVEST รายจังหวัด สำหรับ simple mode
-- **อำเภอ override (Simple)** — override ระดับอำเภอ
-- **ตำบล override (Simple)** — override ระดับตำบล (ชนะสุด)
+- **จังหวัด (Simple)** / **อำเภอ override** / **ตำบล override**
 - **Whitelist จังหวัด** — ติ๊กเปิด/ปิดต่อจังหวัด
-- **Modifier defaults** — outOfArea / outOfHours default amount
-- **Import/Export JSON** — backup/restore (export เป็นไฟล์ `.json` แล้วเอามา import กลับได้)
-- **Reset to defaults** — ล้างข้อมูลใน chrome.storage แล้ว seed จาก `default-data.json` ใหม่
+- **Modifier defaults** — outOfArea / outOfHours
+- **Import/Export JSON** + **Reset to defaults**
 
-**Live update:** บันทึกที่ admin → loader.js detect `chrome.storage.onChanged` → broadcast → content.js อ่าน window.X ใหม่ใน poll ครั้งถัดไป (≤ 500ms) — **ไม่ต้อง refresh page ของ I Survey**
+**Live update:** บันทึกที่ /admin → server เก็บลง SQLite → extension's `loader.js` poll ทุก 30s
+ดึงข้อมูลใหม่ → broadcast ให้ `content.js` ใน MAIN world (เปลี่ยนได้ภายใน 30s โดยไม่ต้องรีเฟรชหน้า cloud.isurvey.mobi)
 
-**Storage:**
-- ข้อมูลเก็บใน `chrome.storage.local` (~30KB ปัจจุบัน, quota 10MB) — ติดตัวเครื่องเดียว ไม่ sync ไป device อื่น
-- ถ้าต้องการ sync ไปเครื่องอื่น → Export JSON บนเครื่องนึง → Import บนอีกเครื่อง
+**Capture log:** เมื่อ user กรอกฟอร์ม content.js debounce 1.5s แล้วส่ง snapshot ไป
+ISOLATED → background.js → POST `/api/captures` — ดูได้ที่หน้า /captures
 
 ---
 
@@ -189,11 +209,12 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 
 ## วิธีเพิ่ม / แก้ไข mapping
 
-**แนะนำ: ใช้ Admin page** (ดูหัวข้อด้านบน) — ไม่ต้องแก้โค้ด ไม่ต้อง git ไม่ต้อง reload extension
+**แนะนำ: ใช้หน้า /admin บน server** — ไม่ต้องแก้โค้ด ไม่ต้อง git ไม่ต้อง reload extension
 
-**ทางเลือก: แก้ defaults สำหรับ first install** — ถ้าอยากให้ extension ใหม่ที่ install มี data มาให้แล้ว ให้แก้ [`default-data.json`](./default-data.json)
-- กระทบเฉพาะ user ใหม่ที่ยังไม่มีข้อมูลใน chrome.storage
-- User เดิมต้องกด "Reset to defaults" ใน admin ถึงจะเอา default ใหม่มาใช้
+**ทางเลือก: แก้ seed defaults** — ถ้าจะตั้งค่าเริ่มต้นสำหรับ DB ใหม่ที่ยังว่าง
+หรือสำหรับการ Reset to defaults ให้แก้ [`../server/seed/default-data.json`](../server/seed/default-data.json)
+- มีผลก็ต่อเมื่อ DB ว่าง (first run) **หรือ** กด "Reset to defaults" ที่หน้า /admin
+- ปกติแล้วใช้หน้า /admin แก้ไขในรันไทม์ดีกว่า — defaults จะใช้แค่กรณี seed/restore
 
 ```jsonc
 {
@@ -262,17 +283,17 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 
 ```
 isurvey-helper/
-├── manifest.json                        ← MV3 + storage permission + options_ui + content_scripts
-├── default-data.json                    ← Default seed data — admin "Reset to defaults" อ่านจากนี่
-├── admin.html / admin.css / admin.js    ← Admin UI (chrome://extensions → Extension options)
-├── config-bridge.js                     ← MAIN: receive config จาก loader → set window.X (แทน config.js เก่า)
-├── content.js                           ← MAIN: Logic หลัก (observer + setValue)
-├── loader.js                            ← ISOLATED: chrome.storage seed/read + onChanged → broadcast MAIN
+├── manifest.json                        ← MV3 + host_permissions + background SW + options_ui + content_scripts
+├── background.js                        ← Service worker: HTTP I/O ไปหา server
+├── options.html / options.js            ← Settings page (Server URL field) — เปิดจาก chrome://extensions Details
+├── config-bridge.js                     ← MAIN: receive config จาก loader → set window.X
+├── content.js                           ← MAIN: Logic หลัก + capture trigger (observer + setValue + debounced capture)
+├── loader.js                            ← ISOLATED: ref data + ขอ config จาก SW (poll 30s) + forward capture
 ├── feature-out-of-area-amount.js        ← MAIN: numberfield "ยอดเงิน" คู่ checkbox "นอกพื้นที่"
 ├── feature-out-of-hours-amount.js       ← MAIN: numberfield "ยอดเงิน" ต่อท้าย radio "นอก" (นอกเวลา)
 ├── feature-deduct-amount.js             ← MAIN: แถวที่ 7 "หักเงิน" — inject เข้าตารางค่าใช้จ่าย
 ├── data/
-│   ├── provinces.json                   ← 77 จังหวัด (reference)
+│   ├── provinces.json                   ← 77 จังหวัด (reference, สำหรับ name lookup)
 │   ├── amphurs.json                     ← อำเภอทั้งประเทศ (reference)
 │   └── tumbons.json                     ← ตำบลทั้งประเทศ (reference)
 ├── icon-16.png / icon-48.png / icon-128.png
@@ -283,16 +304,16 @@ isurvey-helper/
 
 | ไฟล์ | World | หน้าที่ |
 |------|-------|--------|
-| `manifest.json` | — | ประกาศ extension, match URL, inject scripts, options_ui = admin.html, permissions = storage |
-| `default-data.json` | — | Seed data สำหรับ first install + ใช้ตอนกด "Reset to defaults" ใน admin |
-| `admin.html` / `admin.js` / `admin.css` | extension page | UI สำหรับ user เพิ่ม/แก้/ลบ ข้อมูลใน chrome.storage.local |
-| `loader.js` | ISOLATED | (1) fetch reference JSON → MAIN, (2) seed/read chrome.storage.local → broadcast config → MAIN, (3) ฟัง storage.onChanged → re-broadcast (live update) |
+| `manifest.json` | — | ประกาศ extension, match URL, inject scripts, options_ui = options.html, host_permissions เพื่อให้ service worker fetch ไป backend ได้ |
+| `background.js` | service worker | HTTP I/O ทุกอย่างไปยัง backend (fetch config, send capture, ping) — รับ chrome.runtime messages |
+| `options.html` / `options.js` | extension page | ตั้งค่า Server URL (default `http://localhost:3200`) + ปุ่มทดสอบเชื่อมต่อ |
+| `loader.js` | ISOLATED | (1) fetch reference JSON → MAIN, (2) ขอ config จาก background → broadcast MAIN ทุก 30s, (3) forward capture-data จาก MAIN → background |
 | `config-bridge.js` | MAIN | receive config payload จาก loader → set `window.PROVINCE_FEE_MAP` / `window.AMPHUR_FEE_TABLE` / ฯลฯ + dispatch `isurvey-config-ready` / `isurvey-config-updated` |
-| `content.js` | MAIN | อ่าน hidden inputs / modifier inputs, lookup fee, set ผ่าน `Ext.getCmp().setValue()` — **อ่าน window.X สดทุก sync** เพื่อรับ live update จาก admin |
+| `content.js` | MAIN | อ่าน hidden inputs / modifier inputs, lookup fee, set ผ่าน `Ext.getCmp().setValue()` — **อ่าน window.X สดทุก sync** + debounced capture (1.5s) → postMessage ISOLATED |
 | `feature-out-of-area-amount.js` | MAIN | สร้าง/ลบ numberfield "ยอดเงิน (บาท)" ตามสถานะ checkbox "นอกพื้นที่" (poll ทุก 500ms) |
 | `feature-out-of-hours-amount.js` | MAIN | สร้าง/ลบ numberfield "ยอดเงิน (บาท)" ตามสถานะ radio "นอก" ใน group ใน/นอกเวลา (poll ทุก 500ms) |
 | `feature-deduct-amount.js` | MAIN | inject แถวที่ 7 "หักเงิน" + numberfield ลงใน table panel ที่ครอบ `tab1_SUR_INVEST` (poll ทุก 500ms; ค่าหัก = negative modifier ของ SUR_INVEST) |
-| `data/*.json` | — | ข้อมูล reference จาก API I Survey ใช้ทั้ง runtime (log) และ admin (dropdown) |
+| `data/*.json` | — | ข้อมูล reference จาก API I Survey ใช้ทั้ง runtime (name lookup ใน capture) — server มี copy แยกของตัวเอง |
 
 ---
 
@@ -400,7 +421,9 @@ isurvey-helper/
 
 | Version | การเปลี่ยนแปลง |
 |---------|--------------|
-| **1.7.0** | **Admin page**: เพิ่ม UI ให้ user จัดการข้อมูล (เพิ่ม/แก้/ลบ) ผ่าน `chrome://extensions` → Extension options. ย้าย data จาก `config.js` ไป `chrome.storage.local` (seed จาก [default-data.json](./default-data.json)). เพิ่ม [admin.html](./admin.html) / [admin.js](./admin.js) / [admin.css](./admin.css) / [config-bridge.js](./config-bridge.js); `loader.js` รับหน้าที่ seed + read storage + ฟัง `chrome.storage.onChanged` → re-broadcast (live update โดยไม่ต้อง refresh page); `content.js` อ่าน maps สดทุก sync. `config.js` ถูกลบ. Import/Export JSON + Reset to defaults |
+| **2.1.0** | **Capture metadata + UX**: เพิ่ม checkbox "ส่งช้า" / "เอกสารไม่ครบ" ในแถว 7 (หักเงิน) — บังคับเลือกเหตุผลเมื่อ deduct > 0 (warning label สีแดงในฟอร์ม + extension skip POST + server reject 400). เพิ่ม `inspector_name` (อ่านจาก header `#main-tab_header-title-textEl` + ตัดคำนำหน้าไทย: นาย/นาง/นางสาว/ด.ช./ด.ญ./เด็กชาย/เด็กหญิง). เปลี่ยน surveyor_name ให้อ่านจาก DOM input ตรง (`tab1_surveyor_name-inputEl`). หน้า server แยก viewer (public, ไม่มีเมนูเข้า admin) ↔ admin (URL-only, มีลบ/Clear all); เพิ่ม Excel export (.xlsx) ผ่าน `GET /api/captures.xlsx`; column รวม = SUR+INS+TRANS+PHOTO (sur_invest หักเงินไว้ก่อนแล้ว); UI: + เขียว / − แดง, label ภาษาไทย (เรทราคา / รายละเอียด), centered cells, full-width panels |
+| **2.0.0** | **Backend server**: ย้าย config + admin UI ออกจาก extension ไปยัง standalone Node.js server ที่โฟลเดอร์ [`../server/`](../server/) (Express + SQLite). หน้า /admin /viewer /captures เปิดจาก browser ตรงไปยัง server. Extension เปลี่ยน options_ui เป็นเพียง [options.html](./options.html) (Server URL field), เพิ่ม [background.js](./background.js) service worker สำหรับ HTTP I/O, แก้ [loader.js](./loader.js) ให้ขอ config จาก server (poll 30s) แทน chrome.storage, เพิ่ม capture trigger ใน [content.js](./content.js) (debounce 1.5s) → POST `/api/captures`. ลบ `admin.html` / `admin.js` / `admin.css` / `default-data.json` ออกจาก extension (default-data ย้ายไป [`../server/seed/default-data.json`](../server/seed/default-data.json)) |
+| **1.7.0** | **Admin page**: เพิ่ม UI ให้ user จัดการข้อมูล (เพิ่ม/แก้/ลบ) ผ่าน `chrome://extensions` → Extension options. ย้าย data จาก `config.js` ไป `chrome.storage.local` (seed จาก default-data.json). เพิ่ม `admin.html` / `admin.js` / `admin.css` / `config-bridge.js`; `loader.js` รับหน้าที่ seed + read storage + ฟัง `chrome.storage.onChanged` → re-broadcast (live update โดยไม่ต้อง refresh page); `content.js` อ่าน maps สดทุก sync. `config.js` ถูกลบ. Import/Export JSON + Reset to defaults |
 | **1.6.1** | เพิ่ม นครราชสีมา (30, 32 อำเภอ) + ขอนแก่น (40, 26 อำเภอ) ใน `AMPHUR_FEE_TABLE` รวมเป็น 245 อำเภอ 17 จังหวัด multi-field. `enabledProvinces` 20 จังหวัด |
 | **1.6.0** | ขยาย `AMPHUR_FEE_TABLE` เพิ่ม 14 จังหวัด (179 อำเภอ) จาก Google Sheet ของผู้ใช้: พระนครศรีอยุธยา, สระบุรี, จันทบุรี, ฉะเชิงเทรา, อุบลราชธานี, เชียงใหม่, สุโขทัย, พิษณุโลก, พิจิตร, กาญจนบุรี, สุพรรณบุรี, นครศรีธรรมราช (rate INS แตกต่าง), ภูเก็ต, สงขลา; รวมเป็น 187 อำเภอ 15 จังหวัด multi-field. เพิ่ม `enabledProvinces` ทั้งหมดเป็น 18 จังหวัด (รวม 10/11/12 ที่เป็น simple mode) |
 | **1.5.0** | เพิ่มแถวที่ 7 "หักเงิน" (`tab1_deduct_amount`) — inject ต่อท้ายแถวที่ 6 (ค่าเรียกร้อง) ในตารางค่าใช้จ่ายผ่าน `table.insert(idx+1, ...)` + position-check ทุก poll; ค่า > 0 = หักออกจาก SUR_INVEST (negative modifier); ทำงานทั้ง simple + multi-field mode; เพิ่ม [`feature-deduct-amount.js`](./feature-deduct-amount.js) |

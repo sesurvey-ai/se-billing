@@ -26,12 +26,15 @@
   "use strict";
 
   // ── ค่าคงที่ (แก้ได้ตามต้องการ) ──────────────────────────
-  const ANCHOR_CMP_ID    = "tab1_SUR_INVEST";    // anchor หา table panel
-  const ROW6_LABEL_TEXT  = "ค่าเรียกร้อง";       // หา row 6 ด้วย text นี้ (insert ต่อท้ายมัน)
-  const ROW_ID           = "tab1_deduct_row";    // panel id ของแถว 7
-  const FIELD_ID         = "tab1_deduct_amount"; // numberfield id
+  const ANCHOR_CMP_ID    = "tab1_SUR_INVEST";          // anchor หา table panel
+  const ROW6_LABEL_TEXT  = "ค่าเรียกร้อง";             // หา row 6 ด้วย text นี้ (insert ต่อท้ายมัน)
+  const ROW_ID           = "tab1_deduct_row";          // panel id ของแถว 7
+  const FIELD_ID         = "tab1_deduct_amount";       // numberfield id (ยอดหักเงิน)
+  const LATE_CHK_ID      = "tab1_deduct_late_submit";  // checkbox "ส่งช้า"
+  const DOCS_CHK_ID      = "tab1_deduct_incomplete_docs"; // checkbox "เอกสารไม่ครบ"
+  const WARN_LBL_ID      = "tab1_deduct_warning";      // label เตือนเมื่อ deduct>0 แต่ไม่ติ๊ก
   const ROW_HEIGHT       = 35;
-  const ROW_WIDTH        = 730;
+  const ROW_WIDTH        = 850;
   const FIELD_WIDTH      = 80;
   const POLL_INTERVAL_MS = 500;
 
@@ -63,7 +66,31 @@
           width: FIELD_WIDTH,
           x: 215, y: 3,
         },
-        { xtype: "label", text: "บาท",    x: 300, y: 6, width: 30  },
+        { xtype: "label", text: "บาท",    x: 300, y: 6, width: 30 },
+        {
+          xtype: "checkbox",
+          id: LATE_CHK_ID,
+          name: LATE_CHK_ID,
+          boxLabel: "ส่งช้า",
+          hideLabel: true,
+          x: 350, y: 6, width: 100,
+        },
+        {
+          xtype: "checkbox",
+          id: DOCS_CHK_ID,
+          name: DOCS_CHK_ID,
+          boxLabel: "เอกสารไม่ครบ",
+          hideLabel: true,
+          x: 460, y: 6, width: 140,
+        },
+        {
+          xtype: "label",
+          id: WARN_LBL_ID,
+          text: "⚠ ต้องเลือกเหตุผล",
+          hidden: true,
+          x: 610, y: 6, width: 200,
+          style: "color:#dc2626;font-weight:500;",
+        },
       ],
     };
   }
