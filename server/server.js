@@ -225,52 +225,60 @@ app.get("/api/captures.xlsx", async (req, res) => {
   wb.created = new Date();
   const ws = wb.addWorksheet("รายละเอียด");
 
+  // Layout match หน้า /captures: ลบ Mode + SE column, รวม "นอกพื้นที่/ยอด" เป็นช่องเดียว,
+  // เพิ่ม "รวมบริษัท" / "รวมพนักงาน", "พนักงาน" = base derive (ไม่ใช่ sur_invest ใน DB)
   ws.columns = [
     { header: "เวลา",            key: "ts",              width: 22 },
     { header: "จังหวัด",          key: "province_name",   width: 14 },
     { header: "อำเภอ",            key: "amphur_name",     width: 18 },
     { header: "ตำบล",             key: "tumbon_name",     width: 18 },
-    { header: "ประเภทเคลม",       key: "mtype_label",     width: 14 },
-    { header: "Surveyor",         key: "surveyor_name",   width: 16 },
-    { header: "SE",               key: "is_se_label",     width: 6  },
+    { header: "MType",            key: "mtype_label",     width: 12 },
+    { header: "พนักงานสำรวจ",      key: "surveyor_label",  width: 28 },
     { header: "เจ้าหน้าที่ตรวจ",   key: "inspector_name",  width: 22 },
-    { header: "Mode",             key: "mode",            width: 12 },
-    { header: "SUR",              key: "sur_invest",      width: 8  },
-    { header: "INS",              key: "ins_invest",      width: 8  },
-    { header: "TRANS",            key: "ins_trans",       width: 8  },
-    { header: "PHOTO",            key: "ins_photo",       width: 8  },
-    { header: "นอกพื้นที่",        key: "out_of_area_lbl", width: 12 },
-    { header: "ยอดนอกพื้นที่",     key: "out_of_area_amt", width: 12 },
-    { header: "นอกเวลา",          key: "out_of_hours_lbl", width: 12 },
-    { header: "ยอดนอกเวลา",       key: "out_of_hours_amt", width: 12 },
+    { header: "ค่าบริการ",         key: "ins_invest",      width: 10 },
+    { header: "ค่าพาหนะ",         key: "ins_trans",       width: 10 },
+    { header: "รูป",              key: "ins_photo",       width: 8  },
+    { header: "รวมบริษัท",         key: "sum_company",     width: 11 },
+    { header: "พนักงาน",          key: "base_pnk",        width: 10 },
+    { header: "นอกพื้นที่",        key: "out_of_area_amt", width: 11 },
+    { header: "นอกเวลา",          key: "out_of_hours_amt", width: 10 },
     { header: "หัก",              key: "deduct_amt",      width: 8  },
     { header: "ส่งช้า",           key: "late_label",      width: 8  },
     { header: "เอกสารไม่ครบ",     key: "docs_label",      width: 12 },
+    { header: "รวมพนักงาน",       key: "sum_pnk",         width: 12 },
   ];
 
-  const MTYPE = { "1": "1 เคลมสด", "2": "2 เคลมแห้ง", "3": "3 ติดตาม", "4": "4 เจรจา" };
+  const MTYPE = { "1": "1·เคลมสด", "2": "2·เคลมแห้ง", "3": "3·ติดตาม", "4": "4·เจรจา" };
   for (const r of rows) {
+    const sur     = Number(r.sur_invest)       || 0;
+    const oaAmt   = r.out_of_area  ? (Number(r.out_of_area_amt)  || 0) : 0;
+    const ohAmt   = r.out_of_hours ? (Number(r.out_of_hours_amt) || 0) : 0;
+    const ded     = Number(r.deduct_amt) || 0;
+    const basePnk = sur - oaAmt - ohAmt + ded;       // derive base (ตรงกับหน้าเว็บ)
+    const sumPnk  = basePnk + oaAmt + ohAmt - ded;   // = sur_invest
+    const sumCo   = (Number(r.ins_invest) || 0)
+                  + (Number(r.ins_trans)  || 0)
+                  + (Number(r.ins_photo)  || 0);
+
     ws.addRow({
       ts:               r.ts ? new Date(r.ts).toLocaleString("th-TH", { hour12: false }) : "",
       province_name:    r.province_name || r.province_id || "",
       amphur_name:      r.amphur_name   || r.amphur_id   || "",
       tumbon_name:      r.tumbon_name   || r.tumbon_id   || "",
       mtype_label:      MTYPE[r.mtype_id] || r.mtype_id || "",
-      surveyor_name:    r.surveyor_name || "",
-      is_se_label:      r.is_se ? "SE" : "",
+      surveyor_label:   (r.surveyor_name || "") + (r.is_se ? " (SE)" : ""),
       inspector_name:   r.inspector_name || "",
-      mode:             r.mode || "",
-      sur_invest:       r.sur_invest ?? "",
       ins_invest:       r.ins_invest ?? "",
       ins_trans:        r.ins_trans  ?? "",
       ins_photo:        r.ins_photo  ?? "",
-      out_of_area_lbl:  r.out_of_area ? "ใช่" : "",
-      out_of_area_amt:  r.out_of_area_amt ?? "",
-      out_of_hours_lbl: r.out_of_hours ? "ใช่" : "",
-      out_of_hours_amt: r.out_of_hours_amt ?? "",
-      deduct_amt:       r.deduct_amt ?? "",
-      late_label:       r.late_submit ? "ใช่" : "",
-      docs_label:       r.incomplete_docs ? "ใช่" : "",
+      sum_company:      sumCo,
+      base_pnk:         basePnk,
+      out_of_area_amt:  r.out_of_area  ? oaAmt : "",
+      out_of_hours_amt: r.out_of_hours ? ohAmt : "",
+      deduct_amt:       r.deduct_amt   ? ded   : "",
+      late_label:       r.late_submit     ? "✓" : "",
+      docs_label:       r.incomplete_docs ? "✓" : "",
+      sum_pnk:          sumPnk,
     });
   }
 

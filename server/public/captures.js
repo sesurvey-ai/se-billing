@@ -40,6 +40,20 @@ function render() {
       if (!hay.includes(search)) continue;
     }
     shown++;
+    // ── คำนวนยอดรวม ──
+    // "พนักงาน" = ค่าฐาน (base SUR) — extract กลับจาก sur_invest โดยลบ modifier + บวก deduct
+    //   (sur_invest ใน DB = base + outOfArea + outOfHours − deduct, extension setValue ค่านี้)
+    //   → base = sur_invest − outOfArea − outOfHours + deduct
+    const sur      = Number(r.sur_invest)       || 0;
+    const oaAmt    = r.out_of_area  ? (Number(r.out_of_area_amt)  || 0) : 0;
+    const ohAmt    = r.out_of_hours ? (Number(r.out_of_hours_amt) || 0) : 0;
+    const ded      = Number(r.deduct_amt) || 0;
+    const basePnk  = sur - oaAmt - ohAmt + ded;
+    const sumPnk   = basePnk + oaAmt + ohAmt - ded;       // = sur (math ตรงตามที่แสดง)
+    const sumCo    = (Number(r.ins_invest) || 0)
+                   + (Number(r.ins_trans)  || 0)
+                   + (Number(r.ins_photo)  || 0);
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="timestamp">${fmtTs(r.ts)}</td>
@@ -49,21 +63,17 @@ function render() {
       <td>${fmtMtype(r.mtype_id)}</td>
       <td>${r.surveyor_name || ""}${r.is_se ? " <small>(SE)</small>" : ""}</td>
       <td>${r.inspector_name || ""}</td>
-      <td class="numeric">${r.sur_invest ?? ""}</td>
       <td class="numeric">${r.ins_invest ?? ""}</td>
-      <td class="numeric">${r.ins_trans ?? ""}</td>
-      <td class="numeric">${r.ins_photo ?? ""}</td>
+      <td class="numeric">${r.ins_trans  ?? ""}</td>
+      <td class="numeric">${r.ins_photo  ?? ""}</td>
+      <td class="numeric"><strong>${sumCo}</strong></td>
+      <td class="numeric">${basePnk}</td>
       <td>${r.out_of_area  ? `<span class="amount-pos">+${r.out_of_area_amt  ?? 0}</span>` : ""}</td>
       <td>${r.out_of_hours ? `<span class="amount-pos">+${r.out_of_hours_amt ?? 0}</span>` : ""}</td>
       <td class="numeric">${r.deduct_amt ? `<span class="amount-neg">-${r.deduct_amt}</span>` : ""}</td>
-      <td>${r.late_submit ? "✓" : ""}</td>
+      <td>${r.late_submit     ? "✓" : ""}</td>
       <td>${r.incomplete_docs ? "✓" : ""}</td>
-      <td class="numeric"><strong>${
-        // sur_invest ที่บันทึกแล้ว = base + outOfArea + outOfHours − deduct
-        // (extension หักไว้ก่อน setValue) — ดังนั้นรวม 4 ช่องนี้ = ยอดสุทธิหลังหักเงิน
-        (Number(r.sur_invest) || 0) + (Number(r.ins_invest) || 0) +
-        (Number(r.ins_trans)  || 0) + (Number(r.ins_photo)  || 0)
-      }</strong></td>
+      <td class="numeric"><strong>${sumPnk}</strong></td>
       ${ADMIN_MODE ? `<td class="actions"><button class="btn btn-icon btn-danger" data-id="${r.id}">ลบ</button></td>` : ""}`;
     tbody.appendChild(tr);
   }

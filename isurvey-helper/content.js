@@ -546,20 +546,20 @@
       syncSurInvestSimple(provinceId, amphurId, tumbonId);
     }
 
-    // อัพเดท warning label (ตอบสนองทันที — ไม่ต้องรอ debounce)
+    // อัพเดท warning label (ตอบสนองทันที)
     updateDeductWarning();
 
-    // หลัง sync: schedule capture (debounced) — เก็บข้อมูลส่งให้ server
-    scheduleCapture();
+    // Note: capture จะส่งตอนกดปุ่ม "ยืนยันการตรวจสอบ" (#tab1_save) เท่านั้น
+    // — ไม่ใช่ตอนเปลี่ยนค่าในฟอร์ม (เลิก debounce แล้ว)
   }
 
   // ─────────────────────────────────────────────────────────
   // Capture: snapshot ของฟอร์ม → ส่งไป ISOLATED → background → server
+  // Trigger: ผูกกับการกดปุ่ม "ยืนยันการตรวจสอบ" (#tab1_save) เท่านั้น
+  //          — 1 click = 1 capture (ถ้าค่าเปลี่ยนจากครั้งก่อน)
   // ─────────────────────────────────────────────────────────
 
-  let captureTimer = null;
-  let lastCaptureSig = "";
-  const CAPTURE_DEBOUNCE_MS = 1500;
+  let lastCaptureSig = "";  // dedup: skip ถ้า payload เหมือนรอบก่อน
 
   function readExtNumber(cmpId, sel) {
     const cmp = getExtCmp(cmpId);
@@ -644,20 +644,23 @@
     }
   }
 
-  function scheduleCapture() {
-    if (captureTimer) clearTimeout(captureTimer);
-    captureTimer = setTimeout(() => {
-      captureTimer = null;
-      const rec = buildCapture();
-      if (!rec) return;
-      // de-dup: skip ถ้าเหมือน snapshot ก่อนหน้า (ไม่นับ ts)
-      const { ts, ...rest } = rec;
-      const sig = JSON.stringify(rest);
-      if (sig === lastCaptureSig) return;
-      lastCaptureSig = sig;
-      sendCapture(rec);
-      log("Capture sent:", rec.province_id, rec.amphur_id, "mode=" + rec.mode);
-    }, CAPTURE_DEBOUNCE_MS);
+  /**
+   * captureNow — เก็บ snapshot ปัจจุบันทันที (เรียกตอนกดปุ่ม "ยืนยันการตรวจสอบ")
+   *   - validate ผ่าน buildCapture (return null ถ้า deduct ไม่มี flag, ฯลฯ)
+   *   - dedup: skip ถ้า payload เหมือนครั้งก่อน
+   */
+  function captureNow() {
+    const rec = buildCapture();
+    if (!rec) return; // null = invalid (warning label ในฟอร์มจะแสดงสาเหตุ)
+    const { ts, ...rest } = rec;
+    const sig = JSON.stringify(rest);
+    if (sig === lastCaptureSig) {
+      log("Capture skipped: payload เหมือนรอบก่อน");
+      return;
+    }
+    lastCaptureSig = sig;
+    sendCapture(rec);
+    log("Capture sent (on save):", rec.province_id, rec.amphur_id, "mode=" + rec.mode);
   }
 
   // ─────────────────────────────────────────────────────────
@@ -740,6 +743,26 @@
     }, CFG.pollIntervalMs);
   }
 
+  /**
+   * Listener สำหรับปุ่ม "ยืนยันการตรวจสอบ" (#tab1_save)
+   * — ใช้ delegated click ที่ document เผื่อปุ่มถูก re-render
+   * — capture phase เพื่ออ่าน state ก่อน Ext จะส่ง form ออกไป
+   * — delay 100ms ให้ Ext sync state รอบสุดท้ายก่อนเรา read
+   * — ไม่ preventDefault — ปล่อยให้ I Survey save ปกติ
+   */
+  function attachSaveButtonListener() {
+    if (window.__iSurveyHelperSaveListenerAttached) return;
+    window.__iSurveyHelperSaveListenerAttached = true;
+
+    document.addEventListener("click", (ev) => {
+      const btn = ev.target && ev.target.closest && ev.target.closest("#tab1_save");
+      if (!btn) return;
+      log("ยืนยันการตรวจสอบ clicked → capture in 100ms");
+      setTimeout(captureNow, 100);
+    }, true);
+    log('Save-button listener attached (#tab1_save)');
+  }
+
   // ─────────────────────────────────────────────────────────
   // Bootstrap
   // ─────────────────────────────────────────────────────────
@@ -781,6 +804,7 @@
 
     attachAllLocationObservers();
     attachModifierListeners();
+    attachSaveButtonListener();
     syncFeeFromLocation();
     startPolling();
   }
