@@ -90,6 +90,9 @@
       surClaimInput:       'input#tab1_SUR_CLAIM-inputEl',
       insClaimCmpId:       'tab1_INS_CLAIM',               // textfield 10% ของ RECV_CLAIM
       insClaimInput:       'input#tab1_INS_CLAIM-inputEl',
+      serviceTypeCmpId:    'tab1_service_type',            // combo "ประเภทบริการ" — บริการ/ต่อเนื่อง/หน้าร้าน/พื้นที่เดียวกัน
+      serviceTypeInput:    'input#tab1_service_type-inputEl',
+      serviceTypeInputId:  'tab1_service_type-inputEl',
     },
     CFG.selectors || {}
   );
@@ -216,6 +219,21 @@
     const el = document.querySelector(SEL.mtypeIdInput);
     const txt = el ? (el.value || "").trim() : "";
     return MTYPE_LABEL_TO_ID[txt] || "";
+  }
+
+  /**
+   * อ่านค่า "ประเภทบริการ" (tab1_service_type) — combo มี 4 option:
+   * บริการ / ต่อเนื่อง / หน้าร้าน / พื้นที่เดียวกัน
+   * (valueField + displayField = "item" → getValue() คืน label ตรงๆ)
+   */
+  function readServiceType() {
+    const cmp = getExtCmp(SEL.serviceTypeCmpId);
+    if (cmp && typeof cmp.getValue === "function") {
+      const v = cmp.getValue();
+      if (v) return String(v).trim();
+    }
+    const el = document.querySelector(SEL.serviceTypeInput);
+    return el ? (el.value || "").trim() : "";
   }
 
   /**
@@ -580,9 +598,52 @@
   }
 
   /**
+   * "ต่อเนื่อง" override — fixed rate ที่กำหนดไว้ก่อนคำนวณ multi-field/simple
+   *
+   * Rules:
+   *   service_type = "ต่อเนื่อง" + MtypeID 2 (เคลมแห้ง) ทุกจังหวัด:
+   *     SUR=50, INS_INVEST=100, INS_PHOTO=50
+   *   service_type = "ต่อเนื่อง" + MtypeID 1 (เคลมสด) + จังหวัด BMR (10/11/12/13):
+   *     SUR=100, INS_INVEST=300, INS_PHOTO=50
+   *   service_type = "ต่อเนื่อง" + MtypeID 1 (เคลมสด) + จังหวัดอื่น:
+   *     SUR=100, INS_INVEST=500, INS_PHOTO=50
+   *   อื่นๆ → ไม่ override (caller fallthrough ไป syncMultiFields/Simple ปกติ)
+   *
+   * INS_TRANS: clear ทุก rule (ต่อเนื่อง = ไม่มีค่าเดินทาง)
+   * Modifiers (outOfArea/outOfHours/deduct): ไม่ apply ใน ต่อเนื่อง mode
+   *
+   * @returns {boolean} true ถ้า override ถูก apply (caller skip normal logic)
+   */
+  const BMR_PROVINCE_IDS = new Set(["10", "11", "12", "13"]);
+  function applyContinuousOverride(provinceId) {
+    if (readServiceType() !== "ต่อเนื่อง") return false;
+    const mtype = readMtypeId();
+
+    let rule = null;
+    if (mtype === "2") {
+      rule = { sur: 50,  ins: 100, photo: 50, label: "MtypeID 2 เคลมแห้ง" };
+    } else if (mtype === "1") {
+      if (BMR_PROVINCE_IDS.has(String(provinceId))) {
+        rule = { sur: 100, ins: 300, photo: 50, label: "MtypeID 1 เคลมสด BMR" };
+      } else {
+        rule = { sur: 100, ins: 500, photo: 50, label: "MtypeID 1 เคลมสด non-BMR" };
+      }
+    }
+    if (!rule) return false; // MtypeID 3/4 — ไม่มี rule → fallthrough
+
+    const tag = `ต่อเนื่อง [${rule.label}]`;
+    setOneField(SEL.feeCmpId,       SEL.feeInput,       rule.sur,   `SUR_INVEST ${tag}`);
+    setOneField(SEL.insInvestCmpId, SEL.insInvestInput, rule.ins,   `INS_INVEST ${tag}`);
+    setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  rule.photo, `INS_PHOTO ${tag}`);
+    setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "",         `INS_TRANS ${tag} → clear`);
+    return true;
+  }
+
+  /**
    * Entry point: เลือก mode ตามว่า amphurId อยู่ใน AMPHUR_FEE_TABLE หรือไม่
    *   - อยู่ → multi-field (ระยอง)
    *   - ไม่อยู่ → simple SUR_INVEST (กทม. ฯลฯ)
+   * "ต่อเนื่อง" override ทำงานก่อน — ถ้า apply แล้วจะ short-circuit
    */
   function syncFeeFromLocation() {
     const provinceId = readHiddenValue(SEL.provinceHidden);
@@ -593,6 +654,12 @@
     syncClaimPercentages();
 
     if (!isProvinceEnabled(provinceId)) return; // นอก whitelist → ไม่แตะ fee field
+
+    // "ต่อเนื่อง" override — ถ้า matched → set 4 fields fixed + return
+    if (applyContinuousOverride(provinceId)) {
+      updateDeductWarning();
+      return;
+    }
 
     const tbl = getAmphurTable()[amphurId];
     if (tbl) {
@@ -771,6 +838,7 @@
         t.id === SEL.mtypeIdInputId ||
         t.id === SEL.surveyorNameInputId ||
         t.id === SEL.recvClaimInputId ||
+        t.id === SEL.serviceTypeInputId ||
         (t.type === "radio" && t.name === SEL.inOutRadioName);
       if (matches) {
         // sync ทันทีหลัง Ext กระจาย event ภายใน
@@ -816,6 +884,7 @@
     attachExtChangeListener(SEL.mtypeIdCmpId, "MtypeID");
     attachExtChangeListener(SEL.surveyorNameCmpId, "Surveyor");
     attachExtChangeListener(SEL.recvClaimCmpId, "RecvClaim");
+    attachExtChangeListener(SEL.serviceTypeCmpId, "ServiceType");
   }
 
   /**

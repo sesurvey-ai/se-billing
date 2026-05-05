@@ -149,6 +149,20 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 | `outOfHours` | radio "นอก" ใน group `tab1_grd-in_out` ถูกเลือก | +100 | ถ้า user กรอกยอดเอง ใน numberfield ที่โผล่ขึ้นต่อท้าย radiogroup จะใช้ค่านั้นแทน default |
 | `deduct` | numberfield "หักเงิน" (`tab1_deduct_amount`) มีค่า > 0 | — | inject เป็น **แถวที่ 7** ในตารางรายการค่าใช้จ่าย; **หัก** ออกจาก SUR_INVEST (ทำงานทั้ง simple และ multi-field mode) |
 
+### "ต่อเนื่อง" service-type override (v2.6.0+)
+
+ถ้า `tab1_service_type` = **"ต่อเนื่อง"** → fixed rate override (ก่อน multi-field/simple) ตาม MtypeID + จังหวัด:
+
+| service_type | MtypeID | จังหวัด | SUR_INVEST | INS_INVEST | INS_TRANS | INS_PHOTO |
+|---|---|---|---|---|---|---|
+| ต่อเนื่อง | 2 (เคลมแห้ง) | ทุกจังหวัด | 50 | 100 | clear | 50 |
+| ต่อเนื่อง | 1 (เคลมสด) | กทม./สมุทรปราการ/นนทบุรี/ปทุมธานี (10/11/12/13) | 100 | 300 | clear | 50 |
+| ต่อเนื่อง | 1 (เคลมสด) | จังหวัดอื่น | 100 | 500 | clear | 50 |
+| ต่อเนื่อง | 3 / 4 | — | *(ไม่ override → multi-field/simple ปกติ)* |
+
+> Modifiers (outOfArea/outOfHours/deduct) **ไม่ apply** ในโหมด "ต่อเนื่อง"
+> เพราะเป็น fixed rate ตามตาราง
+
 ### Auto-calc % ของค่าเรียกร้อง (v2.3.0+)
 
 ทำงานทุก mode ไม่ขึ้นกับจังหวัด/อำเภอ — เป็นเปอร์เซ็นต์ตรง ๆ ของยอดเรียกร้อง:
@@ -289,6 +303,7 @@ Trigger 4 ทาง: native input/change + Ext component change + polling 500ms 
 | **ค่าเรียกร้อง** (input source สำหรับ %) | `tab1_RECV_CLAIM` (numberfield) |
 | **5% ของค่าเรียกร้อง** | `tab1_SUR_CLAIM` (textfield, auto) |
 | **10% ของค่าเรียกร้อง** | `tab1_INS_CLAIM` (textfield, auto) |
+| **ประเภทบริการ** (combo) | `tab1_service_type` — บริการ/ต่อเนื่อง/หน้าร้าน/พื้นที่เดียวกัน |
 | checkbox "นอกพื้นที่" | `tab1_chk_co_area` |
 | radiogroup "ใน/นอกเวลา" | `tab1_grd-in_out` (radio name `tab1_rd-in_out`) |
 | **หักเงิน** (inject แถว 7) | `tab1_deduct_amount` (numberfield) |
@@ -454,6 +469,7 @@ isurvey-helper/
 
 | Version | การเปลี่ยนแปลง |
 |---------|--------------|
+| **2.6.0** | **"ต่อเนื่อง" service-type override**: เพิ่ม `tab1_service_type` (combo) — ถ้าเลือก "ต่อเนื่อง" จะ override fee fields ด้วย fixed rate ก่อน multi-field/simple. Rules: (1) MtypeID 2 ทุกจังหวัด → SUR=50, INS=100, PHOTO=50, TRANS=clear; (2) MtypeID 1 + BMR (10/11/12/13) → SUR=100, INS=300, PHOTO=50, TRANS=clear; (3) MtypeID 1 non-BMR → SUR=100, INS=500, PHOTO=50, TRANS=clear; (4) MtypeID 3/4 → fall through ไป logic ปกติ. ไม่ apply modifiers ในโหมดนี้. ผูก Ext change event listener สำหรับ `tab1_service_type` ทำให้ sync ทันที |
 | **2.5.0** | **Per-user province popup**: เพิ่ม `action.default_popup` (popup.html/.css/.js) — user คลิก extension icon เปิด popup ติ๊กเลือกจังหวัดที่ใช้งานประจำ (search + เลือกทั้งหมด/ล้างทั้งหมด + counter). บันทึกใน `chrome.storage.local["userProvincePreferences"]` (per-machine/per-user). loader.js ฟัง `chrome.storage.onChanged` → re-broadcast config ทันที (ไม่ต้องรอ poll 30s). content.js เพิ่ม `filterProvinceCombobox()` ที่ apply Ext store filter (`store.addFilter([{id: "__iSurveyHelperUserPref", filterFn: ...}])`) ตาม preference. ติ๊ก 0 = แสดงครบ 77. ไม่กรอง dropdown อำเภอ |
 | **2.4.0** | **เปิด type-ahead บน combobox จังหวัด/อำเภอ/ตำบล**: host ตั้ง `editable: false, typeAhead: false` ทำให้ user พิมพ์ค้นหาไม่ได้ ต้อง scroll หาในรายการ 77 จังหวัด / 1004 อำเภอ. แก้ runtime ผ่าน `cmp.setEditable(true); cmp.typeAhead = true; cmp.queryMode = "local"; cmp.minChars = 0` + ลบ readonly attribute. ใช้ flag `__iSurveyHelperTypeAheadEnabled` กัน double-apply + re-apply อัตโนมัติทุก 500ms ถ้า Ext destroy/recreate cmp |
 | **2.3.4** | **Auto-clear INS_TRANS / INS_PHOTO เมื่อ table ไม่ระบุ**: ใน multi-field mode — ถ้า amphur entry ไม่มี `INS_TRANS` หรือ `INS_PHOTO_12` ให้ clear field ที่เกี่ยวข้องอัตโนมัติ (เดิม: ปล่อยค่าเดิมค้างไว้). กระทบเฉพาะ กทม. ทุกอำเภอ (entry มีแค่ SUR/INS_INVEST_12/34 ไม่มี TRANS/PHOTO_12) → ค่าเดินทาง/ค่ารูป จะถูก clear ทันทีเมื่อเลือก กทม. — สอดคล้องกับ Google Sheet ที่ไม่ได้กำหนดสองค่านี้สำหรับ กทม. |
