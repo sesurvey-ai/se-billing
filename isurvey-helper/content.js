@@ -490,19 +490,25 @@
         `INS_INVEST [amphur ${amphurId}, MtypeID ${mtype}=${mtype === "3" ? "ติดตาม" : "เจรจาสินไหม"}]`);
     }
 
-    // INS_TRANS: ทุก MtypeID (ขึ้นกับอำเภออย่างเดียว)
+    // INS_TRANS: ทุก MtypeID (ขึ้นกับอำเภออย่างเดียว) — ถ้า table ไม่ได้ระบุ → clear
+    // (เช่น กทม. ทุกอำเภอไม่มี INS_TRANS → field ต้องว่าง)
     if (tbl.INS_TRANS !== undefined) {
       setOneField(SEL.insTransCmpId, SEL.insTransInput, tbl.INS_TRANS,
         `INS_TRANS [amphur ${amphurId}]`);
+    } else {
+      setOneField(SEL.insTransCmpId, SEL.insTransInput, "",
+        `INS_TRANS [amphur ${amphurId} → ไม่ระบุ, clear]`);
     }
 
-    // INS_PHOTO: เฉพาะ MtypeID 1-2 — เมื่อ 3-4 ให้ auto-clear (ป้องกันค่าเก่าค้าง)
+    // INS_PHOTO: เฉพาะ MtypeID 1-2 + table มี INS_PHOTO_12; กรณีอื่น (3-4 หรือ
+    // table ไม่ระบุเช่น กทม.) → clear
     if (mt12 && tbl.INS_PHOTO_12 !== undefined) {
       setOneField(SEL.insPhotoCmpId, SEL.insPhotoInput, tbl.INS_PHOTO_12,
         `INS_PHOTO [amphur ${amphurId}, MtypeID ${mtype}]`);
-    } else if (mt34) {
+    } else {
+      const reason = mt34 ? `MtypeID ${mtype}` : `amphur ${amphurId} ไม่ระบุ`;
       setOneField(SEL.insPhotoCmpId, SEL.insPhotoInput, "",
-        `INS_PHOTO [MtypeID ${mtype} → clear]`);
+        `INS_PHOTO [${reason} → clear]`);
     }
   }
 
