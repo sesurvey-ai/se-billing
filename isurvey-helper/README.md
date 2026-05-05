@@ -418,6 +418,28 @@ isurvey-helper/
 
 ---
 
+## Known Limitations / Future Considerations
+
+### Province / amphur dropdown — ไม่มี filter, พิมพ์ค้นหาไม่ได้
+
+Combobox จังหวัด/อำเภอ/ตำบล (`tab1_survey_provinceID` / `_amphurID` /
+`_tumbonID`) บน iSurvey ตั้งไว้ที่ `editable: false`, `typeAhead: false`
+ทำให้ user ต้อง scroll หาเองในรายการ 77 จังหวัด / 1004 อำเภอ ถึงแม้จะใช้
+จริงแค่ 21 จังหวัด / 315 อำเภอ ที่อยู่ใน `enabledProvinces` /
+`AMPHUR_FEE_TABLE`
+
+**ตอนนี้:** Extension ยังไม่จัดการ — user ต้อง scroll เอง
+
+**ทางเลือกสำหรับอนาคต** (ถ้าจะ implement):
+1. **Filter** — `Ext.getCmp(id).getStore().filterBy(rec => allow.has(rec.get('provinceID')))` เหลือเฉพาะที่ใช้งาน
+2. **Enable type-ahead** — `cmp.setEditable(true); cmp.typeAhead = true;` ที่ runtime
+3. **ทั้งคู่** — filter + type-ahead
+
+ต้อง re-attach หลัง host re-render combobox (pattern เดียวกับ
+`attachAllExtListeners` ใน [content.js](./content.js))
+
+---
+
 ## Changelog
 
 | Version | การเปลี่ยนแปลง |
