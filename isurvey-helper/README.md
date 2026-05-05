@@ -134,8 +134,8 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 "8015": { SUR_INVEST: 1100, INS_INVEST_12: 1650, INS_INVEST_34: 1500, INS_TRANS: 1200, INS_PHOTO_12: 50 }, // ขนอม
 ```
 
-**Provinces ที่รองรับใน multi-field mode (17 จังหวัด, 245 อำเภอ):**
-ระยอง (21), พระนครศรีอยุธยา (14), สระบุรี (19), จันทบุรี (22), ฉะเชิงเทรา (24), นครราชสีมา (30), อุบลราชธานี (34), ขอนแก่น (40), เชียงใหม่ (50), สุโขทัย (64), พิษณุโลก (65), พิจิตร (66), กาญจนบุรี (71), สุพรรณบุรี (72), นครศรีธรรมราช (80), ภูเก็ต (83), สงขลา (90)
+**Provinces ที่รองรับใน multi-field mode (21 จังหวัด, 315 อำเภอ):**
+กรุงเทพฯ (10), สมุทรปราการ (11), นนทบุรี (12), ปทุมธานี (13), พระนครศรีอยุธยา (14), สระบุรี (19), ระยอง (21), จันทบุรี (22), ฉะเชิงเทรา (24), นครราชสีมา (30), อุบลราชธานี (34), ขอนแก่น (40), เชียงใหม่ (50), สุโขทัย (64), พิษณุโลก (65), พิจิตร (66), กาญจนบุรี (71), สุพรรณบุรี (72), นครศรีธรรมราช (80), ภูเก็ต (83), สงขลา (90)
 
 ### Modifier (เปิด/ปิด/ปรับจำนวนเงินได้ใน config.js → `modifierFees`)
 
@@ -422,6 +422,7 @@ isurvey-helper/
 
 | Version | การเปลี่ยนแปลง |
 |---------|--------------|
+| **2.3.2** | **Region: BMR**: เพิ่ม 4 จังหวัดในกลุ่มกรุงเทพและปริมณฑล (กทม. 50 amphur / สมุทรปราการ 6 / นนทบุรี 6 / ปทุมธานี 8) เข้า `AMPHUR_FEE_TABLE` รวมเป็น **21 จังหวัด, 315 อำเภอ**. กทม.: SUR=300, INS_12=INS_34=700 (ไม่มี TRANS/PHOTO). อีก 3 จังหวัด: SUR=300, INS_12=300, INS_34=200, TRANS=500, PHOTO_12=50. เพิ่ม "13" ใน `enabledProvinces` (รวม 21 จังหวัด) |
 | **2.3.1** | **Fix: 10% target field**: เปลี่ยน target ของ 10% จาก `tab1_INS_DAILY` → `tab1_INS_CLAIM` (รอบ 2.3.0 ใส่ผิดช่อง) |
 | **2.3.0** | **เพิ่ม auto-calc % ของค่าเรียกร้อง**: ตรวจ `tab1_RECV_CLAIM` (numberfield ค่าเรียกร้อง) — ถ้า > 0 → ตั้ง `tab1_SUR_CLAIM` = 5% และ `tab1_INS_CLAIM` = 10% ของ RECV; ถ้า ≤ 0 หรือว่าง → clear ทั้งสอง. ทำงานทุก mode (ไม่ขึ้นกับ `enabledProvinces` หรือ `AMPHUR_FEE_TABLE`). Trigger: native `change`/`input` listener + Ext component `change` (เผื่อ spinner buttons / setValue) + polling 500ms. Round 2 decimals |
 | **2.2.2** | **Fix: MtypeID leading-zero**: Ext combobox `tab1_claim_MtypeID` เก็บ value เป็น `"01"-"04"` (จาก store field `clMTID`) แต่ `readMtypeId()` เทียบกับ `"1"-"4"` ตรง ๆ → `mt12`/`mt34` เป็น false ทั้งคู่ → multi-field sync ไม่ทำงานเมื่อเลือกผ่าน UI (INS_INVEST/INS_PHOTO ไม่ถูกเซ็ต). Fix: strip leading zero ใน `readMtypeId()` ด้วย `replace(/^0+(?=\d)/, "")` |
