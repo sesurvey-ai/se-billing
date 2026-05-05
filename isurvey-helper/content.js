@@ -85,8 +85,8 @@
       recvClaimInputId:    'tab1_RECV_CLAIM-inputEl',
       surClaimCmpId:       'tab1_SUR_CLAIM',               // textfield 5% ของ RECV_CLAIM
       surClaimInput:       'input#tab1_SUR_CLAIM-inputEl',
-      insDailyCmpId:       'tab1_INS_DAILY',               // textfield 10% ของ RECV_CLAIM
-      insDailyInput:       'input#tab1_INS_DAILY-inputEl',
+      insClaimCmpId:       'tab1_INS_CLAIM',               // textfield 10% ของ RECV_CLAIM
+      insClaimInput:       'input#tab1_INS_CLAIM-inputEl',
     },
     CFG.selectors || {}
   );
@@ -541,7 +541,7 @@
   /**
    * RECV_CLAIM (ค่าเรียกร้อง) > 0 → คำนวณ %:
    *   SUR_CLAIM  = RECV_CLAIM * 5%
-   *   INS_DAILY  = RECV_CLAIM * 10%
+   *   INS_CLAIM  = RECV_CLAIM * 10%
    * ถ้า ≤ 0 หรือว่าง → clear ทั้งสอง
    * ทำงานทุก mode (ไม่ขึ้นกับ AMPHUR_FEE_TABLE หรือ enabledProvinces)
    */
@@ -560,14 +560,14 @@
 
     if (isEmpty) {
       setOneField(SEL.surClaimCmpId, SEL.surClaimInput, "", "SUR_CLAIM (RECV ว่าง/0 → clear)");
-      setOneField(SEL.insDailyCmpId, SEL.insDailyInput, "", "INS_DAILY (RECV ว่าง/0 → clear)");
+      setOneField(SEL.insClaimCmpId, SEL.insClaimInput, "", "INS_CLAIM (RECV ว่าง/0 → clear)");
       return;
     }
 
-    const sur5    = Math.round(num * 0.05 * 100) / 100;
-    const daily10 = Math.round(num * 0.10 * 100) / 100;
-    setOneField(SEL.surClaimCmpId, SEL.surClaimInput, sur5,    `SUR_CLAIM (5% ของ ${num})`);
-    setOneField(SEL.insDailyCmpId, SEL.insDailyInput, daily10, `INS_DAILY (10% ของ ${num})`);
+    const pct5  = Math.round(num * 0.05 * 100) / 100;
+    const pct10 = Math.round(num * 0.10 * 100) / 100;
+    setOneField(SEL.surClaimCmpId, SEL.surClaimInput, pct5,  `SUR_CLAIM (5% ของ ${num})`);
+    setOneField(SEL.insClaimCmpId, SEL.insClaimInput, pct10, `INS_CLAIM (10% ของ ${num})`);
   }
 
   /**
