@@ -420,23 +420,15 @@ isurvey-helper/
 
 ## Known Limitations / Future Considerations
 
-### Province / amphur dropdown — ไม่มี filter, พิมพ์ค้นหาไม่ได้
+### Province / amphur dropdown — filter ตาม whitelist (ยังไม่ทำ)
 
-Combobox จังหวัด/อำเภอ/ตำบล (`tab1_survey_provinceID` / `_amphurID` /
-`_tumbonID`) บน iSurvey ตั้งไว้ที่ `editable: false`, `typeAhead: false`
-ทำให้ user ต้อง scroll หาเองในรายการ 77 จังหวัด / 1004 อำเภอ ถึงแม้จะใช้
-จริงแค่ 21 จังหวัด / 315 อำเภอ ที่อยู่ใน `enabledProvinces` /
-`AMPHUR_FEE_TABLE`
+Extension เปิด **type-ahead** ให้แล้ว (v2.4.0+) — user พิมพ์ค้นหาได้
+แต่ยังไม่ได้กรอง dropdown เหลือเฉพาะ 21 จังหวัด / 315 อำเภอ ที่อยู่ใน
+`enabledProvinces` / `AMPHUR_FEE_TABLE`
 
-**ตอนนี้:** Extension ยังไม่จัดการ — user ต้อง scroll เอง
-
-**ทางเลือกสำหรับอนาคต** (ถ้าจะ implement):
-1. **Filter** — `Ext.getCmp(id).getStore().filterBy(rec => allow.has(rec.get('provinceID')))` เหลือเฉพาะที่ใช้งาน
-2. **Enable type-ahead** — `cmp.setEditable(true); cmp.typeAhead = true;` ที่ runtime
-3. **ทั้งคู่** — filter + type-ahead
-
-ต้อง re-attach หลัง host re-render combobox (pattern เดียวกับ
-`attachAllExtListeners` ใน [content.js](./content.js))
+**ทางเลือกถ้าจะกรองด้วย** (future work):
+- `Ext.getCmp(id).getStore().filterBy(rec => allow.has(rec.get('provinceID')))` เหลือเฉพาะที่ใช้งาน
+- ต้อง re-attach หลัง host re-render combobox (pattern เดียวกับ `attachAllExtListeners` / `enableAllTypeAhead`)
 
 ---
 
@@ -444,6 +436,7 @@ Combobox จังหวัด/อำเภอ/ตำบล (`tab1_survey_provin
 
 | Version | การเปลี่ยนแปลง |
 |---------|--------------|
+| **2.4.0** | **เปิด type-ahead บน combobox จังหวัด/อำเภอ/ตำบล**: host ตั้ง `editable: false, typeAhead: false` ทำให้ user พิมพ์ค้นหาไม่ได้ ต้อง scroll หาในรายการ 77 จังหวัด / 1004 อำเภอ. แก้ runtime ผ่าน `cmp.setEditable(true); cmp.typeAhead = true; cmp.queryMode = "local"; cmp.minChars = 0` + ลบ readonly attribute. ใช้ flag `__iSurveyHelperTypeAheadEnabled` กัน double-apply + re-apply อัตโนมัติทุก 500ms ถ้า Ext destroy/recreate cmp |
 | **2.3.4** | **Auto-clear INS_TRANS / INS_PHOTO เมื่อ table ไม่ระบุ**: ใน multi-field mode — ถ้า amphur entry ไม่มี `INS_TRANS` หรือ `INS_PHOTO_12` ให้ clear field ที่เกี่ยวข้องอัตโนมัติ (เดิม: ปล่อยค่าเดิมค้างไว้). กระทบเฉพาะ กทม. ทุกอำเภอ (entry มีแค่ SUR/INS_INVEST_12/34 ไม่มี TRANS/PHOTO_12) → ค่าเดินทาง/ค่ารูป จะถูก clear ทันทีเมื่อเลือก กทม. — สอดคล้องกับ Google Sheet ที่ไม่ได้กำหนดสองค่านี้สำหรับ กทม. |
 | **2.3.3** | **Fix: BMR PROVINCE_FEE_MAP**: ปรับ `PROVINCE_FEE_MAP` ให้สอดคล้องกับ multi-field rate ของ BMR — `10/11/12/13` = 300 ทุกจังหวัด (เดิม `10:700, 11/12:800`). ใช้เป็น fallback rate ตอน user เลือกแค่จังหวัดยังไม่เลือกอำเภอ — ก่อนหน้านี้แสดง 800 ก่อนแล้วค่อยเปลี่ยนเป็น 300 หลังเลือกอำเภอ ทำให้สับสน |
 | **2.3.2** | **Region: BMR**: เพิ่ม 4 จังหวัดในกลุ่มกรุงเทพและปริมณฑล (กทม. 50 amphur / สมุทรปราการ 6 / นนทบุรี 6 / ปทุมธานี 8) เข้า `AMPHUR_FEE_TABLE` รวมเป็น **21 จังหวัด, 315 อำเภอ**. กทม.: SUR=300, INS_12=INS_34=700 (ไม่มี TRANS/PHOTO). อีก 3 จังหวัด: SUR=300, INS_12=300, INS_34=200, TRANS=500, PHOTO_12=50. เพิ่ม "13" ใน `enabledProvinces` (รวม 21 จังหวัด) |

@@ -49,6 +49,9 @@
       provinceHidden:   'input[type="hidden"][name="tab1_survey_provinceID"]',
       amphurHidden:     'input[type="hidden"][name="tab1_survey_amphurID"]',
       tumbonHidden:     'input[type="hidden"][name="tab1_survey_tumbonID"]',
+      provinceCmpId:    'tab1_survey_provinceID',  // combobox component (พิมพ์ค้นหา)
+      amphurCmpId:      'tab1_survey_amphurID',
+      tumbonCmpId:      'tab1_survey_tumbonID',
       feeInput:         'input#tab1_SUR_INVEST-inputEl',
       feeCmpId:         'tab1_SUR_INVEST',
       outOfAreaCmpId:      'tab1_chk_co_area',
@@ -815,10 +818,42 @@
     attachExtChangeListener(SEL.recvClaimCmpId, "RecvClaim");
   }
 
+  /**
+   * เปิด type-ahead บน combobox จังหวัด/อำเภอ/ตำบล —
+   * host ตั้ง editable=false, typeAhead=false ทำให้ user พิมพ์ค้นหาไม่ได้
+   * ใช้ flag บน cmp กัน double-apply; re-apply อัตโนมัติถ้า Ext recreate
+   */
+  function enableTypeAhead(cmpId) {
+    const cmp = getExtCmp(cmpId);
+    if (!cmp) return false;
+    if (cmp.__iSurveyHelperTypeAheadEnabled) return true;
+    cmp.__iSurveyHelperTypeAheadEnabled = true;
+    try {
+      if (typeof cmp.setEditable === "function") cmp.setEditable(true);
+      else cmp.editable = true;
+      cmp.typeAhead = true;
+      cmp.queryMode = "local";
+      cmp.minChars = 0;
+      if (cmp.inputEl && cmp.inputEl.dom) cmp.inputEl.dom.removeAttribute("readonly");
+      log(`Type-ahead enabled: ${cmpId}`);
+    } catch (e) {
+      warn(`Failed to enable type-ahead on ${cmpId}:`, e);
+      return false;
+    }
+    return true;
+  }
+
+  function enableAllTypeAhead() {
+    enableTypeAhead(SEL.provinceCmpId);
+    enableTypeAhead(SEL.amphurCmpId);
+    enableTypeAhead(SEL.tumbonCmpId);
+  }
+
   function startPolling() {
     setInterval(() => {
       attachAllLocationObservers();
       attachAllExtListeners();
+      enableAllTypeAhead();
       syncFeeFromLocation();
     }, CFG.pollIntervalMs);
   }
@@ -884,6 +919,7 @@
 
     attachAllLocationObservers();
     attachAllExtListeners();
+    enableAllTypeAhead();
     attachModifierListeners();
     attachSaveButtonListener();
     syncFeeFromLocation();
