@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Runtime DB (machine-specific — backup separately)
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

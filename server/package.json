@@ -1,0 +1,19 @@
+{
+  "name": "isurvey-helper-server",
+  "version": "1.0.0",
+  "description": "Backend server for I Survey Auto-Fill Helper — config CRUD + capture log",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.0"
+  }
+}

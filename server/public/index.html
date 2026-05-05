@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>I Survey Helper — เรทราคา</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1><a href="/">I Survey Helper</a></h1>
+    <div class="nav-links">
+      <a href="/" class="active">เรทราคา</a>
+      <a href="/captures">รายละเอียด</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="summary-row" id="summary"></div>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="amphur-table">ตารางหลายช่อง (Multi-field)</button>
+      <button class="tab" data-tab="province-map">จังหวัด (Simple)</button>
+      <button class="tab" data-tab="amphur-map">อำเภอ override</button>
+      <button class="tab" data-tab="tumbon-map">ตำบล override</button>
+      <button class="tab" data-tab="enabled">Enabled provinces</button>
+      <button class="tab" data-tab="modifiers">Modifiers</button>
+    </nav>
+
+    <section class="panel" data-panel="amphur-table">
+      <div class="panel-header">
+        <h2>ตารางหลายช่อง (Multi-field)</h2>
+        <p class="hint">เรตของอำเภอที่อยู่ในระบบ multi-field — เติม SUR_INVEST + INS_INVEST_12/_34 + INS_TRANS + INS_PHOTO_12</p>
+        <div class="panel-actions">
+          <input type="search" id="search-amphur-table" placeholder="ค้น ID หรือชื่ออำเภอ/จังหวัด..." class="search" />
+          <span class="info" id="count-amphur-table"></span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>amphurID</th><th>จังหวัด</th><th>อำเภอ</th>
+              <th class="center">พนักงาน</th><th class="center">ค่าบริการ_12</th><th class="center">ค่าบริการ_34</th>
+              <th class="center">ค่าพาหนะ</th><th class="center">รูป</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-amphur-table"></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-amphur-table">ยังไม่มีรายการ</div>
+      </div>
+    </section>
+
+    <section class="panel hidden" data-panel="province-map">
+      <div class="panel-header"><h2>จังหวัด (Simple mode)</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>provinceID</th><th>ชื่อจังหวัด</th><th class="numeric">SUR_INVEST</th></tr></thead>
+          <tbody id="tbody-province-map"></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-province-map">ยังไม่มีรายการ</div>
+      </div>
+    </section>
+
+    <section class="panel hidden" data-panel="amphur-map">
+      <div class="panel-header"><h2>อำเภอ override (Simple mode)</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>amphurID</th><th>จังหวัด</th><th>อำเภอ</th><th class="numeric">SUR_INVEST</th></tr></thead>
+          <tbody id="tbody-amphur-map"></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-amphur-map">ยังไม่มีรายการ</div>
+      </div>
+    </section>
+
+    <section class="panel hidden" data-panel="tumbon-map">
+      <div class="panel-header"><h2>ตำบล override (Simple mode)</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>tumbonID</th><th>จังหวัด</th><th>อำเภอ</th><th>ตำบล</th><th class="numeric">SUR_INVEST</th></tr></thead>
+          <tbody id="tbody-tumbon-map"></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-tumbon-map">ยังไม่มีรายการ</div>
+      </div>
+    </section>
+
+    <section class="panel hidden" data-panel="enabled">
+      <div class="panel-header"><h2>Enabled provinces (whitelist)</h2></div>
+      <div id="enabled-list" class="checkbox-grid"></div>
+    </section>
+
+    <section class="panel hidden" data-panel="modifiers">
+      <div class="panel-header"><h2>Modifier defaults</h2></div>
+      <div id="modifiers-view"></div>
+    </section>
+  </main>
+
+  <script src="/api.js"></script>
+  <script src="/viewer.js"></script>
+</body>
+</html>

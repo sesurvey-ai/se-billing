@@ -1,0 +1,15 @@
+จังหวัดที่ตรวจสอบ   tab1_survey_provinceID-inputEl
+อำเภอที่ตรวจสอบ    tab1_survey_amphurID-inputEl
+ประเภทเคลม  tab1_claim_MtypeID-inputEl  
+            1 เคลมสด
+            2 เคลมแห้ง
+            3 ติดตาม
+            4 เจรจาสินไหม
+
+เสนอ
+ค่าบริการ tab1_SUR_INVEST-inputEl
+
+จำนวนเงินอนุมัติ
+ค่าบริการ tab1_INS_INVEST-inputEl
+ค่าเดินทาง/ค่าพาหนะ    tab1_INS_TRANS-inputEl
+ค่ารูปถ่าย tab1_INS_PHOTO-inputEl

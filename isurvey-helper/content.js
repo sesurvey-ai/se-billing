@@ -20,12 +20,15 @@
   if (window.__iSurveyHelperLoaded) return;
   window.__iSurveyHelperLoaded = true;
 
-  // ── ดึง config จาก config.js (รันก่อนหน้าใน MAIN world) ──
-  const PROVINCE_MAP = window.PROVINCE_FEE_MAP || {};
-  const AMPHUR_MAP   = window.AMPHUR_FEE_MAP   || {};
-  const TUMBON_MAP   = window.TUMBON_FEE_MAP   || {};
-
-  const CFG = Object.assign(
+  // ── Live readers — อ่าน window.X ทุกครั้ง เพื่อรับ live update จาก admin ──
+  // Maps + dynamic fields (modifierFees, enabledProvinces) มาจาก chrome.storage
+  // ผ่าน config-bridge.js → set window.X. Static fields (selectors, debug, ฯลฯ)
+  // อยู่ใน window.ISURVEY_HELPER_CONFIG ตลอดเพราะ config-bridge.js seed ก่อน content.js
+  const getProvinceMap  = () => window.PROVINCE_FEE_MAP || {};
+  const getAmphurMap    = () => window.AMPHUR_FEE_MAP   || {};
+  const getTumbonMap    = () => window.TUMBON_FEE_MAP   || {};
+  const getAmphurTable  = () => window.AMPHUR_FEE_TABLE || {};
+  const getCFG = () => Object.assign(
     {
       pollIntervalMs: 500,
       highlightColor: "#fff59d",
@@ -38,6 +41,9 @@
     window.ISURVEY_HELPER_CONFIG || {}
   );
 
+  // ── Static config snapshot สำหรับการ init/poll (modifier/whitelist อ่านสด) ──
+  const CFG = getCFG();
+
   const SEL = Object.assign(
     {
       provinceHidden:   'input[type="hidden"][name="tab1_survey_provinceID"]',
@@ -46,13 +52,34 @@
       feeInput:         'input#tab1_SUR_INVEST-inputEl',
       feeCmpId:         'tab1_SUR_INVEST',
       outOfAreaCmpId:      'tab1_chk_co_area',
-      outOfAreaAmountCmpId:'tab1_chk_co_area_amount',          // numberfield ที่ user กรอกยอดเอง
+      outOfAreaAmountCmpId:'tab1_chk_co_area_amount',          // numberfield ที่ user กรอกยอดเอง (นอกพื้นที่)
       outOfAreaAmountInputId: 'tab1_chk_co_area_amount-inputEl',
       inOutGroupCmpId:     'tab1_grd-in_out',
       outOfAreaInput:      'input#tab1_chk_co_area-inputEl',
       outOfAreaInputId:    'tab1_chk_co_area-inputEl',
       inOutRadioName:      'tab1_rd-in_out',
       outValueLabel:       'นอก',
+      outOfHoursAmountCmpId:    'tab1_rd_out_amount',           // numberfield ที่ user กรอกยอดเอง (นอกเวลา)
+      outOfHoursAmountInputId:  'tab1_rd_out_amount-inputEl',
+      mtypeIdCmpId:        'tab1_claim_MtypeID',
+      mtypeIdInput:        'input#tab1_claim_MtypeID-inputEl',
+      mtypeIdInputId:      'tab1_claim_MtypeID-inputEl',
+      surveyorNameCmpId:   'tab1_surveyor_name',
+      surveyorNameInput:   'input#tab1_surveyor_name-inputEl',
+      surveyorNameInputId: 'tab1_surveyor_name-inputEl',
+      insInvestCmpId:      'tab1_INS_INVEST',
+      insInvestInput:      'input#tab1_INS_INVEST-inputEl',
+      insTransCmpId:       'tab1_INS_TRANS',
+      insTransInput:       'input#tab1_INS_TRANS-inputEl',
+      insPhotoCmpId:       'tab1_INS_PHOTO',
+      insPhotoInput:       'input#tab1_INS_PHOTO-inputEl',
+      deductAmountCmpId:   'tab1_deduct_amount',           // numberfield ที่ user กรอกยอด "หักเงิน"
+      deductAmountInputId: 'tab1_deduct_amount-inputEl',
+      lateSubmitCmpId:     'tab1_deduct_late_submit',      // checkbox "ส่งช้า"
+      lateSubmitInputId:   'tab1_deduct_late_submit-inputEl',
+      incompleteDocsCmpId: 'tab1_deduct_incomplete_docs',  // checkbox "เอกสารไม่ครบ"
+      incompleteDocsInputId:'tab1_deduct_incomplete_docs-inputEl',
+      deductWarningCmpId:  'tab1_deduct_warning',          // label เตือน deduct ไม่ระบุเหตุผล
     },
     CFG.selectors || {}
   );
@@ -155,6 +182,62 @@
     return el ? (el.value || "") : "";
   }
 
+  /**
+   * อ่าน MtypeID ปัจจุบัน → "1"/"2"/"3"/"4" หรือ "" ถ้าว่าง
+   *   1 = เคลมสด, 2 = เคลมแห้ง, 3 = ติดตาม, 4 = เจรจาสินไหม
+   * พยายาม Ext.getValue() ก่อน (คืน underlying ID); fallback อ่าน text แล้ว map
+   */
+  const MTYPE_LABEL_TO_ID = {
+    "เคลมสด":      "1",
+    "เคลมแห้ง":    "2",
+    "ติดตาม":      "3",
+    "เจรจาสินไหม": "4",
+  };
+  function readMtypeId() {
+    const cmp = getExtCmp(SEL.mtypeIdCmpId);
+    if (cmp && typeof cmp.getValue === "function") {
+      const v = cmp.getValue();
+      if (v !== null && v !== undefined && v !== "") return String(v);
+    }
+    const el = document.querySelector(SEL.mtypeIdInput);
+    const txt = el ? (el.value || "").trim() : "";
+    return MTYPE_LABEL_TO_ID[txt] || "";
+  }
+
+  /**
+   * อ่านชื่อ "เจ้าหน้าที่ตรวจงาน" จาก header (user ที่ login)
+   * จาก <div id="main-tab_header-title-textEl">…Hi, นายนพดล สมบูรณ์กุล</div>
+   * → ตัด "Hi, " + ตัดคำนำหน้าไทย (นาย/นาง/นางสาว/ด.ช./ด.ญ./เด็กชาย/เด็กหญิง)
+   * คืน "นพดล สมบูรณ์กุล" หรือ null ถ้าไม่เจอ element
+   *
+   * Note: เรียงคำนำหน้ายาว→สั้น เพราะ JS regex alternation match ตัวแรกที่เจอ
+   * (นางสาว ก่อน นาง — ไม่งั้น "นางสาวสมศรี" จะถูกตัดเหลือ "สาวสมศรี")
+   */
+  const TITLE_PREFIX_RE = /^(นางสาว|นาง|นาย|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/;
+  function readInspectorName() {
+    const el = document.getElementById("main-tab_header-title-textEl");
+    if (!el) return null;
+    let text = (el.textContent || "").trim();
+    if (!text) return null;
+    text = text.replace(/^Hi\s*,?\s*/i, "").trim(); // ตัด "Hi, " (มี/ไม่มี comma + spaces)
+    text = text.replace(TITLE_PREFIX_RE, "").trim();
+    return text || null;
+  }
+
+  /**
+   * อ่านชื่อ surveyor จาก DOM input โดยตรง (`tab1_surveyor_name-inputEl`) —
+   * ไม่ใช้ Ext.getValue() เพราะอาจคืนค่าภายใน (ID/code) ไม่ใช่ชื่อที่แสดง
+   */
+  function readSurveyorName() {
+    const el = document.getElementById(SEL.surveyorNameInputId);
+    return (el && el.value ? String(el.value) : "").trim();
+  }
+
+  /** พนักงาน SE? — ตรวจชื่อ surveyor ขึ้นต้นด้วย "se" (case insensitive) */
+  function isSurveyorSE() {
+    return /^se/i.test(readSurveyorName());
+  }
+
   function lookupName(level, id) {
     const ref = window.__ISURVEY_REF__;
     if (!ref || !id) return "";
@@ -171,6 +254,9 @@
   // ─────────────────────────────────────────────────────────
 
   function lookupFee(provinceId, amphurId, tumbonId) {
+    const TUMBON_MAP   = getTumbonMap();
+    const AMPHUR_MAP   = getAmphurMap();
+    const PROVINCE_MAP = getProvinceMap();
     if (tumbonId && Object.prototype.hasOwnProperty.call(TUMBON_MAP, tumbonId)) {
       return { fee: TUMBON_MAP[tumbonId], level: "tumbon", id: tumbonId };
     }
@@ -205,7 +291,7 @@
    * - field มีค่าตัวเลขถูกต้อง (รวม 0) → ใช้ค่านั้น
    */
   function getOutOfAreaAmount() {
-    const defaultAmt = CFG.modifierFees.outOfArea;
+    const defaultAmt = (getCFG().modifierFees || {}).outOfArea || 0;
     const cmp = getExtCmp(SEL.outOfAreaAmountCmpId);
     if (cmp && typeof cmp.getValue === "function") {
       const v = cmp.getValue();
@@ -214,6 +300,68 @@
       }
     }
     return { amount: defaultAmt, source: "default" };
+  }
+
+  /**
+   * อ่านยอดเงินที่ user กรอกใน numberfield "นอกเวลา"
+   * คืน { amount, source } โดย source = "custom" ถ้าได้จาก field, "default" ถ้า fallback
+   */
+  function getOutOfHoursAmount() {
+    const defaultAmt = (getCFG().modifierFees || {}).outOfHours || 0;
+    const cmp = getExtCmp(SEL.outOfHoursAmountCmpId);
+    if (cmp && typeof cmp.getValue === "function") {
+      const v = cmp.getValue();
+      if (v !== null && v !== undefined && v !== "" && !isNaN(v)) {
+        return { amount: Number(v), source: "custom" };
+      }
+    }
+    return { amount: defaultAmt, source: "default" };
+  }
+
+  /**
+   * อ่านยอด "หักเงิน" ที่ user กรอกในแถว 7 (inject โดย feature-deduct-amount.js)
+   * คืน amount > 0 เมื่อ user กรอก, 0 เมื่อว่าง/ไม่มี field
+   * (ไม่มี toggle — field value = 0 หมายความว่า "ไม่หัก")
+   */
+  function getDeductAmount() {
+    const cmp = getExtCmp(SEL.deductAmountCmpId);
+    if (cmp && typeof cmp.getValue === "function") {
+      const v = cmp.getValue();
+      if (v !== null && v !== undefined && v !== "" && !isNaN(v)) {
+        const n = Number(v);
+        if (n > 0) return n;
+      }
+    }
+    return 0;
+  }
+
+  function readDeductFlag(cmpId, fallbackInputId) {
+    const cmp = getExtCmp(cmpId);
+    if (cmp && typeof cmp.getValue === "function") return cmp.getValue() === true;
+    const el = document.getElementById(fallbackInputId);
+    return !!(el && el.checked);
+  }
+  const isLateSubmit     = () => readDeductFlag(SEL.lateSubmitCmpId,     SEL.lateSubmitInputId);
+  const isIncompleteDocs = () => readDeductFlag(SEL.incompleteDocsCmpId, SEL.incompleteDocsInputId);
+
+  /**
+   * Validate deduct: ถ้ากรอกยอด > 0 ต้องติ๊กอย่างน้อย 1 ใน 2 (ส่งช้า / เอกสารไม่ครบ)
+   * คืน { valid, deduct, late, docs }
+   */
+  function checkDeductValid() {
+    const deduct = getDeductAmount();
+    const late   = isLateSubmit();
+    const docs   = isIncompleteDocs();
+    const valid  = deduct === 0 || late || docs;
+    return { valid, deduct, late, docs };
+  }
+
+  /** อัพเดท visibility ของ warning label ให้ตรงกับสถานะ */
+  function updateDeductWarning() {
+    const { valid, deduct } = checkDeductValid();
+    const cmp = getExtCmp(SEL.deductWarningCmpId);
+    if (!cmp || typeof cmp.setVisible !== "function") return;
+    cmp.setVisible(deduct > 0 && !valid);
   }
 
   function isOutOfHoursSelected() {
@@ -234,7 +382,6 @@
   }
 
   function getActiveModifiers() {
-    const m = CFG.modifierFees || {};
     const list = [];
     if (isOutOfAreaChecked()) {
       // ค่ามาจาก numberfield ก่อน → fallback default จาก config
@@ -248,8 +395,20 @@
         });
       }
     }
-    if (m.outOfHours && isOutOfHoursSelected()) {
-      list.push({ key: "outOfHours", label: "นอกเวลา", amount: m.outOfHours });
+    if (isOutOfHoursSelected()) {
+      const { amount, source } = getOutOfHoursAmount();
+      if (amount !== 0 || source === "custom") {
+        list.push({
+          key: "outOfHours",
+          label: source === "custom" ? "นอกเวลา (custom)" : "นอกเวลา",
+          amount: amount,
+        });
+      }
+    }
+    // หักเงิน: ไม่มี toggle — value > 0 ก็หัก (negative modifier)
+    const deduct = getDeductAmount();
+    if (deduct > 0) {
+      list.push({ key: "deduct", label: "หักเงิน", amount: -deduct });
     }
     return list;
   }
@@ -259,20 +418,89 @@
   // ─────────────────────────────────────────────────────────
 
   function isProvinceEnabled(provinceId) {
-    const allow = CFG.enabledProvinces || [];
+    const allow = getCFG().enabledProvinces || [];
     if (!allow.length) return true;          // [] = อนุญาตทุกจังหวัด
     return allow.includes(String(provinceId));
   }
 
-  function syncFeeFromLocation() {
+  /**
+   * ตั้งค่าฟิลด์ตัวเดียว (มี skip-if-same + flash + log) — utility สำหรับ multi-field mode
+   * ส่ง value = "" หรือ null → clear ฟิลด์ (ใช้ตอน MtypeID เปลี่ยนแล้วฟิลด์เดิมไม่ valid อีกแล้ว)
+   */
+  function setOneField(cmpId, sel, value, label) {
+    const el = document.querySelector(sel);
+    if (!el) return false;
+
+    const isClear = (value === "" || value === null || value === undefined);
+    if (isClear) {
+      // ถ้าฟิลด์ว่างอยู่แล้ว → ไม่ต้องแตะ (กัน flash ทุกรอบ poll)
+      if (!el.value || String(el.value).trim() === "") return false;
+    } else {
+      if (isSameNumeric(el.value, value)) return false;
+    }
+
+    const mode = setFieldValue(cmpId, el, isClear ? "" : value);
+    if (!mode) {
+      warn("ไม่พบ component/element สำหรับ", cmpId);
+      return false;
+    }
+    flashHighlight(el);
+    log(`Set ${label} = ${isClear ? "(cleared)" : value} [${mode}]`);
+    return true;
+  }
+
+  /**
+   * Multi-field mode: ใช้กับอำเภอที่อยู่ใน AMPHUR_FEE_TABLE
+   * เติมหลายช่อง (SUR_INVEST / INS_INVEST / INS_TRANS / INS_PHOTO) ตาม MtypeID + SE/non-SE
+   */
+  function syncMultiFields(amphurId, tbl) {
+    const mtype = readMtypeId();
+    const isSE  = isSurveyorSE();
+    const mt12  = (mtype === "1" || mtype === "2");
+    const mt34  = (mtype === "3" || mtype === "4");
+
+    // SUR_INVEST: เฉพาะ SE — ค่าเดียวต่ออำเภอ ทุก MtypeID + บวก modifier "นอกพื้นที่"/"นอกเวลา"
+    if (isSE && tbl.SUR_INVEST !== undefined) {
+      const mods = getActiveModifiers();
+      const total = mods.reduce((sum, m) => sum + m.amount, tbl.SUR_INVEST);
+      const modLabel = mods.length
+        ? " " + mods.map(m => `${m.amount >= 0 ? "+" : ""}${m.amount} ${m.label}`).join(" ")
+        : "";
+      setOneField(SEL.feeCmpId, SEL.feeInput, total,
+        `SUR_INVEST [amphur ${amphurId}] (base ${tbl.SUR_INVEST}${modLabel})`);
+    }
+
+    // INS_INVEST: เลือกตาม MtypeID (1-2 vs 3-4)
+    if (mt12 && tbl.INS_INVEST_12 !== undefined) {
+      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, tbl.INS_INVEST_12,
+        `INS_INVEST [amphur ${amphurId}, MtypeID ${mtype}=เคลม${mtype === "1" ? "สด" : "แห้ง"}]`);
+    } else if (mt34 && tbl.INS_INVEST_34 !== undefined) {
+      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, tbl.INS_INVEST_34,
+        `INS_INVEST [amphur ${amphurId}, MtypeID ${mtype}=${mtype === "3" ? "ติดตาม" : "เจรจาสินไหม"}]`);
+    }
+
+    // INS_TRANS: ทุก MtypeID (ขึ้นกับอำเภออย่างเดียว)
+    if (tbl.INS_TRANS !== undefined) {
+      setOneField(SEL.insTransCmpId, SEL.insTransInput, tbl.INS_TRANS,
+        `INS_TRANS [amphur ${amphurId}]`);
+    }
+
+    // INS_PHOTO: เฉพาะ MtypeID 1-2 — เมื่อ 3-4 ให้ auto-clear (ป้องกันค่าเก่าค้าง)
+    if (mt12 && tbl.INS_PHOTO_12 !== undefined) {
+      setOneField(SEL.insPhotoCmpId, SEL.insPhotoInput, tbl.INS_PHOTO_12,
+        `INS_PHOTO [amphur ${amphurId}, MtypeID ${mtype}]`);
+    } else if (mt34) {
+      setOneField(SEL.insPhotoCmpId, SEL.insPhotoInput, "",
+        `INS_PHOTO [MtypeID ${mtype} → clear]`);
+    }
+  }
+
+  /**
+   * Simple mode: SUR_INVEST อย่างเดียว (เดิม) — กทม., สมุทรปราการ ฯลฯ
+   */
+  function syncSurInvestSimple(provinceId, amphurId, tumbonId) {
     const feeEl = document.querySelector(SEL.feeInput);
     if (!feeEl) return;
-
-    const provinceId = readHiddenValue(SEL.provinceHidden);
-    const amphurId   = readHiddenValue(SEL.amphurHidden);
-    const tumbonId   = readHiddenValue(SEL.tumbonHidden);
-
-    if (!isProvinceEnabled(provinceId)) return; // นอก whitelist → ไม่แตะ
 
     const base = lookupFee(provinceId, amphurId, tumbonId);
     if (!base) return; // ไม่มีในตาราง
@@ -280,7 +508,7 @@
     const mods = getActiveModifiers();
     const total = mods.reduce((sum, m) => sum + m.amount, base.fee);
 
-    if (isSameNumeric(feeEl.value, total)) return; // ตรงแล้ว ข้าม
+    if (isSameNumeric(feeEl.value, total)) return;
 
     const mode = setFieldValue(SEL.feeCmpId, feeEl, total);
     if (!mode) {
@@ -297,6 +525,142 @@
     log(
       `Set ค่าบริการ = ${total} (base ${base.fee} [${baseLabel}]${modLabel}) [${mode}]`
     );
+  }
+
+  /**
+   * Entry point: เลือก mode ตามว่า amphurId อยู่ใน AMPHUR_FEE_TABLE หรือไม่
+   *   - อยู่ → multi-field (ระยอง)
+   *   - ไม่อยู่ → simple SUR_INVEST (กทม. ฯลฯ)
+   */
+  function syncFeeFromLocation() {
+    const provinceId = readHiddenValue(SEL.provinceHidden);
+    const amphurId   = readHiddenValue(SEL.amphurHidden);
+    const tumbonId   = readHiddenValue(SEL.tumbonHidden);
+
+    if (!isProvinceEnabled(provinceId)) return; // นอก whitelist → ไม่แตะ
+
+    const tbl = getAmphurTable()[amphurId];
+    if (tbl) {
+      syncMultiFields(amphurId, tbl);
+    } else {
+      syncSurInvestSimple(provinceId, amphurId, tumbonId);
+    }
+
+    // อัพเดท warning label (ตอบสนองทันที)
+    updateDeductWarning();
+
+    // Note: capture จะส่งตอนกดปุ่ม "ยืนยันการตรวจสอบ" (#tab1_save) เท่านั้น
+    // — ไม่ใช่ตอนเปลี่ยนค่าในฟอร์ม (เลิก debounce แล้ว)
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Capture: snapshot ของฟอร์ม → ส่งไป ISOLATED → background → server
+  // Trigger: ผูกกับการกดปุ่ม "ยืนยันการตรวจสอบ" (#tab1_save) เท่านั้น
+  //          — 1 click = 1 capture (ถ้าค่าเปลี่ยนจากครั้งก่อน)
+  // ─────────────────────────────────────────────────────────
+
+  let lastCaptureSig = "";  // dedup: skip ถ้า payload เหมือนรอบก่อน
+
+  function readExtNumber(cmpId, sel) {
+    const cmp = getExtCmp(cmpId);
+    if (cmp && typeof cmp.getValue === "function") {
+      const v = cmp.getValue();
+      if (v !== null && v !== undefined && v !== "") {
+        const n = Number(String(v).replace(/,/g, ""));
+        if (!isNaN(n)) return n;
+      }
+    }
+    if (sel) {
+      const el = document.querySelector(sel);
+      if (el && el.value) {
+        const n = Number(String(el.value).replace(/,/g, ""));
+        if (!isNaN(n)) return n;
+      }
+    }
+    return null;
+  }
+
+  function buildCapture() {
+    const provinceId = readHiddenValue(SEL.provinceHidden);
+    const amphurId   = readHiddenValue(SEL.amphurHidden);
+    const tumbonId   = readHiddenValue(SEL.tumbonHidden);
+    if (!provinceId && !amphurId) return null; // ยังไม่เลือกอะไร — ไม่ capture
+    if (!isProvinceEnabled(provinceId)) return null;
+
+    // กฎ: ถ้ากรอกยอดหัก ต้องระบุเหตุผล (ส่งช้า / เอกสารไม่ครบ) อย่างน้อย 1 ข้อ
+    // ไม่งั้น skip capture เพื่อกัน DB เก็บ deduct โดยไม่มีเหตุผล
+    const dv = checkDeductValid();
+    if (!dv.valid) {
+      log(`Capture skipped: หักเงิน ${dv.deduct} บาท แต่ยังไม่ติ๊กเหตุผล`);
+      return null;
+    }
+
+    const surveyorName = readSurveyorName();
+
+    const outOfArea  = isOutOfAreaChecked();
+    const outOfHours = isOutOfHoursSelected();
+    const outOfAreaInfo  = outOfArea  ? getOutOfAreaAmount()  : null;
+    const outOfHoursInfo = outOfHours ? getOutOfHoursAmount() : null;
+    const deduct = getDeductAmount();
+
+    const tbl = getAmphurTable()[amphurId];
+    const mode = tbl ? "multi-field" : "simple";
+
+    return {
+      ts: new Date().toISOString(),
+      province_id: provinceId || null,
+      province_name: lookupName("province", provinceId) || null,
+      amphur_id: amphurId || null,
+      amphur_name: lookupName("amphur", amphurId) || null,
+      tumbon_id: tumbonId || null,
+      tumbon_name: lookupName("tumbon", tumbonId) || null,
+      mtype_id: readMtypeId() || null,
+      surveyor_name: surveyorName || null,
+      is_se: isSurveyorSE(),
+      inspector_name: readInspectorName(),
+      sur_invest: readExtNumber(SEL.feeCmpId, SEL.feeInput),
+      ins_invest: readExtNumber(SEL.insInvestCmpId, SEL.insInvestInput),
+      ins_trans:  readExtNumber(SEL.insTransCmpId, SEL.insTransInput),
+      ins_photo:  readExtNumber(SEL.insPhotoCmpId, SEL.insPhotoInput),
+      out_of_area: outOfArea,
+      out_of_area_amt: outOfAreaInfo ? outOfAreaInfo.amount : null,
+      out_of_hours: outOfHours,
+      out_of_hours_amt: outOfHoursInfo ? outOfHoursInfo.amount : null,
+      deduct_amt: deduct > 0 ? deduct : null,
+      late_submit: isLateSubmit(),
+      incomplete_docs: isIncompleteDocs(),
+      mode,
+    };
+  }
+
+  function sendCapture(rec) {
+    try {
+      window.postMessage(
+        { __isurveyHelper: true, type: "capture-data", payload: rec },
+        window.location.origin
+      );
+    } catch (e) {
+      warn("capture postMessage failed:", e);
+    }
+  }
+
+  /**
+   * captureNow — เก็บ snapshot ปัจจุบันทันที (เรียกตอนกดปุ่ม "ยืนยันการตรวจสอบ")
+   *   - validate ผ่าน buildCapture (return null ถ้า deduct ไม่มี flag, ฯลฯ)
+   *   - dedup: skip ถ้า payload เหมือนครั้งก่อน
+   */
+  function captureNow() {
+    const rec = buildCapture();
+    if (!rec) return; // null = invalid (warning label ในฟอร์มจะแสดงสาเหตุ)
+    const { ts, ...rest } = rec;
+    const sig = JSON.stringify(rest);
+    if (sig === lastCaptureSig) {
+      log("Capture skipped: payload เหมือนรอบก่อน");
+      return;
+    }
+    lastCaptureSig = sig;
+    sendCapture(rec);
+    log("Capture sent (on save):", rec.province_id, rec.amphur_id, "mode=" + rec.mode);
   }
 
   // ─────────────────────────────────────────────────────────
@@ -338,13 +702,19 @@
     if (window.__iSurveyHelperModifierListenerAttached) return;
     window.__iSurveyHelperModifierListenerAttached = true;
 
-    // 'change' = checkbox / radio / numberfield (blur)
+    // 'change' = checkbox / radio / numberfield (blur) / combobox / text input
     document.addEventListener("change", (ev) => {
       const t = ev.target;
       if (!t) return;
       const matches =
         t.id === SEL.outOfAreaInputId ||
         t.id === SEL.outOfAreaAmountInputId ||
+        t.id === SEL.outOfHoursAmountInputId ||
+        t.id === SEL.deductAmountInputId ||
+        t.id === SEL.lateSubmitInputId ||
+        t.id === SEL.incompleteDocsInputId ||
+        t.id === SEL.mtypeIdInputId ||
+        t.id === SEL.surveyorNameInputId ||
         (t.type === "radio" && t.name === SEL.inOutRadioName);
       if (matches) {
         // sync ทันทีหลัง Ext กระจาย event ภายใน
@@ -355,7 +725,11 @@
     // 'input' = ขณะ user พิมพ์ใน numberfield (live update)
     document.addEventListener("input", (ev) => {
       const t = ev.target;
-      if (t && t.id === SEL.outOfAreaAmountInputId) {
+      if (t && (
+        t.id === SEL.outOfAreaAmountInputId ||
+        t.id === SEL.outOfHoursAmountInputId ||
+        t.id === SEL.deductAmountInputId
+      )) {
         setTimeout(syncFeeFromLocation, 0);
       }
     }, true);
@@ -369,21 +743,54 @@
     }, CFG.pollIntervalMs);
   }
 
+  /**
+   * Listener สำหรับปุ่ม "ยืนยันการตรวจสอบ" (#tab1_save)
+   * — ใช้ delegated click ที่ document เผื่อปุ่มถูก re-render
+   * — capture phase เพื่ออ่าน state ก่อน Ext จะส่ง form ออกไป
+   * — delay 100ms ให้ Ext sync state รอบสุดท้ายก่อนเรา read
+   * — ไม่ preventDefault — ปล่อยให้ I Survey save ปกติ
+   */
+  function attachSaveButtonListener() {
+    if (window.__iSurveyHelperSaveListenerAttached) return;
+    window.__iSurveyHelperSaveListenerAttached = true;
+
+    document.addEventListener("click", (ev) => {
+      const btn = ev.target && ev.target.closest && ev.target.closest("#tab1_save");
+      if (!btn) return;
+      log("ยืนยันการตรวจสอบ clicked → capture in 100ms");
+      setTimeout(captureNow, 100);
+    }, true);
+    log('Save-button listener attached (#tab1_save)');
+  }
+
   // ─────────────────────────────────────────────────────────
   // Bootstrap
   // ─────────────────────────────────────────────────────────
 
-  function init() {
-    const allow = CFG.enabledProvinces || [];
+  function logConfigSnapshot(prefix) {
+    const cfg = getCFG();
+    const allow = cfg.enabledProvinces || [];
+    const mods = cfg.modifierFees || {};
     log(
-      `Loaded. mappings: ` +
-        `province=${Object.keys(PROVINCE_MAP).length}, ` +
-        `amphur=${Object.keys(AMPHUR_MAP).length}, ` +
-        `tumbon=${Object.keys(TUMBON_MAP).length}, ` +
+      `${prefix} mappings: ` +
+        `province=${Object.keys(getProvinceMap()).length}, ` +
+        `amphur=${Object.keys(getAmphurMap()).length}, ` +
+        `tumbon=${Object.keys(getTumbonMap()).length}, ` +
+        `amphurTable=${Object.keys(getAmphurTable()).length}, ` +
         `enabledProvinces=${allow.length ? "[" + allow.join(",") + "]" : "ALL"}, ` +
-        `modifiers={outOfArea:+${CFG.modifierFees.outOfArea}, outOfHours:+${CFG.modifierFees.outOfHours}}, ` +
-        `poll=${CFG.pollIntervalMs}ms`
+        `modifiers={outOfArea:+${mods.outOfArea || 0}, outOfHours:+${mods.outOfHours || 0}}, ` +
+        `poll=${cfg.pollIntervalMs}ms`
     );
+  }
+
+  function init() {
+    logConfigSnapshot("Loaded.");
+
+    // ฟัง config update จาก admin → log + sync ทันที (ไม่ต้องรอ poll)
+    window.addEventListener("isurvey-config-updated", () => {
+      logConfigSnapshot("Config updated.");
+      syncFeeFromLocation();
+    });
 
     if (window.__ISURVEY_REF__) {
       const c = window.__ISURVEY_REF__.counts;
@@ -397,6 +804,7 @@
 
     attachAllLocationObservers();
     attachModifierListeners();
+    attachSaveButtonListener();
     syncFeeFromLocation();
     startPolling();
   }

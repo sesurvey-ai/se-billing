@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>I Survey Helper — Settings</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Sarabun", sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 0 24px;
+      color: #222;
+    }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    .hint { color: #666; font-size: 13px; margin-bottom: 24px; }
+    .row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    label { font-weight: 500; font-size: 13px; }
+    input[type="url"] { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    input:focus { outline: 2px solid #2563eb; outline-offset: -1px; border-color: #2563eb; }
+    .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    button {
+      padding: 8px 16px; border: 1px solid #ccc; background: white;
+      border-radius: 4px; cursor: pointer; font-size: 14px; font-family: inherit;
+    }
+    button:hover { background: #f0f0f0; }
+    .primary { background: #2563eb; color: white; border-color: #2563eb; }
+    .primary:hover { background: #1d4ed8; }
+    .status { font-size: 13px; min-height: 20px; }
+    .status.ok { color: #15803d; }
+    .status.err { color: #b91c1c; }
+    .links { margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee; font-size: 13px; color: #666; }
+    .links a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>I Survey Auto-Fill Helper — Settings</h1>
+  <p class="hint">การตั้งค่าการเชื่อมต่อกับ backend server (ที่จัดการเรตราคา + เก็บ log การกรอกฟอร์ม)</p>
+
+  <div class="row">
+    <label for="server-url">Server URL</label>
+    <input id="server-url" type="url" placeholder="http://localhost:3200" />
+    <small class="hint">เช่น <code>http://localhost:3200</code> (เครื่องเดียวกัน) หรือ <code>http://192.168.1.50:3200</code> (เครื่องอื่นใน LAN เดียวกัน) — ห้ามมี <code>/</code> ปิดท้าย</small>
+  </div>
+
+  <div class="actions">
+    <button id="save" class="primary">บันทึก</button>
+    <button id="test">ทดสอบเชื่อมต่อ</button>
+    <span id="status" class="status"></span>
+  </div>
+
+  <div class="links">
+    <p>เปิดหน้า server (เมื่อตั้งค่า URL ถูกแล้ว):</p>
+    <ul>
+      <li><a id="link-viewer" target="_blank">หน้า เรทราคา (อ่านอย่างเดียว)</a></li>
+      <li><a id="link-admin" target="_blank">หน้า Admin (เพิ่ม/แก้/ลบ)</a></li>
+      <li><a id="link-captures" target="_blank">หน้า รายละเอียด (ข้อมูลที่จับจากฟอร์ม)</a></li>
+    </ul>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

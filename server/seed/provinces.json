@@ -1,0 +1,313 @@
+{
+  "data": [
+    {
+      "provinceID": "10",
+      "provincename": "กรุงเทพฯ"
+    },
+    {
+      "provinceID": "11",
+      "provincename": "สมุทรปราการ"
+    },
+    {
+      "provinceID": "12",
+      "provincename": "นนทบุรี"
+    },
+    {
+      "provinceID": "13",
+      "provincename": "ปทุมธานี"
+    },
+    {
+      "provinceID": "14",
+      "provincename": "พระนครศรีอยุธยา"
+    },
+    {
+      "provinceID": "15",
+      "provincename": "อ่างทอง"
+    },
+    {
+      "provinceID": "16",
+      "provincename": "ลพบุรี"
+    },
+    {
+      "provinceID": "17",
+      "provincename": "สิงห์บุรี"
+    },
+    {
+      "provinceID": "18",
+      "provincename": "ชัยนาท"
+    },
+    {
+      "provinceID": "19",
+      "provincename": "สระบุรี"
+    },
+    {
+      "provinceID": "20",
+      "provincename": "ชลบุรี"
+    },
+    {
+      "provinceID": "21",
+      "provincename": "ระยอง"
+    },
+    {
+      "provinceID": "22",
+      "provincename": "จันทบุรี"
+    },
+    {
+      "provinceID": "23",
+      "provincename": "ตราด"
+    },
+    {
+      "provinceID": "24",
+      "provincename": "ฉะเชิงเทรา"
+    },
+    {
+      "provinceID": "25",
+      "provincename": "ปราจีนบุรี"
+    },
+    {
+      "provinceID": "26",
+      "provincename": "นครนายก"
+    },
+    {
+      "provinceID": "27",
+      "provincename": "สระแก้ว"
+    },
+    {
+      "provinceID": "30",
+      "provincename": "นครราชสีมา"
+    },
+    {
+      "provinceID": "31",
+      "provincename": "บุรีรัมย์"
+    },
+    {
+      "provinceID": "32",
+      "provincename": "สุรินทร์"
+    },
+    {
+      "provinceID": "33",
+      "provincename": "ศรีสะเกษ"
+    },
+    {
+      "provinceID": "34",
+      "provincename": "อุบลราชธานี"
+    },
+    {
+      "provinceID": "35",
+      "provincename": "ยโสธร"
+    },
+    {
+      "provinceID": "36",
+      "provincename": "ชัยภูมิ"
+    },
+    {
+      "provinceID": "37",
+      "provincename": "อำนาจเจริญ"
+    },
+    {
+      "provinceID": "38",
+      "provincename": "บึงกาฬ"
+    },
+    {
+      "provinceID": "39",
+      "provincename": "หนองบัวลำภู"
+    },
+    {
+      "provinceID": "40",
+      "provincename": "ขอนแก่น"
+    },
+    {
+      "provinceID": "41",
+      "provincename": "อุดรธานี"
+    },
+    {
+      "provinceID": "42",
+      "provincename": "เลย"
+    },
+    {
+      "provinceID": "43",
+      "provincename": "หนองคาย"
+    },
+    {
+      "provinceID": "44",
+      "provincename": "มหาสารคาม"
+    },
+    {
+      "provinceID": "45",
+      "provincename": "ร้อยเอ็ด"
+    },
+    {
+      "provinceID": "46",
+      "provincename": "กาฬสินธุ์"
+    },
+    {
+      "provinceID": "47",
+      "provincename": "สกลนคร"
+    },
+    {
+      "provinceID": "48",
+      "provincename": "นครพนม"
+    },
+    {
+      "provinceID": "49",
+      "provincename": "มุกดาหาร"
+    },
+    {
+      "provinceID": "50",
+      "provincename": "เชียงใหม่"
+    },
+    {
+      "provinceID": "51",
+      "provincename": "ลำพูน"
+    },
+    {
+      "provinceID": "52",
+      "provincename": "ลำปาง"
+    },
+    {
+      "provinceID": "53",
+      "provincename": "อุตรดิตถ์"
+    },
+    {
+      "provinceID": "54",
+      "provincename": "แพร่"
+    },
+    {
+      "provinceID": "55",
+      "provincename": "น่าน"
+    },
+    {
+      "provinceID": "56",
+      "provincename": "พะเยา"
+    },
+    {
+      "provinceID": "57",
+      "provincename": "เชียงราย"
+    },
+    {
+      "provinceID": "58",
+      "provincename": "แม่ฮ่องสอน"
+    },
+    {
+      "provinceID": "60",
+      "provincename": "นครสวรรค์"
+    },
+    {
+      "provinceID": "61",
+      "provincename": "อุทัยธานี"
+    },
+    {
+      "provinceID": "62",
+      "provincename": "กำแพงเพชร"
+    },
+    {
+      "provinceID": "63",
+      "provincename": "ตาก"
+    },
+    {
+      "provinceID": "64",
+      "provincename": "สุโขทัย"
+    },
+    {
+      "provinceID": "65",
+      "provincename": "พิษณุโลก"
+    },
+    {
+      "provinceID": "66",
+      "provincename": "พิจิตร"
+    },
+    {
+      "provinceID": "67",
+      "provincename": "เพชรบูรณ์"
+    },
+    {
+      "provinceID": "70",
+      "provincename": "ราชบุรี"
+    },
+    {
+      "provinceID": "71",
+      "provincename": "กาญจนบุรี"
+    },
+    {
+      "provinceID": "72",
+      "provincename": "สุพรรณบุรี"
+    },
+    {
+      "provinceID": "73",
+      "provincename": "นครปฐม"
+    },
+    {
+      "provinceID": "74",
+      "provincename": "สมุทรสาคร"
+    },
+    {
+      "provinceID": "75",
+      "provincename": "สมุทรสงคราม"
+    },
+    {
+      "provinceID": "76",
+      "provincename": "เพชรบุรี"
+    },
+    {
+      "provinceID": "77",
+      "provincename": "ประจวบคีรีขันธ์"
+    },
+    {
+      "provinceID": "80",
+      "provincename": "นครศรีธรรมราช"
+    },
+    {
+      "provinceID": "81",
+      "provincename": "กระบี่"
+    },
+    {
+      "provinceID": "82",
+      "provincename": "พังงา"
+    },
+    {
+      "provinceID": "83",
+      "provincename": "ภูเก็ต"
+    },
+    {
+      "provinceID": "84",
+      "provincename": "สุราษฎร์ธานี"
+    },
+    {
+      "provinceID": "85",
+      "provincename": "ระนอง"
+    },
+    {
+      "provinceID": "86",
+      "provincename": "ชุมพร"
+    },
+    {
+      "provinceID": "90",
+      "provincename": "สงขลา"
+    },
+    {
+      "provinceID": "91",
+      "provincename": "สตูล"
+    },
+    {
+      "provinceID": "92",
+      "provincename": "ตรัง"
+    },
+    {
+      "provinceID": "93",
+      "provincename": "พัทลุง"
+    },
+    {
+      "provinceID": "94",
+      "provincename": "ปัตตานี"
+    },
+    {
+      "provinceID": "95",
+      "provincename": "ยะลา"
+    },
+    {
+      "provinceID": "96",
+      "provincename": "นราธิวาส"
+    }
+  ],
+  "total": 77
+}
