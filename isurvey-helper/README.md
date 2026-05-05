@@ -63,8 +63,9 @@ node server.js     # ฟัง http://localhost:3200
 **Live update:** บันทึกที่ /admin → server เก็บลง SQLite → extension's `loader.js` poll ทุก 30s
 ดึงข้อมูลใหม่ → broadcast ให้ `content.js` ใน MAIN world (เปลี่ยนได้ภายใน 30s โดยไม่ต้องรีเฟรชหน้า cloud.isurvey.mobi)
 
-**Capture log:** เมื่อ user กรอกฟอร์ม content.js debounce 1.5s แล้วส่ง snapshot ไป
-ISOLATED → background.js → POST `/api/captures` — ดูได้ที่หน้า /captures
+**Capture log:** เมื่อ user กดปุ่ม **"ยืนยันการตรวจสอบ"** (`#tab1_save`) content.js
+จับ click (capture phase, delegated) → snapshot ฟอร์ม → ISOLATED → background.js
+→ POST `/api/captures` (มี dedup กันส่งซ้ำ → 1 การกด = 1 record) — ดูได้ที่หน้า /captures
 
 ---
 
@@ -287,7 +288,7 @@ isurvey-helper/
 ├── background.js                        ← Service worker: HTTP I/O ไปหา server
 ├── options.html / options.js            ← Settings page (Server URL field) — เปิดจาก chrome://extensions Details
 ├── config-bridge.js                     ← MAIN: receive config จาก loader → set window.X
-├── content.js                           ← MAIN: Logic หลัก + capture trigger (observer + setValue + debounced capture)
+├── content.js                           ← MAIN: Logic หลัก + capture trigger (observer + setValue + click ปุ่ม "ยืนยันการตรวจสอบ")
 ├── loader.js                            ← ISOLATED: ref data + ขอ config จาก SW (poll 30s) + forward capture
 ├── feature-out-of-area-amount.js        ← MAIN: numberfield "ยอดเงิน" คู่ checkbox "นอกพื้นที่"
 ├── feature-out-of-hours-amount.js       ← MAIN: numberfield "ยอดเงิน" ต่อท้าย radio "นอก" (นอกเวลา)
@@ -309,7 +310,7 @@ isurvey-helper/
 | `options.html` / `options.js` | extension page | ตั้งค่า Server URL (default `http://localhost:3200`) + ปุ่มทดสอบเชื่อมต่อ |
 | `loader.js` | ISOLATED | (1) fetch reference JSON → MAIN, (2) ขอ config จาก background → broadcast MAIN ทุก 30s, (3) forward capture-data จาก MAIN → background |
 | `config-bridge.js` | MAIN | receive config payload จาก loader → set `window.PROVINCE_FEE_MAP` / `window.AMPHUR_FEE_TABLE` / ฯลฯ + dispatch `isurvey-config-ready` / `isurvey-config-updated` |
-| `content.js` | MAIN | อ่าน hidden inputs / modifier inputs, lookup fee, set ผ่าน `Ext.getCmp().setValue()` — **อ่าน window.X สดทุก sync** + debounced capture (1.5s) → postMessage ISOLATED |
+| `content.js` | MAIN | อ่าน hidden inputs / modifier inputs, lookup fee, set ผ่าน `Ext.getCmp().setValue()` — **อ่าน window.X สดทุก sync** + capture เมื่อกดปุ่ม "ยืนยันการตรวจสอบ" (`#tab1_save`, delegated click + dedup) → postMessage ISOLATED |
 | `feature-out-of-area-amount.js` | MAIN | สร้าง/ลบ numberfield "ยอดเงิน (บาท)" ตามสถานะ checkbox "นอกพื้นที่" (poll ทุก 500ms) |
 | `feature-out-of-hours-amount.js` | MAIN | สร้าง/ลบ numberfield "ยอดเงิน (บาท)" ตามสถานะ radio "นอก" ใน group ใน/นอกเวลา (poll ทุก 500ms) |
 | `feature-deduct-amount.js` | MAIN | inject แถวที่ 7 "หักเงิน" + numberfield ลงใน table panel ที่ครอบ `tab1_SUR_INVEST` (poll ทุก 500ms; ค่าหัก = negative modifier ของ SUR_INVEST) |
@@ -441,8 +442,8 @@ isurvey-helper/
 
 ## หมายเหตุ
 
-- ไม่มี dependency ภายนอก
-- ไม่ส่งข้อมูลออกไปไหน — ทำงานในเครื่องผู้ใช้เท่านั้น
+- Extension เองไม่มี dependency ภายนอก (server ใช้ Express + SQLite + ExcelJS — ดู [`../server/package.json`](../server/package.json))
+- ส่งข้อมูล capture ไปที่ backend server ที่ผู้ใช้ตั้งค่าเอง (default `http://localhost:3200`) — ไม่มีการส่งออกไปยังบริการภายนอก
 - ทดสอบกับ Chrome เวอร์ชันล่าสุด
   (รองรับ `world: "MAIN"` ตั้งแต่ Chrome 111+,
    `web_accessible_resources` matches/resources format ตั้งแต่ MV3)
