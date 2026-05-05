@@ -1,9 +1,10 @@
 {
   "_comment": "Default seed data for isurvey-helper. On first install, loader.js writes this to chrome.storage.local. After that, storage is the source of truth — admin page can edit/add/delete entries. 'Reset to defaults' in admin re-seeds from this file.",
   "PROVINCE_FEE_MAP": {
-    "10": 700,
-    "11": 800,
-    "12": 800
+    "10": 300,
+    "11": 300,
+    "12": 300,
+    "13": 300
   },
   "AMPHUR_FEE_MAP": {},
   "TUMBON_FEE_MAP": {},

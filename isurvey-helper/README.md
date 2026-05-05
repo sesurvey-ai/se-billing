@@ -422,6 +422,7 @@ isurvey-helper/
 
 | Version | การเปลี่ยนแปลง |
 |---------|--------------|
+| **2.3.3** | **Fix: BMR PROVINCE_FEE_MAP**: ปรับ `PROVINCE_FEE_MAP` ให้สอดคล้องกับ multi-field rate ของ BMR — `10/11/12/13` = 300 ทุกจังหวัด (เดิม `10:700, 11/12:800`). ใช้เป็น fallback rate ตอน user เลือกแค่จังหวัดยังไม่เลือกอำเภอ — ก่อนหน้านี้แสดง 800 ก่อนแล้วค่อยเปลี่ยนเป็น 300 หลังเลือกอำเภอ ทำให้สับสน |
 | **2.3.2** | **Region: BMR**: เพิ่ม 4 จังหวัดในกลุ่มกรุงเทพและปริมณฑล (กทม. 50 amphur / สมุทรปราการ 6 / นนทบุรี 6 / ปทุมธานี 8) เข้า `AMPHUR_FEE_TABLE` รวมเป็น **21 จังหวัด, 315 อำเภอ**. กทม.: SUR=300, INS_12=INS_34=700 (ไม่มี TRANS/PHOTO). อีก 3 จังหวัด: SUR=300, INS_12=300, INS_34=200, TRANS=500, PHOTO_12=50. เพิ่ม "13" ใน `enabledProvinces` (รวม 21 จังหวัด) |
 | **2.3.1** | **Fix: 10% target field**: เปลี่ยน target ของ 10% จาก `tab1_INS_DAILY` → `tab1_INS_CLAIM` (รอบ 2.3.0 ใส่ผิดช่อง) |
 | **2.3.0** | **เพิ่ม auto-calc % ของค่าเรียกร้อง**: ตรวจ `tab1_RECV_CLAIM` (numberfield ค่าเรียกร้อง) — ถ้า > 0 → ตั้ง `tab1_SUR_CLAIM` = 5% และ `tab1_INS_CLAIM` = 10% ของ RECV; ถ้า ≤ 0 หรือว่าง → clear ทั้งสอง. ทำงานทุก mode (ไม่ขึ้นกับ `enabledProvinces` หรือ `AMPHUR_FEE_TABLE`). Trigger: native `change`/`input` listener + Ext component `change` (เผื่อ spinner buttons / setValue) + polling 500ms. Round 2 decimals |
