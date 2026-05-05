@@ -44,6 +44,19 @@
   let configReady = false;
   let lastConfigSig = "";
 
+  // ── Per-user province preference (chrome.storage.local) ─────────────────
+  // popup.js เขียนค่าตอน user ติ๊ก checkbox; loader merge เข้า config payload
+  // เพื่อให้ config-bridge.js + content.js เห็นค่าเดียวกันกับ field อื่น
+  async function getUserProvincePrefs() {
+    return new Promise((resolve) => {
+      try {
+        chrome.storage.local.get("userProvincePreferences", (obj) => {
+          resolve(Array.isArray(obj?.userProvincePreferences) ? obj.userProvincePreferences : []);
+        });
+      } catch { resolve([]); }
+    });
+  }
+
   // ─────────────────────────────────────────────────────────
   // Reference data (local extension files)
   // ─────────────────────────────────────────────────────────
@@ -97,19 +110,24 @@
     });
   }
 
-  async function refreshConfig({ initial = false } = {}) {
+  async function refreshConfig({ initial = false, reason = "" } = {}) {
     const r = await fetchConfigFromServer();
     if (!r.ok) {
       if (initial) console.warn(TAG, "Initial config fetch failed:", r.error);
       return;
     }
-    const sig = JSON.stringify(r.config);
+    // Merge per-user prefs (chrome.storage.local) เข้า config — ไม่ขึ้นกับ server
+    const userProvincePreferences = await getUserProvincePrefs();
+    const merged = { ...r.config, userProvincePreferences };
+
+    const sig = JSON.stringify(merged);
     if (sig === lastConfigSig) return; // no change
     lastConfigSig = sig;
-    configPayload = r.config;
+    configPayload = merged;
     configReady = true;
     broadcastConfig();
-    console.log(TAG, initial ? "Config loaded from server" : "Config updated from server (poll)");
+    const tag = reason || (initial ? "loaded from server" : "updated from server (poll)");
+    console.log(TAG, "Config " + tag);
   }
 
   // ─────────────────────────────────────────────────────────
@@ -171,4 +189,18 @@
   // Initial config fetch + polling
   refreshConfig({ initial: true });
   setInterval(() => refreshConfig(), CONFIG_POLL_MS);
+
+  // ── ฟัง user prefs change (popup) → re-broadcast ทันที ──────────────────
+  try {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== "local") return;
+      if (!changes.userProvincePreferences) return;
+      // ใช้ refreshConfig เพราะเรา cache config payload ทั้งก้อน — clear sig
+      // เพื่อบังคับ broadcast แม้ server config ไม่เปลี่ยน
+      lastConfigSig = "";
+      refreshConfig({ reason: "user prefs changed (popup)" });
+    });
+  } catch (e) {
+    console.warn(TAG, "chrome.storage.onChanged unavailable:", e);
+  }
 })();

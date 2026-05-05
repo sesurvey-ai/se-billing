@@ -62,11 +62,13 @@
   window.AMPHUR_FEE_TABLE = window.AMPHUR_FEE_TABLE || {};
 
   // ── Static config อยู่ใน window.ISURVEY_HELPER_CONFIG เลย ──
-  // dynamic fields (modifierFees, enabledProvinces) จะถูก override โดย bridge payload
+  // dynamic fields (modifierFees, enabledProvinces, userProvincePreferences)
+  // จะถูก override โดย bridge payload
   window.ISURVEY_HELPER_CONFIG = Object.assign(
     {
       modifierFees: { outOfArea: 0, outOfHours: 0 }, // จะถูก override
       enabledProvinces: [],                            // จะถูก override
+      userProvincePreferences: [],                     // จะถูก override (จาก popup)
     },
     STATIC_CONFIG,
     window.ISURVEY_HELPER_CONFIG || {}
@@ -88,6 +90,9 @@
     window.AMPHUR_FEE_TABLE = p.AMPHUR_FEE_TABLE || {};
     if (p.modifierFees) window.ISURVEY_HELPER_CONFIG.modifierFees = p.modifierFees;
     if (p.enabledProvinces) window.ISURVEY_HELPER_CONFIG.enabledProvinces = p.enabledProvinces;
+    if (Array.isArray(p.userProvincePreferences)) {
+      window.ISURVEY_HELPER_CONFIG.userProvincePreferences = p.userProvincePreferences;
+    }
 
     if (!received) {
       received = true;

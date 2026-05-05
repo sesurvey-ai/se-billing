@@ -849,11 +849,63 @@
     enableTypeAhead(SEL.tumbonCmpId);
   }
 
+  /**
+   * กรอง store ของ combobox จังหวัดตาม userProvincePreferences (จาก popup)
+   * - prefs ว่าง → ถอด filter (แสดงครบ 77)
+   * - prefs มีรายการ → ถอด filter เก่าแล้วใส่ filter ใหม่ (filter id = "__iSurveyHelperUserPref")
+   *
+   * Re-apply ทุก poll เพราะ host อาจ clear filter ตอน re-render combobox
+   */
+  let lastFilterSig = null;
+  function filterProvinceCombobox() {
+    const cmp = getExtCmp(SEL.provinceCmpId);
+    if (!cmp || typeof cmp.getStore !== "function") return false;
+    const store = cmp.getStore();
+    if (!store) return false;
+
+    const prefs = (getCFG().userProvincePreferences) || [];
+    const sig = prefs.length ? prefs.slice().sort().join(",") : "";
+
+    try {
+      // ถ้า filter ของเรามีอยู่แล้วและ sig ตรง — เช็ค count ดูว่ายังถูก apply อยู่
+      const existing = (store.getFilters && store.getFilters().getByKey)
+        ? store.getFilters().getByKey("__iSurveyHelperUserPref")
+        : null;
+      if (existing && lastFilterSig === sig) return true;
+
+      // remove old filter (silent — ไม่ trigger event)
+      if (typeof store.removeFilter === "function") {
+        store.removeFilter("__iSurveyHelperUserPref", true);
+      }
+
+      if (prefs.length === 0) {
+        lastFilterSig = "";
+        return true;
+      }
+
+      const set = new Set(prefs.map(String));
+      const valueField = cmp.valueField || "provinceID";
+      store.addFilter([{
+        id: "__iSurveyHelperUserPref",
+        filterFn: (rec) => set.has(String(rec.get(valueField))),
+      }]);
+      if (sig !== lastFilterSig) {
+        log(`Province filter applied: ${prefs.length}/${store.getTotalCount?.() || "?"}`);
+      }
+      lastFilterSig = sig;
+    } catch (e) {
+      warn("filterProvinceCombobox error:", e);
+      return false;
+    }
+    return true;
+  }
+
   function startPolling() {
     setInterval(() => {
       attachAllLocationObservers();
       attachAllExtListeners();
       enableAllTypeAhead();
+      filterProvinceCombobox();
       syncFeeFromLocation();
     }, CFG.pollIntervalMs);
   }
@@ -904,6 +956,8 @@
     // ฟัง config update จาก admin → log + sync ทันที (ไม่ต้องรอ poll)
     window.addEventListener("isurvey-config-updated", () => {
       logConfigSnapshot("Config updated.");
+      lastFilterSig = null; // บังคับ re-apply filter (sig อาจเหมือนเดิมแต่ store filter ถูก clear)
+      filterProvinceCombobox();
       syncFeeFromLocation();
     });
 
@@ -920,6 +974,7 @@
     attachAllLocationObservers();
     attachAllExtListeners();
     enableAllTypeAhead();
+    filterProvinceCombobox();
     attachModifierListeners();
     attachSaveButtonListener();
     syncFeeFromLocation();
