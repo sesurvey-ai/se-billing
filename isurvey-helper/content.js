@@ -197,7 +197,11 @@
     const cmp = getExtCmp(SEL.mtypeIdCmpId);
     if (cmp && typeof cmp.getValue === "function") {
       const v = cmp.getValue();
-      if (v !== null && v !== undefined && v !== "") return String(v);
+      if (v !== null && v !== undefined && v !== "") {
+        // Ext combobox store ใช้ valueField "clMTID" ที่เก็บเป็น "01"-"04" (2-digit)
+        // normalize → "1"-"4" เพื่อเทียบกับ mt12/mt34 ใน syncMultiFields
+        return String(v).replace(/^0+(?=\d)/, "");
+      }
     }
     const el = document.querySelector(SEL.mtypeIdInput);
     const txt = el ? (el.value || "").trim() : "";
@@ -736,9 +740,34 @@
     log("Modifier change-listener attached (delegated on document)");
   }
 
+  /**
+   * ผูก Ext component event 'change' โดยตรง — สำหรับ combobox/checkbox ที่
+   * Ext ไม่ fire native DOM 'change' บน inputEl (เช่น tab1_claim_MtypeID)
+   * ใช้ flag บนตัว cmp เอง — ถ้า Ext destroy + recreate cmp ใหม่ flag หาย
+   * → re-attach อัตโนมัติในรอบ poll ถัดไป
+   */
+  function attachExtChangeListener(cmpId, label) {
+    const cmp = getExtCmp(cmpId);
+    if (!cmp || typeof cmp.on !== "function") return false;
+    if (cmp.__iSurveyHelperListenerAttached) return true;
+    cmp.__iSurveyHelperListenerAttached = true;
+    cmp.on("change", () => {
+      log(`Ext change → ${label} → sync`);
+      syncFeeFromLocation();
+    });
+    log(`Ext change-listener attached: ${label} (${cmpId})`);
+    return true;
+  }
+
+  function attachAllExtListeners() {
+    attachExtChangeListener(SEL.mtypeIdCmpId, "MtypeID");
+    attachExtChangeListener(SEL.surveyorNameCmpId, "Surveyor");
+  }
+
   function startPolling() {
     setInterval(() => {
       attachAllLocationObservers();
+      attachAllExtListeners();
       syncFeeFromLocation();
     }, CFG.pollIntervalMs);
   }
@@ -803,6 +832,7 @@
     }
 
     attachAllLocationObservers();
+    attachAllExtListeners();
     attachModifierListeners();
     attachSaveButtonListener();
     syncFeeFromLocation();
