@@ -80,6 +80,13 @@
       incompleteDocsCmpId: 'tab1_deduct_incomplete_docs',  // checkbox "เอกสารไม่ครบ"
       incompleteDocsInputId:'tab1_deduct_incomplete_docs-inputEl',
       deductWarningCmpId:  'tab1_deduct_warning',          // label เตือน deduct ไม่ระบุเหตุผล
+      recvClaimCmpId:      'tab1_RECV_CLAIM',              // numberfield "ค่าเรียกร้อง" (input)
+      recvClaimInput:      'input#tab1_RECV_CLAIM-inputEl',
+      recvClaimInputId:    'tab1_RECV_CLAIM-inputEl',
+      surClaimCmpId:       'tab1_SUR_CLAIM',               // textfield 5% ของ RECV_CLAIM
+      surClaimInput:       'input#tab1_SUR_CLAIM-inputEl',
+      insDailyCmpId:       'tab1_INS_DAILY',               // textfield 10% ของ RECV_CLAIM
+      insDailyInput:       'input#tab1_INS_DAILY-inputEl',
     },
     CFG.selectors || {}
   );
@@ -532,6 +539,38 @@
   }
 
   /**
+   * RECV_CLAIM (ค่าเรียกร้อง) > 0 → คำนวณ %:
+   *   SUR_CLAIM  = RECV_CLAIM * 5%
+   *   INS_DAILY  = RECV_CLAIM * 10%
+   * ถ้า ≤ 0 หรือว่าง → clear ทั้งสอง
+   * ทำงานทุก mode (ไม่ขึ้นกับ AMPHUR_FEE_TABLE หรือ enabledProvinces)
+   */
+  function syncClaimPercentages() {
+    const recvCmp = getExtCmp(SEL.recvClaimCmpId);
+    let raw = null;
+    if (recvCmp && typeof recvCmp.getValue === "function") {
+      raw = recvCmp.getValue();
+    } else {
+      const el = document.getElementById(SEL.recvClaimInputId);
+      if (!el) return;
+      raw = el.value;
+    }
+    const num = parseFloat(String(raw == null ? "" : raw).replace(/,/g, ""));
+    const isEmpty = !Number.isFinite(num) || num <= 0;
+
+    if (isEmpty) {
+      setOneField(SEL.surClaimCmpId, SEL.surClaimInput, "", "SUR_CLAIM (RECV ว่าง/0 → clear)");
+      setOneField(SEL.insDailyCmpId, SEL.insDailyInput, "", "INS_DAILY (RECV ว่าง/0 → clear)");
+      return;
+    }
+
+    const sur5    = Math.round(num * 0.05 * 100) / 100;
+    const daily10 = Math.round(num * 0.10 * 100) / 100;
+    setOneField(SEL.surClaimCmpId, SEL.surClaimInput, sur5,    `SUR_CLAIM (5% ของ ${num})`);
+    setOneField(SEL.insDailyCmpId, SEL.insDailyInput, daily10, `INS_DAILY (10% ของ ${num})`);
+  }
+
+  /**
    * Entry point: เลือก mode ตามว่า amphurId อยู่ใน AMPHUR_FEE_TABLE หรือไม่
    *   - อยู่ → multi-field (ระยอง)
    *   - ไม่อยู่ → simple SUR_INVEST (กทม. ฯลฯ)
@@ -541,7 +580,10 @@
     const amphurId   = readHiddenValue(SEL.amphurHidden);
     const tumbonId   = readHiddenValue(SEL.tumbonHidden);
 
-    if (!isProvinceEnabled(provinceId)) return; // นอก whitelist → ไม่แตะ
+    // ค่าเรียกร้อง % — ทำเสมอ ไม่ขึ้นกับ whitelist
+    syncClaimPercentages();
+
+    if (!isProvinceEnabled(provinceId)) return; // นอก whitelist → ไม่แตะ fee field
 
     const tbl = getAmphurTable()[amphurId];
     if (tbl) {
@@ -719,6 +761,7 @@
         t.id === SEL.incompleteDocsInputId ||
         t.id === SEL.mtypeIdInputId ||
         t.id === SEL.surveyorNameInputId ||
+        t.id === SEL.recvClaimInputId ||
         (t.type === "radio" && t.name === SEL.inOutRadioName);
       if (matches) {
         // sync ทันทีหลัง Ext กระจาย event ภายใน
@@ -732,7 +775,8 @@
       if (t && (
         t.id === SEL.outOfAreaAmountInputId ||
         t.id === SEL.outOfHoursAmountInputId ||
-        t.id === SEL.deductAmountInputId
+        t.id === SEL.deductAmountInputId ||
+        t.id === SEL.recvClaimInputId
       )) {
         setTimeout(syncFeeFromLocation, 0);
       }
@@ -762,6 +806,7 @@
   function attachAllExtListeners() {
     attachExtChangeListener(SEL.mtypeIdCmpId, "MtypeID");
     attachExtChangeListener(SEL.surveyorNameCmpId, "Surveyor");
+    attachExtChangeListener(SEL.recvClaimCmpId, "RecvClaim");
   }
 
   function startPolling() {
