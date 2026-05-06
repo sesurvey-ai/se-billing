@@ -3,13 +3,31 @@
 
 const API_BASE = ""; // same origin
 
+function getToken() {
+  try { return localStorage.getItem("apiToken") || ""; } catch { return ""; }
+}
+
+function redirectToLogin() {
+  // เก็บหน้าปัจจุบันไว้ให้ login กลับมาให้ถูก
+  const next = encodeURIComponent(window.location.pathname + window.location.search);
+  window.location = `/login.html?next=${next}`;
+}
+
 async function req(method, path, body) {
   const opts = { method, headers: {} };
+  const token = getToken();
+  if (token) opts.headers["Authorization"] = "Bearer " + token;
   if (body !== undefined) {
     opts.headers["Content-Type"] = "application/json";
     opts.body = JSON.stringify(body);
   }
   const r = await fetch(API_BASE + path, opts);
+  if (r.status === 401) {
+    // token ผิด/หมดอายุ → ล้าง + redirect ไป login
+    try { localStorage.removeItem("apiToken"); } catch {}
+    redirectToLogin();
+    throw new Error("unauthorized — redirecting to login");
+  }
   if (!r.ok) {
     const txt = await r.text().catch(() => "");
     throw new Error(`${method} ${path} → ${r.status}: ${txt}`);
@@ -17,6 +35,13 @@ async function req(method, path, body) {
   if (r.status === 204) return null;
   return r.json();
 }
+
+// Logout helper — ใช้ใน admin/captures ผ่านปุ่ม "ออกจากระบบ"
+function logout() {
+  try { localStorage.removeItem("apiToken"); } catch {}
+  window.location = "/login.html";
+}
+window.logout = logout;
 
 const api = {
   config:   () => req("GET", "/api/config"),
@@ -60,11 +85,27 @@ const api = {
     insert: (rec) => req("POST", "/api/captures", rec),
     remove: (id) => req("DELETE", `/api/captures/${id}`),
     clear:  () => req("DELETE", "/api/captures"),
-    xlsxUrl: ({ provinceId } = {}) => {
+    xlsxDownload: async ({ provinceId } = {}) => {
       const q = new URLSearchParams();
       if (provinceId) q.set("provinceId", provinceId);
       const qs = q.toString();
-      return `/api/captures.xlsx${qs ? "?" + qs : ""}`;
+      const url = `/api/captures.xlsx${qs ? "?" + qs : ""}`;
+      const token = getToken();
+      const headers = {};
+      if (token) headers["Authorization"] = "Bearer " + token;
+      const r = await fetch(url, { headers });
+      if (r.status === 401) { redirectToLogin(); return; }
+      if (!r.ok) throw new Error(`xlsx export → ${r.status}`);
+      const blob = await r.blob();
+      const filename = (r.headers.get("content-disposition") || "")
+        .match(/filename="?([^"]+)"?/)?.[1] || "captures.xlsx";
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     },
   },
   seed: ({ force = false } = {}) => req("POST", `/api/seed${force ? "?force=1" : ""}`),

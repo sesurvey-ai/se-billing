@@ -31,21 +31,29 @@ async function load() {
   const url = r.ok ? r.url : "http://localhost:3200";
   $("server-url").value = url;
   refreshLinks(url);
+
+  const t = await send("get-api-token");
+  if (t.ok) $("api-token").value = t.token || "";
 }
 
 $("save").addEventListener("click", async () => {
   const url = $("server-url").value.trim();
-  const r = await send("set-server-url", { url });
-  if (r.ok) {
-    refreshLinks(r.url);
-    setStatus(`บันทึก: ${r.url}`, "ok");
-  } else {
-    setStatus(r.error || "บันทึกล้มเหลว", "err");
-  }
+  const token = $("api-token").value.trim();
+
+  const rUrl = await send("set-server-url", { url });
+  if (!rUrl.ok) { setStatus(rUrl.error || "บันทึก URL ล้มเหลว", "err"); return; }
+
+  const rTok = await send("set-api-token", { token });
+  if (!rTok.ok) { setStatus(rTok.error || "บันทึก token ล้มเหลว", "err"); return; }
+
+  refreshLinks(rUrl.url);
+  const tokMsg = rTok.hasToken ? "+ token" : "(ไม่มี token)";
+  setStatus(`บันทึก: ${rUrl.url} ${tokMsg}`, "ok");
 });
 
 $("test").addEventListener("click", async () => {
   setStatus("กำลังทดสอบ...", "");
+  // /healthz ผ่านได้โดยไม่ต้อง auth — ทดสอบได้แค่ว่า URL ถูก/server ติดต่อได้
   const r = await send("ping-server");
   if (r.ok) {
     setStatus(`✓ เชื่อมต่อสำเร็จ (${r.healthz?.ts || "ok"})`, "ok");

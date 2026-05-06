@@ -41,13 +41,45 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REF_DIR = join(__dirname, "seed");
 const PORT = Number(process.env.PORT) || 3200;
 const HOST = process.env.HOST || "0.0.0.0"; // 0.0.0.0 เพื่อรับจาก LAN ได้
+const API_TOKEN = process.env.API_TOKEN || "";
+// CORS_ORIGINS: comma-separated list (e.g. "https://billing.example.com").
+// extension origins (chrome-extension://...) ผ่านเสมอผ่าน regex ด้านล่าง
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || "")
+  .split(",").map(s => s.trim()).filter(Boolean);
+
+if (!API_TOKEN) {
+  console.warn("[isurvey-server] WARN: API_TOKEN env not set — /api/* endpoints are UNPROTECTED");
+}
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: (origin, cb) => {
+    // no origin = curl/server-to-server/Postman → allow
+    if (!origin) return cb(null, true);
+    // chrome-extension origin → allow ทุก extension id
+    if (/^chrome-extension:\/\//.test(origin)) return cb(null, true);
+    // explicit allowlist
+    if (CORS_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin ${origin} not allowed`));
+  },
+}));
 app.use(express.json({ limit: "2mb" }));
 
 // ── Healthz ────────────────────────────────────────────────────────────────
+// (ก่อน bearerAuth middleware เพราะ Dokploy/Traefik ใช้ check ไม่ส่ง token)
 app.get("/healthz", (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+
+// ── Bearer auth: กั้น /api/* ทุก endpoint ────────────────────────────────────
+// ถ้า API_TOKEN ไม่ได้ตั้ง (dev/legacy) → middleware เป็น no-op (ทุก request ผ่าน)
+app.use("/api", (req, res, next) => {
+  if (!API_TOKEN) return next();
+  const h = req.headers.authorization || "";
+  const m = /^Bearer\s+(.+)$/.exec(h);
+  if (!m || m[1] !== API_TOKEN) {
+    return res.status(401).json({ error: "unauthorized" });
+  }
+  next();
+});
 
 // ── Config (read-all) ──────────────────────────────────────────────────────
 app.get("/api/config", (_req, res) => {
