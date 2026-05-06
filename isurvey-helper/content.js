@@ -49,6 +49,9 @@
       provinceHidden:   'input[type="hidden"][name="tab1_survey_provinceID"]',
       amphurHidden:     'input[type="hidden"][name="tab1_survey_amphurID"]',
       tumbonHidden:     'input[type="hidden"][name="tab1_survey_tumbonID"]',
+      provinceCmpId:    'tab1_survey_provinceID',  // combobox component (พิมพ์ค้นหา)
+      amphurCmpId:      'tab1_survey_amphurID',
+      tumbonCmpId:      'tab1_survey_tumbonID',
       feeInput:         'input#tab1_SUR_INVEST-inputEl',
       feeCmpId:         'tab1_SUR_INVEST',
       outOfAreaCmpId:      'tab1_chk_co_area',
@@ -80,6 +83,16 @@
       incompleteDocsCmpId: 'tab1_deduct_incomplete_docs',  // checkbox "เอกสารไม่ครบ"
       incompleteDocsInputId:'tab1_deduct_incomplete_docs-inputEl',
       deductWarningCmpId:  'tab1_deduct_warning',          // label เตือน deduct ไม่ระบุเหตุผล
+      recvClaimCmpId:      'tab1_RECV_CLAIM',              // numberfield "ค่าเรียกร้อง" (input)
+      recvClaimInput:      'input#tab1_RECV_CLAIM-inputEl',
+      recvClaimInputId:    'tab1_RECV_CLAIM-inputEl',
+      surClaimCmpId:       'tab1_SUR_CLAIM',               // textfield 5% ของ RECV_CLAIM
+      surClaimInput:       'input#tab1_SUR_CLAIM-inputEl',
+      insClaimCmpId:       'tab1_INS_CLAIM',               // textfield 10% ของ RECV_CLAIM
+      insClaimInput:       'input#tab1_INS_CLAIM-inputEl',
+      serviceTypeCmpId:    'tab1_service_type',            // combo "ประเภทบริการ" — บริการ/ต่อเนื่อง/หน้าร้าน/พื้นที่เดียวกัน
+      serviceTypeInput:    'input#tab1_service_type-inputEl',
+      serviceTypeInputId:  'tab1_service_type-inputEl',
     },
     CFG.selectors || {}
   );
@@ -197,11 +210,30 @@
     const cmp = getExtCmp(SEL.mtypeIdCmpId);
     if (cmp && typeof cmp.getValue === "function") {
       const v = cmp.getValue();
-      if (v !== null && v !== undefined && v !== "") return String(v);
+      if (v !== null && v !== undefined && v !== "") {
+        // Ext combobox store ใช้ valueField "clMTID" ที่เก็บเป็น "01"-"04" (2-digit)
+        // normalize → "1"-"4" เพื่อเทียบกับ mt12/mt34 ใน syncMultiFields
+        return String(v).replace(/^0+(?=\d)/, "");
+      }
     }
     const el = document.querySelector(SEL.mtypeIdInput);
     const txt = el ? (el.value || "").trim() : "";
     return MTYPE_LABEL_TO_ID[txt] || "";
+  }
+
+  /**
+   * อ่านค่า "ประเภทบริการ" (tab1_service_type) — combo มี 4 option:
+   * บริการ / ต่อเนื่อง / หน้าร้าน / พื้นที่เดียวกัน
+   * (valueField + displayField = "item" → getValue() คืน label ตรงๆ)
+   */
+  function readServiceType() {
+    const cmp = getExtCmp(SEL.serviceTypeCmpId);
+    if (cmp && typeof cmp.getValue === "function") {
+      const v = cmp.getValue();
+      if (v) return String(v).trim();
+    }
+    const el = document.querySelector(SEL.serviceTypeInput);
+    return el ? (el.value || "").trim() : "";
   }
 
   /**
@@ -479,19 +511,25 @@
         `INS_INVEST [amphur ${amphurId}, MtypeID ${mtype}=${mtype === "3" ? "ติดตาม" : "เจรจาสินไหม"}]`);
     }
 
-    // INS_TRANS: ทุก MtypeID (ขึ้นกับอำเภออย่างเดียว)
+    // INS_TRANS: ทุก MtypeID (ขึ้นกับอำเภออย่างเดียว) — ถ้า table ไม่ได้ระบุ → clear
+    // (เช่น กทม. ทุกอำเภอไม่มี INS_TRANS → field ต้องว่าง)
     if (tbl.INS_TRANS !== undefined) {
       setOneField(SEL.insTransCmpId, SEL.insTransInput, tbl.INS_TRANS,
         `INS_TRANS [amphur ${amphurId}]`);
+    } else {
+      setOneField(SEL.insTransCmpId, SEL.insTransInput, "",
+        `INS_TRANS [amphur ${amphurId} → ไม่ระบุ, clear]`);
     }
 
-    // INS_PHOTO: เฉพาะ MtypeID 1-2 — เมื่อ 3-4 ให้ auto-clear (ป้องกันค่าเก่าค้าง)
+    // INS_PHOTO: เฉพาะ MtypeID 1-2 + table มี INS_PHOTO_12; กรณีอื่น (3-4 หรือ
+    // table ไม่ระบุเช่น กทม.) → clear
     if (mt12 && tbl.INS_PHOTO_12 !== undefined) {
       setOneField(SEL.insPhotoCmpId, SEL.insPhotoInput, tbl.INS_PHOTO_12,
         `INS_PHOTO [amphur ${amphurId}, MtypeID ${mtype}]`);
-    } else if (mt34) {
+    } else {
+      const reason = mt34 ? `MtypeID ${mtype}` : `amphur ${amphurId} ไม่ระบุ`;
       setOneField(SEL.insPhotoCmpId, SEL.insPhotoInput, "",
-        `INS_PHOTO [MtypeID ${mtype} → clear]`);
+        `INS_PHOTO [${reason} → clear]`);
     }
   }
 
@@ -528,16 +566,100 @@
   }
 
   /**
+   * RECV_CLAIM (ค่าเรียกร้อง) > 0 → คำนวณ %:
+   *   SUR_CLAIM  = RECV_CLAIM * 5%
+   *   INS_CLAIM  = RECV_CLAIM * 10%
+   * ถ้า ≤ 0 หรือว่าง → clear ทั้งสอง
+   * ทำงานทุก mode (ไม่ขึ้นกับ AMPHUR_FEE_TABLE หรือ enabledProvinces)
+   */
+  function syncClaimPercentages() {
+    const recvCmp = getExtCmp(SEL.recvClaimCmpId);
+    let raw = null;
+    if (recvCmp && typeof recvCmp.getValue === "function") {
+      raw = recvCmp.getValue();
+    } else {
+      const el = document.getElementById(SEL.recvClaimInputId);
+      if (!el) return;
+      raw = el.value;
+    }
+    const num = parseFloat(String(raw == null ? "" : raw).replace(/,/g, ""));
+    const isEmpty = !Number.isFinite(num) || num <= 0;
+
+    if (isEmpty) {
+      setOneField(SEL.surClaimCmpId, SEL.surClaimInput, "", "SUR_CLAIM (RECV ว่าง/0 → clear)");
+      setOneField(SEL.insClaimCmpId, SEL.insClaimInput, "", "INS_CLAIM (RECV ว่าง/0 → clear)");
+      return;
+    }
+
+    const pct5  = Math.round(num * 0.05 * 100) / 100;
+    const pct10 = Math.round(num * 0.10 * 100) / 100;
+    setOneField(SEL.surClaimCmpId, SEL.surClaimInput, pct5,  `SUR_CLAIM (5% ของ ${num})`);
+    setOneField(SEL.insClaimCmpId, SEL.insClaimInput, pct10, `INS_CLAIM (10% ของ ${num})`);
+  }
+
+  /**
+   * "ต่อเนื่อง" override — fixed rate ที่กำหนดไว้ก่อนคำนวณ multi-field/simple
+   *
+   * Rules:
+   *   service_type = "ต่อเนื่อง" + MtypeID 2 (เคลมแห้ง) ทุกจังหวัด:
+   *     SUR=50, INS_INVEST=100, INS_PHOTO=50
+   *   service_type = "ต่อเนื่อง" + MtypeID 1 (เคลมสด) + จังหวัด BMR (10/11/12/13):
+   *     SUR=100, INS_INVEST=300, INS_PHOTO=50
+   *   service_type = "ต่อเนื่อง" + MtypeID 1 (เคลมสด) + จังหวัดอื่น:
+   *     SUR=100, INS_INVEST=500, INS_PHOTO=50
+   *   อื่นๆ → ไม่ override (caller fallthrough ไป syncMultiFields/Simple ปกติ)
+   *
+   * INS_TRANS: clear ทุก rule (ต่อเนื่อง = ไม่มีค่าเดินทาง)
+   * Modifiers (outOfArea/outOfHours/deduct): ไม่ apply ใน ต่อเนื่อง mode
+   *
+   * @returns {boolean} true ถ้า override ถูก apply (caller skip normal logic)
+   */
+  const BMR_PROVINCE_IDS = new Set(["10", "11", "12", "13"]);
+  function applyContinuousOverride(provinceId) {
+    if (readServiceType() !== "ต่อเนื่อง") return false;
+    const mtype = readMtypeId();
+
+    let rule = null;
+    if (mtype === "2") {
+      rule = { sur: 50,  ins: 100, photo: 50, label: "MtypeID 2 เคลมแห้ง" };
+    } else if (mtype === "1") {
+      if (BMR_PROVINCE_IDS.has(String(provinceId))) {
+        rule = { sur: 100, ins: 300, photo: 50, label: "MtypeID 1 เคลมสด BMR" };
+      } else {
+        rule = { sur: 100, ins: 500, photo: 50, label: "MtypeID 1 เคลมสด non-BMR" };
+      }
+    }
+    if (!rule) return false; // MtypeID 3/4 — ไม่มี rule → fallthrough
+
+    const tag = `ต่อเนื่อง [${rule.label}]`;
+    setOneField(SEL.feeCmpId,       SEL.feeInput,       rule.sur,   `SUR_INVEST ${tag}`);
+    setOneField(SEL.insInvestCmpId, SEL.insInvestInput, rule.ins,   `INS_INVEST ${tag}`);
+    setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  rule.photo, `INS_PHOTO ${tag}`);
+    setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "",         `INS_TRANS ${tag} → clear`);
+    return true;
+  }
+
+  /**
    * Entry point: เลือก mode ตามว่า amphurId อยู่ใน AMPHUR_FEE_TABLE หรือไม่
    *   - อยู่ → multi-field (ระยอง)
    *   - ไม่อยู่ → simple SUR_INVEST (กทม. ฯลฯ)
+   * "ต่อเนื่อง" override ทำงานก่อน — ถ้า apply แล้วจะ short-circuit
    */
   function syncFeeFromLocation() {
     const provinceId = readHiddenValue(SEL.provinceHidden);
     const amphurId   = readHiddenValue(SEL.amphurHidden);
     const tumbonId   = readHiddenValue(SEL.tumbonHidden);
 
-    if (!isProvinceEnabled(provinceId)) return; // นอก whitelist → ไม่แตะ
+    // ค่าเรียกร้อง % — ทำเสมอ ไม่ขึ้นกับ whitelist
+    syncClaimPercentages();
+
+    if (!isProvinceEnabled(provinceId)) return; // นอก whitelist → ไม่แตะ fee field
+
+    // "ต่อเนื่อง" override — ถ้า matched → set 4 fields fixed + return
+    if (applyContinuousOverride(provinceId)) {
+      updateDeductWarning();
+      return;
+    }
 
     const tbl = getAmphurTable()[amphurId];
     if (tbl) {
@@ -715,6 +837,8 @@
         t.id === SEL.incompleteDocsInputId ||
         t.id === SEL.mtypeIdInputId ||
         t.id === SEL.surveyorNameInputId ||
+        t.id === SEL.recvClaimInputId ||
+        t.id === SEL.serviceTypeInputId ||
         (t.type === "radio" && t.name === SEL.inOutRadioName);
       if (matches) {
         // sync ทันทีหลัง Ext กระจาย event ภายใน
@@ -728,7 +852,8 @@
       if (t && (
         t.id === SEL.outOfAreaAmountInputId ||
         t.id === SEL.outOfHoursAmountInputId ||
-        t.id === SEL.deductAmountInputId
+        t.id === SEL.deductAmountInputId ||
+        t.id === SEL.recvClaimInputId
       )) {
         setTimeout(syncFeeFromLocation, 0);
       }
@@ -736,9 +861,120 @@
     log("Modifier change-listener attached (delegated on document)");
   }
 
+  /**
+   * ผูก Ext component event 'change' โดยตรง — สำหรับ combobox/checkbox ที่
+   * Ext ไม่ fire native DOM 'change' บน inputEl (เช่น tab1_claim_MtypeID)
+   * ใช้ flag บนตัว cmp เอง — ถ้า Ext destroy + recreate cmp ใหม่ flag หาย
+   * → re-attach อัตโนมัติในรอบ poll ถัดไป
+   */
+  function attachExtChangeListener(cmpId, label) {
+    const cmp = getExtCmp(cmpId);
+    if (!cmp || typeof cmp.on !== "function") return false;
+    if (cmp.__iSurveyHelperListenerAttached) return true;
+    cmp.__iSurveyHelperListenerAttached = true;
+    cmp.on("change", () => {
+      log(`Ext change → ${label} → sync`);
+      syncFeeFromLocation();
+    });
+    log(`Ext change-listener attached: ${label} (${cmpId})`);
+    return true;
+  }
+
+  function attachAllExtListeners() {
+    attachExtChangeListener(SEL.mtypeIdCmpId, "MtypeID");
+    attachExtChangeListener(SEL.surveyorNameCmpId, "Surveyor");
+    attachExtChangeListener(SEL.recvClaimCmpId, "RecvClaim");
+    attachExtChangeListener(SEL.serviceTypeCmpId, "ServiceType");
+  }
+
+  /**
+   * เปิด type-ahead บน combobox จังหวัด/อำเภอ/ตำบล —
+   * host ตั้ง editable=false, typeAhead=false ทำให้ user พิมพ์ค้นหาไม่ได้
+   * ใช้ flag บน cmp กัน double-apply; re-apply อัตโนมัติถ้า Ext recreate
+   */
+  function enableTypeAhead(cmpId) {
+    const cmp = getExtCmp(cmpId);
+    if (!cmp) return false;
+    if (cmp.__iSurveyHelperTypeAheadEnabled) return true;
+    cmp.__iSurveyHelperTypeAheadEnabled = true;
+    try {
+      if (typeof cmp.setEditable === "function") cmp.setEditable(true);
+      else cmp.editable = true;
+      cmp.typeAhead = true;
+      cmp.queryMode = "local";
+      cmp.minChars = 0;
+      if (cmp.inputEl && cmp.inputEl.dom) cmp.inputEl.dom.removeAttribute("readonly");
+      log(`Type-ahead enabled: ${cmpId}`);
+    } catch (e) {
+      warn(`Failed to enable type-ahead on ${cmpId}:`, e);
+      return false;
+    }
+    return true;
+  }
+
+  function enableAllTypeAhead() {
+    enableTypeAhead(SEL.provinceCmpId);
+    enableTypeAhead(SEL.amphurCmpId);
+    enableTypeAhead(SEL.tumbonCmpId);
+  }
+
+  /**
+   * กรอง store ของ combobox จังหวัดตาม userProvincePreferences (จาก popup)
+   * - prefs ว่าง → ถอด filter (แสดงครบ 77)
+   * - prefs มีรายการ → ถอด filter เก่าแล้วใส่ filter ใหม่ (filter id = "__iSurveyHelperUserPref")
+   *
+   * Re-apply ทุก poll เพราะ host อาจ clear filter ตอน re-render combobox
+   */
+  let lastFilterSig = null;
+  function filterProvinceCombobox() {
+    const cmp = getExtCmp(SEL.provinceCmpId);
+    if (!cmp || typeof cmp.getStore !== "function") return false;
+    const store = cmp.getStore();
+    if (!store) return false;
+
+    const prefs = (getCFG().userProvincePreferences) || [];
+    const sig = prefs.length ? prefs.slice().sort().join(",") : "";
+
+    try {
+      // ถ้า filter ของเรามีอยู่แล้วและ sig ตรง — เช็ค count ดูว่ายังถูก apply อยู่
+      const existing = (store.getFilters && store.getFilters().getByKey)
+        ? store.getFilters().getByKey("__iSurveyHelperUserPref")
+        : null;
+      if (existing && lastFilterSig === sig) return true;
+
+      // remove old filter (silent — ไม่ trigger event)
+      if (typeof store.removeFilter === "function") {
+        store.removeFilter("__iSurveyHelperUserPref", true);
+      }
+
+      if (prefs.length === 0) {
+        lastFilterSig = "";
+        return true;
+      }
+
+      const set = new Set(prefs.map(String));
+      const valueField = cmp.valueField || "provinceID";
+      store.addFilter([{
+        id: "__iSurveyHelperUserPref",
+        filterFn: (rec) => set.has(String(rec.get(valueField))),
+      }]);
+      if (sig !== lastFilterSig) {
+        log(`Province filter applied: ${prefs.length}/${store.getTotalCount?.() || "?"}`);
+      }
+      lastFilterSig = sig;
+    } catch (e) {
+      warn("filterProvinceCombobox error:", e);
+      return false;
+    }
+    return true;
+  }
+
   function startPolling() {
     setInterval(() => {
       attachAllLocationObservers();
+      attachAllExtListeners();
+      enableAllTypeAhead();
+      filterProvinceCombobox();
       syncFeeFromLocation();
     }, CFG.pollIntervalMs);
   }
@@ -789,6 +1025,8 @@
     // ฟัง config update จาก admin → log + sync ทันที (ไม่ต้องรอ poll)
     window.addEventListener("isurvey-config-updated", () => {
       logConfigSnapshot("Config updated.");
+      lastFilterSig = null; // บังคับ re-apply filter (sig อาจเหมือนเดิมแต่ store filter ถูก clear)
+      filterProvinceCombobox();
       syncFeeFromLocation();
     });
 
@@ -803,6 +1041,9 @@
     }
 
     attachAllLocationObservers();
+    attachAllExtListeners();
+    enableAllTypeAhead();
+    filterProvinceCombobox();
     attachModifierListeners();
     attachSaveButtonListener();
     syncFeeFromLocation();

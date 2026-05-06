@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>I Survey Helper</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <div class="title">เลือกจังหวัดที่ใช้งานประจำ</div>
+    <div class="counter"><span id="count">0</span> / <span id="total">77</span></div>
+  </header>
+
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="ค้นหาจังหวัด..." autocomplete="off" />
+    <button id="select-all" class="btn">เลือกทั้งหมด</button>
+    <button id="clear-all" class="btn btn-secondary">ล้างทั้งหมด</button>
+  </div>
+
+  <div id="list" class="list"></div>
+
+  <footer>
+    <span id="status" class="hint">เปลี่ยนแปลงมีผลทันที — เลือก 0 = แสดงทั้ง 77 จังหวัด</span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

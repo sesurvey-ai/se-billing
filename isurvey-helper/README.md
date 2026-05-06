@@ -122,6 +122,10 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 
 > non-SE: `SUR_INVEST` ไม่ถูกแตะ (เก็บไว้ใน config สำหรับการเติมในอนาคต) ส่วน `INS_*` ยังเติมตาม MtypeID ปกติ
 
+> **กทม. (1001-1050):** entry มีแค่ `SUR_INVEST` + `INS_INVEST_12` + `INS_INVEST_34`
+> ไม่มี `INS_TRANS` / `INS_PHOTO_12` ใน table → extension จะ **auto-clear**
+> 2 ฟิลด์นี้ทันทีเมื่อเลือก กทม. (v2.3.4+)
+
 **ตารางตัวอย่าง [`AMPHUR_FEE_TABLE`](./config.js):**
 ```js
 // SUR_INVEST = column "พนักงาน" (ต่างกันต่ออำเภอ), INS_INVEST = column "บริษัท" (500/400 ทุกอำเภอ)
@@ -134,8 +138,8 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 "8015": { SUR_INVEST: 1100, INS_INVEST_12: 1650, INS_INVEST_34: 1500, INS_TRANS: 1200, INS_PHOTO_12: 50 }, // ขนอม
 ```
 
-**Provinces ที่รองรับใน multi-field mode (17 จังหวัด, 245 อำเภอ):**
-ระยอง (21), พระนครศรีอยุธยา (14), สระบุรี (19), จันทบุรี (22), ฉะเชิงเทรา (24), นครราชสีมา (30), อุบลราชธานี (34), ขอนแก่น (40), เชียงใหม่ (50), สุโขทัย (64), พิษณุโลก (65), พิจิตร (66), กาญจนบุรี (71), สุพรรณบุรี (72), นครศรีธรรมราช (80), ภูเก็ต (83), สงขลา (90)
+**Provinces ที่รองรับใน multi-field mode (21 จังหวัด, 315 อำเภอ):**
+กรุงเทพฯ (10), สมุทรปราการ (11), นนทบุรี (12), ปทุมธานี (13), พระนครศรีอยุธยา (14), สระบุรี (19), ระยอง (21), จันทบุรี (22), ฉะเชิงเทรา (24), นครราชสีมา (30), อุบลราชธานี (34), ขอนแก่น (40), เชียงใหม่ (50), สุโขทัย (64), พิษณุโลก (65), พิจิตร (66), กาญจนบุรี (71), สุพรรณบุรี (72), นครศรีธรรมราช (80), ภูเก็ต (83), สงขลา (90)
 
 ### Modifier (เปิด/ปิด/ปรับจำนวนเงินได้ใน config.js → `modifierFees`)
 
@@ -144,6 +148,32 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 | `outOfArea` | checkbox "นอกพื้นที่" (`tab1_chk_co_area`) ถูกติ๊ก | +50 | ถ้า user กรอกยอดเอง ใน numberfield ที่โผล่ขึ้นข้างหลัง checkbox จะใช้ค่านั้นแทน default |
 | `outOfHours` | radio "นอก" ใน group `tab1_grd-in_out` ถูกเลือก | +100 | ถ้า user กรอกยอดเอง ใน numberfield ที่โผล่ขึ้นต่อท้าย radiogroup จะใช้ค่านั้นแทน default |
 | `deduct` | numberfield "หักเงิน" (`tab1_deduct_amount`) มีค่า > 0 | — | inject เป็น **แถวที่ 7** ในตารางรายการค่าใช้จ่าย; **หัก** ออกจาก SUR_INVEST (ทำงานทั้ง simple และ multi-field mode) |
+
+### "ต่อเนื่อง" service-type override (v2.6.0+)
+
+ถ้า `tab1_service_type` = **"ต่อเนื่อง"** → fixed rate override (ก่อน multi-field/simple) ตาม MtypeID + จังหวัด:
+
+| service_type | MtypeID | จังหวัด | SUR_INVEST | INS_INVEST | INS_TRANS | INS_PHOTO |
+|---|---|---|---|---|---|---|
+| ต่อเนื่อง | 2 (เคลมแห้ง) | ทุกจังหวัด | 50 | 100 | clear | 50 |
+| ต่อเนื่อง | 1 (เคลมสด) | กทม./สมุทรปราการ/นนทบุรี/ปทุมธานี (10/11/12/13) | 100 | 300 | clear | 50 |
+| ต่อเนื่อง | 1 (เคลมสด) | จังหวัดอื่น | 100 | 500 | clear | 50 |
+| ต่อเนื่อง | 3 / 4 | — | *(ไม่ override → multi-field/simple ปกติ)* |
+
+> Modifiers (outOfArea/outOfHours/deduct) **ไม่ apply** ในโหมด "ต่อเนื่อง"
+> เพราะเป็น fixed rate ตามตาราง
+
+### Auto-calc % ของค่าเรียกร้อง (v2.3.0+)
+
+ทำงานทุก mode ไม่ขึ้นกับจังหวัด/อำเภอ — เป็นเปอร์เซ็นต์ตรง ๆ ของยอดเรียกร้อง:
+
+| Field ปลายทาง | ค่า | Source |
+|---|---|---|
+| `tab1_SUR_CLAIM` | `RECV_CLAIM × 5%` | `tab1_RECV_CLAIM` (numberfield ค่าเรียกร้อง) |
+| `tab1_INS_CLAIM` | `RECV_CLAIM × 10%` | `tab1_RECV_CLAIM` |
+
+ถ้า `RECV_CLAIM ≤ 0` หรือว่าง → clear ทั้งสอง. round 2 decimal places.
+Trigger 4 ทาง: native input/change + Ext component change + polling 500ms (safety net)
 
 ตั้ง `modifierFees.outOfArea = 0` หรือ `outOfHours = 0` เพื่อปิด default amount (numberfield ยังโผล่ขึ้นให้กรอกเองได้)
 
@@ -166,15 +196,26 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 - ค่าใน field feed กลับเข้า SUR_INVEST ทันที (ทั้ง `change` และ `input` event)
 - ทำงานทั้ง simple mode (กทม., ฯลฯ) และ multi-field mode (ระยอง — เฉพาะ SE)
 
-### Whitelist จังหวัด (ทดสอบทีละจังหวัด)
+### Whitelist จังหวัด (admin-controlled)
 
-`ISURVEY_HELPER_CONFIG.enabledProvinces` ใน config.js:
+`enabledProvinces` ใน server config — แก้ผ่าน `/admin` → tab "Whitelist จังหวัด":
 - `[]` → ทำงานทุกจังหวัด
-- `["10"]` → เฉพาะกรุงเทพฯ
-- `["10", "21"]` → กทม. + ระยอง (default ตอนนี้)
-- `["10", "11"]` → กทม. + สมุทรปราการ
+- `["10", "21", ...]` → เฉพาะจังหวัดที่ติ๊ก (default 21 จังหวัด multi-field)
 
 ถ้าผู้ใช้เลือกจังหวัดที่ไม่อยู่ใน whitelist → extension จะไม่แตะค่าบริการเลย
+(`isProvinceEnabled` ที่ [content.js](./content.js))
+
+### Per-user province popup (v2.5.0+)
+
+แต่ละผู้ใช้คลิก **extension icon** → popup เด้ง → ติ๊กเลือกจังหวัดที่ใช้ประจำ
+→ บันทึก `chrome.storage.local["userProvincePreferences"]` (per-machine/per-user)
+→ content.js กรอง store ของ combobox `tab1_survey_provinceID`
+
+- ติ๊ก 0 จังหวัด = ไม่กรอง = แสดงครบ 77
+- การเปลี่ยนแปลง apply ทันที (ผ่าน `chrome.storage.onChanged` → loader broadcast → re-filter)
+- ไม่กรอง dropdown อำเภอ — ใช้ type-ahead (v2.4.0) ค้นหาแทน
+- **แตกต่างจาก `enabledProvinces`** ตรงที่ admin whitelist gate auto-fill,
+  ส่วน user popup กรองแค่ visual ของ dropdown
 
 ### ตัวอย่างผลลัพธ์
 
@@ -259,6 +300,10 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 | ค่าบริการอนุมัติ | `tab1_INS_INVEST` |
 | ค่าเดินทาง/พาหนะ (อนุมัติ) | `tab1_INS_TRANS` |
 | ค่ารูปถ่าย (อนุมัติ) | `tab1_INS_PHOTO` |
+| **ค่าเรียกร้อง** (input source สำหรับ %) | `tab1_RECV_CLAIM` (numberfield) |
+| **5% ของค่าเรียกร้อง** | `tab1_SUR_CLAIM` (textfield, auto) |
+| **10% ของค่าเรียกร้อง** | `tab1_INS_CLAIM` (textfield, auto) |
+| **ประเภทบริการ** (combo) | `tab1_service_type` — บริการ/ต่อเนื่อง/หน้าร้าน/พื้นที่เดียวกัน |
 | checkbox "นอกพื้นที่" | `tab1_chk_co_area` |
 | radiogroup "ใน/นอกเวลา" | `tab1_grd-in_out` (radio name `tab1_rd-in_out`) |
 | **หักเงิน** (inject แถว 7) | `tab1_deduct_amount` (numberfield) |
@@ -284,17 +329,18 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 
 ```
 isurvey-helper/
-├── manifest.json                        ← MV3 + host_permissions + background SW + options_ui + content_scripts
+├── manifest.json                        ← MV3 + host_permissions + background SW + action.default_popup + options_ui + content_scripts
 ├── background.js                        ← Service worker: HTTP I/O ไปหา server
 ├── options.html / options.js            ← Settings page (Server URL field) — เปิดจาก chrome://extensions Details
+├── popup.html / popup.css / popup.js    ← Per-user province popup (v2.5.0) — checkbox 77 จังหวัด → chrome.storage.local
 ├── config-bridge.js                     ← MAIN: receive config จาก loader → set window.X
 ├── content.js                           ← MAIN: Logic หลัก + capture trigger (observer + setValue + click ปุ่ม "ยืนยันการตรวจสอบ")
-├── loader.js                            ← ISOLATED: ref data + ขอ config จาก SW (poll 30s) + forward capture
+├── loader.js                            ← ISOLATED: ref data + ขอ config จาก SW (poll 30s) + ฟัง storage.onChanged + forward capture
 ├── feature-out-of-area-amount.js        ← MAIN: numberfield "ยอดเงิน" คู่ checkbox "นอกพื้นที่"
 ├── feature-out-of-hours-amount.js       ← MAIN: numberfield "ยอดเงิน" ต่อท้าย radio "นอก" (นอกเวลา)
 ├── feature-deduct-amount.js             ← MAIN: แถวที่ 7 "หักเงิน" — inject เข้าตารางค่าใช้จ่าย
 ├── data/
-│   ├── provinces.json                   ← 77 จังหวัด (reference, สำหรับ name lookup)
+│   ├── provinces.json                   ← 77 จังหวัด (reference, สำหรับ name lookup + popup)
 │   ├── amphurs.json                     ← อำเภอทั้งประเทศ (reference)
 │   └── tumbons.json                     ← ตำบลทั้งประเทศ (reference)
 ├── icon-16.png / icon-48.png / icon-128.png
@@ -305,10 +351,11 @@ isurvey-helper/
 
 | ไฟล์ | World | หน้าที่ |
 |------|-------|--------|
-| `manifest.json` | — | ประกาศ extension, match URL, inject scripts, options_ui = options.html, host_permissions เพื่อให้ service worker fetch ไป backend ได้ |
+| `manifest.json` | — | ประกาศ extension, match URL, inject scripts, action.default_popup = popup.html, options_ui = options.html, host_permissions เพื่อให้ service worker fetch ไป backend ได้ |
 | `background.js` | service worker | HTTP I/O ทุกอย่างไปยัง backend (fetch config, send capture, ping) — รับ chrome.runtime messages |
 | `options.html` / `options.js` | extension page | ตั้งค่า Server URL (default `http://localhost:3200`) + ปุ่มทดสอบเชื่อมต่อ |
-| `loader.js` | ISOLATED | (1) fetch reference JSON → MAIN, (2) ขอ config จาก background → broadcast MAIN ทุก 30s, (3) forward capture-data จาก MAIN → background |
+| `popup.html` / `popup.css` / `popup.js` | extension popup | คลิก extension icon → checkbox 77 จังหวัด, search, เลือกทั้งหมด/ล้างทั้งหมด — auto-save บน toggle ลง `chrome.storage.local["userProvincePreferences"]` |
+| `loader.js` | ISOLATED | (1) fetch reference JSON → MAIN, (2) ขอ config จาก background → broadcast MAIN ทุก 30s + merge `userProvincePreferences` จาก storage, (3) ฟัง `chrome.storage.onChanged` → re-broadcast ทันทีเมื่อ user toggle popup, (4) forward capture-data จาก MAIN → background |
 | `config-bridge.js` | MAIN | receive config payload จาก loader → set `window.PROVINCE_FEE_MAP` / `window.AMPHUR_FEE_TABLE` / ฯลฯ + dispatch `isurvey-config-ready` / `isurvey-config-updated` |
 | `content.js` | MAIN | อ่าน hidden inputs / modifier inputs, lookup fee, set ผ่าน `Ext.getCmp().setValue()` — **อ่าน window.X สดทุก sync** + capture เมื่อกดปุ่ม "ยืนยันการตรวจสอบ" (`#tab1_save`, delegated click + dedup) → postMessage ISOLATED |
 | `feature-out-of-area-amount.js` | MAIN | สร้าง/ลบ numberfield "ยอดเงิน (บาท)" ตามสถานะ checkbox "นอกพื้นที่" (poll ทุก 500ms) |
@@ -422,6 +469,16 @@ isurvey-helper/
 
 | Version | การเปลี่ยนแปลง |
 |---------|--------------|
+| **2.6.0** | **"ต่อเนื่อง" service-type override**: เพิ่ม `tab1_service_type` (combo) — ถ้าเลือก "ต่อเนื่อง" จะ override fee fields ด้วย fixed rate ก่อน multi-field/simple. Rules: (1) MtypeID 2 ทุกจังหวัด → SUR=50, INS=100, PHOTO=50, TRANS=clear; (2) MtypeID 1 + BMR (10/11/12/13) → SUR=100, INS=300, PHOTO=50, TRANS=clear; (3) MtypeID 1 non-BMR → SUR=100, INS=500, PHOTO=50, TRANS=clear; (4) MtypeID 3/4 → fall through ไป logic ปกติ. ไม่ apply modifiers ในโหมดนี้. ผูก Ext change event listener สำหรับ `tab1_service_type` ทำให้ sync ทันที |
+| **2.5.0** | **Per-user province popup**: เพิ่ม `action.default_popup` (popup.html/.css/.js) — user คลิก extension icon เปิด popup ติ๊กเลือกจังหวัดที่ใช้งานประจำ (search + เลือกทั้งหมด/ล้างทั้งหมด + counter). บันทึกใน `chrome.storage.local["userProvincePreferences"]` (per-machine/per-user). loader.js ฟัง `chrome.storage.onChanged` → re-broadcast config ทันที (ไม่ต้องรอ poll 30s). content.js เพิ่ม `filterProvinceCombobox()` ที่ apply Ext store filter (`store.addFilter([{id: "__iSurveyHelperUserPref", filterFn: ...}])`) ตาม preference. ติ๊ก 0 = แสดงครบ 77. ไม่กรอง dropdown อำเภอ |
+| **2.4.0** | **เปิด type-ahead บน combobox จังหวัด/อำเภอ/ตำบล**: host ตั้ง `editable: false, typeAhead: false` ทำให้ user พิมพ์ค้นหาไม่ได้ ต้อง scroll หาในรายการ 77 จังหวัด / 1004 อำเภอ. แก้ runtime ผ่าน `cmp.setEditable(true); cmp.typeAhead = true; cmp.queryMode = "local"; cmp.minChars = 0` + ลบ readonly attribute. ใช้ flag `__iSurveyHelperTypeAheadEnabled` กัน double-apply + re-apply อัตโนมัติทุก 500ms ถ้า Ext destroy/recreate cmp |
+| **2.3.4** | **Auto-clear INS_TRANS / INS_PHOTO เมื่อ table ไม่ระบุ**: ใน multi-field mode — ถ้า amphur entry ไม่มี `INS_TRANS` หรือ `INS_PHOTO_12` ให้ clear field ที่เกี่ยวข้องอัตโนมัติ (เดิม: ปล่อยค่าเดิมค้างไว้). กระทบเฉพาะ กทม. ทุกอำเภอ (entry มีแค่ SUR/INS_INVEST_12/34 ไม่มี TRANS/PHOTO_12) → ค่าเดินทาง/ค่ารูป จะถูก clear ทันทีเมื่อเลือก กทม. — สอดคล้องกับ Google Sheet ที่ไม่ได้กำหนดสองค่านี้สำหรับ กทม. |
+| **2.3.3** | **Fix: BMR PROVINCE_FEE_MAP**: ปรับ `PROVINCE_FEE_MAP` ให้สอดคล้องกับ multi-field rate ของ BMR — `10/11/12/13` = 300 ทุกจังหวัด (เดิม `10:700, 11/12:800`). ใช้เป็น fallback rate ตอน user เลือกแค่จังหวัดยังไม่เลือกอำเภอ — ก่อนหน้านี้แสดง 800 ก่อนแล้วค่อยเปลี่ยนเป็น 300 หลังเลือกอำเภอ ทำให้สับสน |
+| **2.3.2** | **Region: BMR**: เพิ่ม 4 จังหวัดในกลุ่มกรุงเทพและปริมณฑล (กทม. 50 amphur / สมุทรปราการ 6 / นนทบุรี 6 / ปทุมธานี 8) เข้า `AMPHUR_FEE_TABLE` รวมเป็น **21 จังหวัด, 315 อำเภอ**. กทม.: SUR=300, INS_12=INS_34=700 (ไม่มี TRANS/PHOTO). อีก 3 จังหวัด: SUR=300, INS_12=300, INS_34=200, TRANS=500, PHOTO_12=50. เพิ่ม "13" ใน `enabledProvinces` (รวม 21 จังหวัด) |
+| **2.3.1** | **Fix: 10% target field**: เปลี่ยน target ของ 10% จาก `tab1_INS_DAILY` → `tab1_INS_CLAIM` (รอบ 2.3.0 ใส่ผิดช่อง) |
+| **2.3.0** | **เพิ่ม auto-calc % ของค่าเรียกร้อง**: ตรวจ `tab1_RECV_CLAIM` (numberfield ค่าเรียกร้อง) — ถ้า > 0 → ตั้ง `tab1_SUR_CLAIM` = 5% และ `tab1_INS_CLAIM` = 10% ของ RECV; ถ้า ≤ 0 หรือว่าง → clear ทั้งสอง. ทำงานทุก mode (ไม่ขึ้นกับ `enabledProvinces` หรือ `AMPHUR_FEE_TABLE`). Trigger: native `change`/`input` listener + Ext component `change` (เผื่อ spinner buttons / setValue) + polling 500ms. Round 2 decimals |
+| **2.2.2** | **Fix: MtypeID leading-zero**: Ext combobox `tab1_claim_MtypeID` เก็บ value เป็น `"01"-"04"` (จาก store field `clMTID`) แต่ `readMtypeId()` เทียบกับ `"1"-"4"` ตรง ๆ → `mt12`/`mt34` เป็น false ทั้งคู่ → multi-field sync ไม่ทำงานเมื่อเลือกผ่าน UI (INS_INVEST/INS_PHOTO ไม่ถูกเซ็ต). Fix: strip leading zero ใน `readMtypeId()` ด้วย `replace(/^0+(?=\d)/, "")` |
+| **2.2.1** | **Fix: MtypeID listener latency**: Ext combobox **ไม่ fire** native DOM `change` event บน `inputEl` (เฉพาะ Ext internal event) → listener ที่ `addEventListener("change")` บน document ไม่จับ → MtypeID เปลี่ยนต้องรอ polling 500ms (UX รู้สึกว่าต้องเปลี่ยนจังหวัด/อำเภอบังคับให้ refresh). Fix: เพิ่ม `attachExtChangeListener()` ผูก `cmp.on("change", ...)` ตรงกับ Ext component สำหรับ `tab1_claim_MtypeID` + `tab1_surveyor_name`; flag `__iSurveyHelperListenerAttached` บนตัว cmp เอง → re-attach อัตโนมัติถ้า Ext destroy/recreate cmp |
 | **2.2.0** | **Capture trigger + UI overhaul**: (1) **Capture trigger เปลี่ยนเป็นปุ่ม "ยืนยันการตรวจสอบ"** (#tab1_save) — เลิก debounced-on-change (1.5s), ใช้ delegated click listener (capture phase) → 1 การกด = 1 capture, มี dedup กันส่งซ้ำ → DB สะอาด, record ตรงกับงานยืนยันจริง. (2) **หน้า /captures restructure**: ลบ "รวม" ออก, เพิ่ม "รวมบริษัท" (ค่าบริการ+ค่าพาหนะ+รูป) + "รวมพนักงาน" (พนักงาน+นอกพื้นที่+นอกเวลา−หัก), column "พนักงาน" แสดงค่า base (derive ย้อนจาก sur_invest), reorder ตาม ค่าบริการ→ค่าพาหนะ→รูป→รวมบริษัท→พนักงาน→...→รวมพนักงาน. (3) **Header แปลไทย**: Surveyor→พนักงานสำรวจ, SUR→พนักงาน, INS→ค่าบริการ, TRANS→ค่าพาหนะ, PHOTO→รูป (ทั้งหน้า /captures และ /admin/captures + เรทราคา /, /admin). (4) **Excel export match หน้า /captures**: ลบ Mode + SE column แยก, รวมช่อง "นอกพื้นที่/ยอด" เป็นช่องเดียว, เพิ่ม "รวมบริษัท" + "รวมพนักงาน". (5) UI: panel เต็มจอ (ลบ max-width 1400px), ค่าใน table /captures อยู่กลาง |
 | **2.1.0** | **Capture metadata + UX**: เพิ่ม checkbox "ส่งช้า" / "เอกสารไม่ครบ" ในแถว 7 (หักเงิน) — บังคับเลือกเหตุผลเมื่อ deduct > 0 (warning label สีแดงในฟอร์ม + extension skip POST + server reject 400). เพิ่ม `inspector_name` (อ่านจาก header `#main-tab_header-title-textEl` + ตัดคำนำหน้าไทย: นาย/นาง/นางสาว/ด.ช./ด.ญ./เด็กชาย/เด็กหญิง). เปลี่ยน surveyor_name ให้อ่านจาก DOM input ตรง (`tab1_surveyor_name-inputEl`). หน้า server แยก viewer (public, ไม่มีเมนูเข้า admin) ↔ admin (URL-only, มีลบ/Clear all); เพิ่ม Excel export (.xlsx) ผ่าน `GET /api/captures.xlsx`; column รวม = SUR+INS+TRANS+PHOTO (sur_invest หักเงินไว้ก่อนแล้ว); UI: + เขียว / − แดง, label ภาษาไทย (เรทราคา / รายละเอียด), centered cells, full-width panels |
 | **2.0.0** | **Backend server**: ย้าย config + admin UI ออกจาก extension ไปยัง standalone Node.js server ที่โฟลเดอร์ [`../server/`](../server/) (Express + SQLite). หน้า /admin /viewer /captures เปิดจาก browser ตรงไปยัง server. Extension เปลี่ยน options_ui เป็นเพียง [options.html](./options.html) (Server URL field), เพิ่ม [background.js](./background.js) service worker สำหรับ HTTP I/O, แก้ [loader.js](./loader.js) ให้ขอ config จาก server (poll 30s) แทน chrome.storage, เพิ่ม capture trigger ใน [content.js](./content.js) (debounce 1.5s) → POST `/api/captures`. ลบ `admin.html` / `admin.js` / `admin.css` / `default-data.json` ออกจาก extension (default-data ย้ายไป [`../server/seed/default-data.json`](../server/seed/default-data.json)) |
