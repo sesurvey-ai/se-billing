@@ -15,11 +15,11 @@
  *   { type: "send-capture", data }            → { ok, id }       หรือ { ok:false, error }
  *   { type: "ping-server" }                   → { ok, healthz }
  *
- * Default server URL: http://localhost:3200 (override ได้ผ่าน options.html)
+ * Default server URL: https://billing.sesurvey.cloud (override ได้ผ่าน options.html)
  * API token: bearer token ที่ server ตั้งไว้ใน env API_TOKEN — เก็บใน chrome.storage
  */
 
-const DEFAULT_SERVER_URL = "http://localhost:3200";
+const DEFAULT_SERVER_URL = "https://billing.sesurvey.cloud";
 
 async function getServerUrl() {
   const { serverUrl } = await chrome.storage.local.get("serverUrl");

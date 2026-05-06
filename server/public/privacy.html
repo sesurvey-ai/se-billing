@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>SE-Billing — Privacy Policy</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .privacy-wrap { max-width: 760px; margin: 40px auto; padding: 0 24px; }
+    .privacy-wrap h1 { font-size: 26px; }
+    .privacy-wrap h2 { font-size: 18px; margin-top: 32px; }
+    .privacy-wrap p, .privacy-wrap li { line-height: 1.7; }
+    .privacy-wrap code { background: #f1f5f9; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+    .updated { color: #666; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><a href="/">SE-Billing</a></h1>
+  </header>
+
+  <div class="privacy-wrap">
+    <h1>นโยบายความเป็นส่วนตัว — SE-Billing Extension</h1>
+    <p class="updated">อัพเดทล่าสุด: 6 พฤษภาคม 2026 (Last updated: 2026-05-06)</p>
+
+    <h2>1. ข้อมูลที่ extension เก็บ</h2>
+    <p>SE-Billing Chrome Extension ทำงานบนหน้าเว็บ <code>https://cloud.isurvey.mobi/*</code> เท่านั้น และเก็บข้อมูลต่อไปนี้:</p>
+    <ul>
+      <li><strong>ข้อมูลฟอร์มที่ user กรอก</strong>: จังหวัด/อำเภอ/ตำบลของงานสำรวจ, รหัสประเภทเคลม, ชื่อพนักงานสำรวจ, ค่าบริการ และ field ที่เกี่ยวข้องในแบบฟอร์ม</li>
+      <li><strong>ข้อมูลผู้ใช้งาน</strong>: ชื่อ inspector ที่ login (อ่านจาก header ของหน้า I Survey)</li>
+      <li><strong>การตั้งค่า extension</strong>: Server URL, API token, รายการจังหวัดที่ user เลือกใช้งาน — เก็บใน <code>chrome.storage.local</code> ของเครื่องผู้ใช้</li>
+    </ul>
+    <p>Extension <em>ไม่</em>เก็บ: รหัสผ่าน, ข้อมูลทางการเงินส่วนตัว, ข้อมูลในแท็บอื่นที่ไม่ใช่ I Survey, ประวัติการเข้าชมเว็บไซต์</p>
+
+    <h2>2. วัตถุประสงค์</h2>
+    <p>ข้อมูลที่บันทึกใช้สำหรับ:</p>
+    <ul>
+      <li>คำนวณและเติมค่าบริการลงในฟอร์มอัตโนมัติตามตารางเรทของบริษัท</li>
+      <li>เก็บ audit log ของงานที่ user กรอกเพื่อทำบัญชีค่าบริการรายเดือน</li>
+      <li>วิเคราะห์ภาพรวมการใช้งานเพื่อปรับปรุงอัตราค่าบริการ</li>
+    </ul>
+
+    <h2>3. การส่งข้อมูลไปยัง server</h2>
+    <p>เมื่อผู้ใช้กดปุ่ม "ยืนยันการตรวจสอบ" บนหน้า I Survey, extension จะส่ง snapshot ของฟอร์ม (ฟิลด์ตามข้อ 1) ไปยัง backend server ที่กำหนดใน Settings (default: <code>https://billing.sesurvey.cloud</code>) ผ่าน HTTPS โดยมี Bearer token ป้องกันการเข้าถึง</p>
+    <p>การส่งข้อมูลเกิดเฉพาะตอนกดปุ่มยืนยันเท่านั้น ไม่มีการส่งข้อมูลแบบ background polling หรือ telemetry อื่นๆ</p>
+
+    <h2>4. การเก็บรักษา</h2>
+    <ul>
+      <li>ข้อมูลใน <code>chrome.storage.local</code> เก็บอยู่บนเครื่อง user เท่านั้น — ลบได้โดย uninstall extension</li>
+      <li>ข้อมูลที่ส่งไป server เก็บใน SQLite ของ SE-Billing โดยมีระยะเวลาเก็บไม่จำกัด (สำหรับ audit log)</li>
+      <li>หากต้องการให้ลบข้อมูล server-side ติดต่อ admin ผ่าน <a href="mailto:sesurvey.ai@gmail.com">sesurvey.ai@gmail.com</a></li>
+    </ul>
+
+    <h2>5. การแชร์กับบุคคลที่สาม</h2>
+    <p>SE-Billing <strong>ไม่</strong>ขายหรือแชร์ข้อมูลของ user ให้บุคคลที่สามใดๆ ทั้งสิ้น ข้อมูลใช้ภายในบริษัทเพื่อวัตถุประสงค์ตามข้อ 2 เท่านั้น</p>
+
+    <h2>6. ความปลอดภัย</h2>
+    <ul>
+      <li>การส่งข้อมูลทั้งหมดผ่าน HTTPS (TLS 1.2+)</li>
+      <li>API ป้องกันด้วย Bearer token</li>
+      <li>Server เก็บใน Hostinger VPS ที่ user ควบคุมเอง ไม่ผ่าน third-party SaaS</li>
+    </ul>
+
+    <h2>7. สิทธิ์ของผู้ใช้</h2>
+    <p>ผู้ใช้สามารถ:</p>
+    <ul>
+      <li>ขอดูข้อมูลที่บันทึกของตน</li>
+      <li>ขอลบข้อมูล (right to erasure)</li>
+      <li>Uninstall extension ได้ทุกเมื่อ — chrome.storage.local จะถูกลบอัตโนมัติ</li>
+    </ul>
+    <p>ติดต่อขอใช้สิทธิ์ที่ <a href="mailto:sesurvey.ai@gmail.com">sesurvey.ai@gmail.com</a></p>
+
+    <h2>8. การเปลี่ยนแปลงนโยบาย</h2>
+    <p>หากมีการเปลี่ยนแปลงนโยบายความเป็นส่วนตัว จะแจ้งผ่าน update ของ extension และอัพเดทวันที่ในหน้านี้</p>
+
+    <h2>9. ติดต่อ</h2>
+    <p>คำถาม/ข้อเสนอแนะ: <a href="mailto:sesurvey.ai@gmail.com">sesurvey.ai@gmail.com</a></p>
+  </div>
+</body>
+</html>

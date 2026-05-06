@@ -28,7 +28,7 @@ function send(type, data) {
 
 async function load() {
   const r = await send("get-server-url");
-  const url = r.ok ? r.url : "http://localhost:3200";
+  const url = r.ok ? r.url : "https://billing.sesurvey.cloud";
   $("server-url").value = url;
   refreshLinks(url);
 
