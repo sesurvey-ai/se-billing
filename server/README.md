@@ -72,7 +72,7 @@ node server.js
 > **Firewall:** ถ้า client เชื่อมต่อ LAN ไม่ได้ ตรวจ Windows Firewall บนเครื่อง server ว่าอนุญาตให้พอร์ต 3200 inbound. ถ้าจำเป็น ใช้คำสั่ง:
 >
 > ```powershell
-> New-NetFirewallRule -DisplayName "isurvey-helper-server" -Direction Inbound -Protocol TCP -LocalPort 3200 -Action Allow
+> New-NetFirewallRule -DisplayName "se-billing-server" -Direction Inbound -Protocol TCP -LocalPort 3200 -Action Allow
 > ```
 
 ## Backup / Restore

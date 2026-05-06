@@ -8,12 +8,15 @@
  * Messages handled (chrome.runtime.onMessage):
  *   { type: "get-server-url" }                → { url }
  *   { type: "set-server-url", url }           → { ok, url }
+ *   { type: "get-api-token" }                 → { token }
+ *   { type: "set-api-token", token }          → { ok, hasToken }
  *   { type: "fetch-config" }                  → { ok, config }   หรือ { ok:false, error }
  *   { type: "fetch-reference" }               → { ok, reference }
  *   { type: "send-capture", data }            → { ok, id }       หรือ { ok:false, error }
  *   { type: "ping-server" }                   → { ok, healthz }
  *
  * Default server URL: http://localhost:3200 (override ได้ผ่าน options.html)
+ * API token: bearer token ที่ server ตั้งไว้ใน env API_TOKEN — เก็บใน chrome.storage
  */
 
 const DEFAULT_SERVER_URL = "http://localhost:3200";
@@ -30,10 +33,24 @@ async function setServerUrl(url) {
   return clean || DEFAULT_SERVER_URL;
 }
 
+async function getApiToken() {
+  const { apiToken } = await chrome.storage.local.get("apiToken");
+  return apiToken || "";
+}
+
+async function setApiToken(token) {
+  const clean = String(token || "").trim();
+  await chrome.storage.local.set({ apiToken: clean });
+  return clean;
+}
+
 async function fetchJson(path, opts = {}) {
   const base = await getServerUrl();
+  const token = await getApiToken();
   const url = base + path;
-  const r = await fetch(url, opts);
+  const headers = Object.assign({}, opts.headers || {});
+  if (token) headers["Authorization"] = "Bearer " + token;
+  const r = await fetch(url, { ...opts, headers });
   if (!r.ok) {
     const txt = await r.text().catch(() => "");
     throw new Error(`${opts.method || "GET"} ${url} → ${r.status} ${txt}`);
@@ -52,6 +69,16 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         case "set-server-url": {
           const url = await setServerUrl(msg.url);
           sendResponse({ ok: true, url });
+          break;
+        }
+        case "get-api-token": {
+          // คืน token ตรงๆ — extension options page เท่านั้นที่เรียก (ไม่มี content script ใช้)
+          sendResponse({ ok: true, token: await getApiToken() });
+          break;
+        }
+        case "set-api-token": {
+          await setApiToken(msg.token);
+          sendResponse({ ok: true, hasToken: !!(msg.token || "").trim() });
           break;
         }
         case "fetch-config": {

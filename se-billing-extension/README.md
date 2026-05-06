@@ -33,7 +33,7 @@ node server.js     # ฟัง http://localhost:3200
 
 1. เปิด Chrome → ไปที่ `chrome://extensions`
 2. เปิดสวิตช์ **Developer mode** (มุมขวาบน)
-3. กด **Load unpacked** → เลือกโฟลเดอร์ `isurvey-helper/` นี้
+3. กด **Load unpacked** → เลือกโฟลเดอร์ `se-billing-extension/` นี้
 4. ตั้งค่า server URL:
    - คลิก **Details** ของ extension → คลิก **Extension options**
    - กรอก Server URL (default `http://localhost:3200`) → "บันทึก" → "ทดสอบเชื่อมต่อ"
@@ -328,7 +328,7 @@ Trigger 4 ทาง: native input/change + Ext component change + polling 500ms 
 ## โครงสร้างไฟล์
 
 ```
-isurvey-helper/
+se-billing-extension/
 ├── manifest.json                        ← MV3 + host_permissions + background SW + action.default_popup + options_ui + content_scripts
 ├── background.js                        ← Service worker: HTTP I/O ไปหา server
 ├── options.html / options.js            ← Settings page (Server URL field) — เปิดจาก chrome://extensions Details

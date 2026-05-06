@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>SE-Billing — เข้าสู่ระบบ</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .login-wrap {
+      max-width: 400px;
+      margin: 80px auto;
+      background: white;
+      padding: 32px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .login-wrap h1 { margin-top: 0; font-size: 22px; }
+    .login-wrap label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    .login-wrap input {
+      width: 100%; padding: 10px 12px; border: 1px solid #ccc;
+      border-radius: 4px; font-size: 14px; font-family: inherit;
+    }
+    .login-wrap input:focus { outline: 2px solid #2563eb; outline-offset: -1px; border-color: #2563eb; }
+    .login-wrap button {
+      margin-top: 16px; width: 100%; padding: 10px; border: none;
+      background: #2563eb; color: white; border-radius: 4px;
+      font-size: 14px; cursor: pointer;
+    }
+    .login-wrap button:hover { background: #1d4ed8; }
+    .login-msg { margin-top: 12px; font-size: 13px; min-height: 18px; }
+    .login-msg.err { color: #b91c1c; }
+    .login-msg.ok { color: #15803d; }
+    .hint { color: #666; font-size: 12px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <h1>SE-Billing — เข้าสู่ระบบ</h1>
+    <p class="hint">ใส่ API token ที่ admin กำหนดไว้บน server เพื่อเข้าถึงหน้า Admin / Captures</p>
+
+    <form id="login-form">
+      <label for="token">API Token</label>
+      <input id="token" type="password" autocomplete="off" autofocus placeholder="ใส่ token ที่นี่" />
+      <button type="submit">เข้าสู่ระบบ</button>
+      <div id="msg" class="login-msg"></div>
+    </form>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next") || "/admin";
+
+    $("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const token = $("token").value.trim();
+      if (!token) {
+        $("msg").textContent = "กรุณาใส่ token";
+        $("msg").className = "login-msg err";
+        return;
+      }
+
+      // verify ก่อนเก็บ — ยิง /api/config ดูว่า token ใช้ได้
+      $("msg").textContent = "กำลังตรวจสอบ...";
+      $("msg").className = "login-msg";
+      try {
+        const r = await fetch("/api/config", {
+          headers: { "Authorization": "Bearer " + token },
+        });
+        if (r.status === 401) {
+          $("msg").textContent = "✗ Token ไม่ถูกต้อง";
+          $("msg").className = "login-msg err";
+          return;
+        }
+        if (!r.ok) {
+          $("msg").textContent = "✗ เกิดข้อผิดพลาด: " + r.status;
+          $("msg").className = "login-msg err";
+          return;
+        }
+        localStorage.setItem("apiToken", token);
+        $("msg").textContent = "✓ เข้าสู่ระบบสำเร็จ — กำลัง redirect";
+        $("msg").className = "login-msg ok";
+        window.location = next;
+      } catch (err) {
+        $("msg").textContent = "✗ " + (err.message || err);
+        $("msg").className = "login-msg err";
+      }
+    });
+  </script>
+</body>
+</html>

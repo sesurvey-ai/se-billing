@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <title>I Survey Helper — Settings</title>
+  <title>SE-Billing — Settings</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Sarabun", sans-serif;
@@ -15,7 +15,7 @@
     .hint { color: #666; font-size: 13px; margin-bottom: 24px; }
     .row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
     label { font-weight: 500; font-size: 13px; }
-    input[type="url"] { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    input[type="url"], input[type="password"] { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
     input:focus { outline: 2px solid #2563eb; outline-offset: -1px; border-color: #2563eb; }
     .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     button {
@@ -33,13 +33,19 @@
   </style>
 </head>
 <body>
-  <h1>I Survey Auto-Fill Helper — Settings</h1>
+  <h1>SE-Billing — Settings</h1>
   <p class="hint">การตั้งค่าการเชื่อมต่อกับ backend server (ที่จัดการเรตราคา + เก็บ log การกรอกฟอร์ม)</p>
 
   <div class="row">
     <label for="server-url">Server URL</label>
-    <input id="server-url" type="url" placeholder="http://localhost:3200" />
-    <small class="hint">เช่น <code>http://localhost:3200</code> (เครื่องเดียวกัน) หรือ <code>http://192.168.1.50:3200</code> (เครื่องอื่นใน LAN เดียวกัน) — ห้ามมี <code>/</code> ปิดท้าย</small>
+    <input id="server-url" type="url" placeholder="https://billing.example.com" />
+    <small class="hint">เช่น <code>https://billing.example.com</code> (VPS) หรือ <code>http://localhost:3200</code> (dev) — ห้ามมี <code>/</code> ปิดท้าย</small>
+  </div>
+
+  <div class="row">
+    <label for="api-token">API Token</label>
+    <input id="api-token" type="password" autocomplete="off" placeholder="bearer token จาก server admin" />
+    <small class="hint">Token ที่ admin ตั้งไว้ใน env <code>API_TOKEN</code> ของ server — เก็บใน chrome.storage และส่งใน <code>Authorization: Bearer</code> ทุก request</small>
   </div>
 
   <div class="actions">

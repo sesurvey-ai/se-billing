@@ -1,5 +1,5 @@
 {
-  "_comment": "Default seed data for isurvey-helper. On first install, loader.js writes this to chrome.storage.local. After that, storage is the source of truth — admin page can edit/add/delete entries. 'Reset to defaults' in admin re-seeds from this file.",
+  "_comment": "Default seed data for SE-Billing. On first install, server.js seeds DB from this file. After that, DB is the source of truth — admin page can edit/add/delete entries. 'Reset to defaults' in admin re-seeds from this file.",
   "PROVINCE_FEE_MAP": {
     "10": 300,
     "11": 300,
@@ -56,6 +56,15 @@
     "2204": { "SUR_INVEST": 900, "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 900, "INS_PHOTO_12": 50 },
     "2208": { "SUR_INVEST": 1000, "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 1000, "INS_PHOTO_12": 50 },
     "2207": { "SUR_INVEST": 1000, "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 1000, "INS_PHOTO_12": 50 },
+    "2701": { "SUR_INVEST": 800,  "INS_INVEST_12": 1200, "INS_INVEST_34": 1200 },
+    "2704": { "SUR_INVEST": 800,  "INS_INVEST_12": 1200, "INS_INVEST_34": 1200 },
+    "2705": { "SUR_INVEST": 800,  "INS_INVEST_12": 1200, "INS_INVEST_34": 1200 },
+    "2707": { "SUR_INVEST": 800,  "INS_INVEST_12": 1200, "INS_INVEST_34": 1200 },
+    "2709": { "SUR_INVEST": 800,  "INS_INVEST_12": 1200, "INS_INVEST_34": 1200 },
+    "2702": { "SUR_INVEST": 1100, "INS_INVEST_12": 1500, "INS_INVEST_34": 1500 },
+    "2703": { "SUR_INVEST": 1100, "INS_INVEST_12": 1500, "INS_INVEST_34": 1500 },
+    "2706": { "SUR_INVEST": 1100, "INS_INVEST_12": 1500, "INS_INVEST_34": 1500 },
+    "2708": { "SUR_INVEST": 1100, "INS_INVEST_12": 1500, "INS_INVEST_34": 1500 },
     "3001": { "SUR_INVEST": 400, "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 300, "INS_PHOTO_12": 50 },
     "3032": { "SUR_INVEST": 450, "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 350, "INS_PHOTO_12": 50 },
     "3018": { "SUR_INVEST": 500, "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 400, "INS_PHOTO_12": 50 },
@@ -331,7 +340,7 @@
   },
   "enabledProvinces": [
     "10", "11", "12", "13",
-    "14", "19", "21", "22", "24",
+    "14", "19", "21", "22", "24", "27",
     "30", "34", "40",
     "50", "64", "65", "66",
     "71", "72", "80", "83", "90"

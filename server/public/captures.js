@@ -151,8 +151,12 @@ async function main() {
   });
   $("btn-refresh").addEventListener("click", load);
 
-  $("btn-export").addEventListener("click", () => {
-    window.location.href = api.captures.xlsxUrl({ provinceId: state.provinceId || undefined });
+  $("btn-export").addEventListener("click", async () => {
+    try {
+      await api.captures.xlsxDownload({ provinceId: state.provinceId || undefined });
+    } catch (e) {
+      showStatus("Export ล้มเหลว: " + (e.message || e), true);
+    }
   });
 
   if (ADMIN_MODE) {
