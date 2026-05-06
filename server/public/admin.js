@@ -1,6 +1,6 @@
 /**
  * admin.js (server) — CRUD สำหรับ rate config ผ่าน REST API
- * (port มาจาก isurvey-helper/admin.js — เปลี่ยน chrome.storage → fetch)
+ * (port มาจาก extension admin.js เดิม — เปลี่ยน chrome.storage → fetch)
  */
 "use strict";
 
@@ -519,7 +519,7 @@ function exportJson() {
   const d = new Date();
   const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
   a.href = url;
-  a.download = `isurvey-helper-data-${stamp}.json`;
+  a.download = `se-billing-data-${stamp}.json`;
   a.click();
   URL.revokeObjectURL(url);
   showStatus("Exported");

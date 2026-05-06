@@ -1,14 +1,14 @@
-# se-billing — I Survey Auto-Fill Helper
+# se-billing — SE-Billing Auto-Fill Helper
 
 ระบบช่วยกรอก "ค่าบริการ" อัตโนมัติบนระบบ I Survey
 (`https://cloud.isurvey.mobi/main.php`) — แบ่งเป็น 2 ส่วน:
 
 ```
 se-billing/
-├── isurvey-helper/   ← Chrome Extension (Manifest V3)
-│   └── README.md     ← วิธี install + วิธีทำงานของ extension
-└── server/           ← Backend (Node.js + Express + SQLite)
-    └── README.md     ← วิธี run server + REST API + LAN deploy
+├── se-billing-extension/   ← Chrome Extension (Manifest V3)
+│   └── README.md           ← วิธี install + วิธีทำงานของ extension
+└── server/                 ← Backend (Node.js + Express + SQLite)
+    └── README.md           ← วิธี run server + REST API + Dokploy/VPS deploy
 ```
 
 ## ภาพรวม (v2.x)
@@ -34,9 +34,9 @@ node server.js
 
 # 2. ติดตั้ง extension
 #    Chrome → chrome://extensions → Developer mode → Load unpacked
-#    → เลือกโฟลเดอร์ isurvey-helper/
+#    → เลือกโฟลเดอร์ se-billing-extension/
 
-# 3. ตั้งค่า extension Options → Server URL = http://localhost:3200
+# 3. ตั้งค่า extension Options → Server URL = http://localhost:3200 (+ API token ถ้า server เปิด auth)
 
 # 4. เปิด/รีเฟรช https://cloud.isurvey.mobi/main.php — extension เริ่มทำงาน
 ```

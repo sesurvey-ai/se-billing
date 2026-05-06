@@ -1,5 +1,5 @@
 {
-  "_comment": "Default seed data for isurvey-helper. On first install, loader.js writes this to chrome.storage.local. After that, storage is the source of truth — admin page can edit/add/delete entries. 'Reset to defaults' in admin re-seeds from this file.",
+  "_comment": "Default seed data for SE-Billing. On first install, server.js seeds DB from this file. After that, DB is the source of truth — admin page can edit/add/delete entries. 'Reset to defaults' in admin re-seeds from this file.",
   "PROVINCE_FEE_MAP": {
     "10": 300,
     "11": 300,

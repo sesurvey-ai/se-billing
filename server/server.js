@@ -13,7 +13,7 @@
  *   GET  /api/amphur-table           CRUD: GET, PUT, DELETE :id
  *   GET  /api/enabled-provinces      → string[] / PUT body { ids: [...] }
  *   GET  /api/modifiers              → object   / PUT body { outOfArea, outOfHours }
- *   GET  /api/reference              → ส่ง reference จังหวัด/อำเภอ/ตำบล (จาก isurvey-helper/data/*.json)
+ *   GET  /api/reference              → ส่ง reference จังหวัด/อำเภอ/ตำบล (จาก se-billing-extension/data/*.json)
  *
  *   POST /api/captures               → extension ส่งข้อมูล form ที่ user กรอก
  *   GET  /api/captures               → list (limit/offset/provinceId query)
