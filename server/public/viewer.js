@@ -18,12 +18,19 @@ function setupTabs() {
 
 function renderSummary() {
   const c = state.config;
+  const enabledSet = new Set((c.enabledProvinces || []).map(String));
+
+  // นับอำเภอจาก reference (geography ของไทย) ที่ provinceID อยู่ใน enabledProvinces
+  // — universe ของอำเภอทั้งหมดในจังหวัดที่ระบบรองรับ ไม่ใช่ coverage ของ rate ที่ตั้งไว้
+  let amphursInEnabled = 0;
+  const refAmphurs = state.ref?.byAmphurId || {};
+  for (const aid of Object.keys(refAmphurs)) {
+    if (enabledSet.has(provinceIdFromAmphurId(aid))) amphursInEnabled++;
+  }
+
   const items = [
-    { label: "Multi-field amphurs", value: Object.keys(c.AMPHUR_FEE_TABLE).length },
-    { label: "Simple จังหวัด",       value: Object.keys(c.PROVINCE_FEE_MAP).length },
-    { label: "Simple amphur override", value: Object.keys(c.AMPHUR_FEE_MAP).length },
-    { label: "Simple tumbon override", value: Object.keys(c.TUMBON_FEE_MAP).length },
-    { label: "Enabled provinces",    value: c.enabledProvinces.length },
+    { label: "จังหวัดที่ใช้งาน",                value: c.enabledProvinces.length },
+    { label: "อำเภอในจังหวัดที่ใช้งาน",       value: amphursInEnabled },
   ];
   document.getElementById("summary").innerHTML = items.map(i =>
     `<div class="summary-card"><div class="label">${i.label}</div><div class="value">${i.value}</div></div>`
