@@ -332,7 +332,46 @@
     "1305": { "SUR_INVEST": 300, "INS_INVEST_12": 300, "INS_INVEST_34": 200, "INS_TRANS": 500, "INS_PHOTO_12": 50 },
     "1306": { "SUR_INVEST": 300, "INS_INVEST_12": 300, "INS_INVEST_34": 200, "INS_TRANS": 500, "INS_PHOTO_12": 50 },
     "1307": { "SUR_INVEST": 300, "INS_INVEST_12": 300, "INS_INVEST_34": 200, "INS_TRANS": 500, "INS_PHOTO_12": 50 },
-    "1351": { "SUR_INVEST": 300, "INS_INVEST_12": 300, "INS_INVEST_34": 200, "INS_TRANS": 500, "INS_PHOTO_12": 50 }
+    "1351": { "SUR_INVEST": 300, "INS_INVEST_12": 300, "INS_INVEST_34": 200, "INS_TRANS": 500, "INS_PHOTO_12": 50 },
+
+    "2001": { "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 300, "INS_PHOTO_12": 50, "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 400, "ศรีราชา": 500,  "บางละมุง": 600 } },
+    "2002": { "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 500, "INS_PHOTO_12": 50, "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 500, "ศรีราชา": 600,  "บางละมุง": 700 } },
+    "2003": { "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 800, "INS_PHOTO_12": 50, "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 700, "ศรีราชา": 800,  "บางละมุง": 900 } },
+    "2004": { "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 500, "INS_PHOTO_12": 50, "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 400, "ศรีราชา": 500,  "บางละมุง": 600 } },
+    "2005": { "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 500, "INS_PHOTO_12": 50, "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 400, "ศรีราชา": 600,  "บางละมุง": 700 } },
+    "2006": { "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 600, "INS_PHOTO_12": 50, "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 550, "ศรีราชา": 600,  "บางละมุง": 700 } },
+    "2007": { "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 500, "INS_PHOTO_12": 50, "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 500, "ศรีราชา": 400,  "บางละมุง": 500 } },
+    "2009": { "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 700, "INS_PHOTO_12": 50, "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 1000,"ศรีราชา": 800,  "บางละมุง": 500 } },
+    "2010": { "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 800, "INS_PHOTO_12": 50, "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 700, "ศรีราชา": 900,  "บางละมุง": 1200 } },
+    "2011": { "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 800, "INS_PHOTO_12": 50, "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 600, "ศรีราชา": 900,  "บางละมุง": 1150 } }
+  },
+  "TUMBON_FEE_OVERRIDE": {
+    "200708": {
+      "label": "บ่อวิน",
+      "parentAmphur": "2007",
+      "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 600, "INS_PHOTO_12": 50,
+      "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 400, "ศรีราชา": 400, "บางละมุง": 700 }
+    },
+    "200903": {
+      "label": "พลูตาหลวง",
+      "parentAmphur": "2009",
+      "INS_INVEST_12": 500, "INS_INVEST_34": 400, "INS_TRANS": 800, "INS_PHOTO_12": 50,
+      "SUR_INVEST_BY_TEAM": { "เมืองชลบุรี": 1000, "ศรีราชา": 800, "บางละมุง": 600 }
+    }
+  },
+  "SURVEYOR_TEAMS": {
+    "SEC125": "เมืองชลบุรี",
+    "SEC212": "เมืองชลบุรี",
+    "SEC218": "เมืองชลบุรี",
+    "SEC343": "เมืองชลบุรี",
+    "SEC432": "เมืองชลบุรี",
+    "SEC189": "ศรีราชา",
+    "SEC264": "ศรีราชา",
+    "SEC387": "ศรีราชา",
+    "SEC463": "ศรีราชา",
+    "SEC148": "บางละมุง",
+    "SEC303": "บางละมุง",
+    "SEC356": "บางละมุง"
   },
   "modifierFees": {
     "outOfArea": 50,
@@ -340,7 +379,7 @@
   },
   "enabledProvinces": [
     "10", "11", "12", "13",
-    "14", "19", "21", "22", "24", "27",
+    "14", "19", "20", "21", "22", "24", "27",
     "30", "34", "40",
     "50", "64", "65", "66",
     "71", "72", "80", "83", "90"

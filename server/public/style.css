@@ -169,3 +169,9 @@ td.timestamp { font-size: 12px; color: #555; white-space: nowrap; }
 /* Pagination */
 .pager { display: flex; gap: 8px; align-items: center; padding: 12px 0; flex-wrap: wrap; }
 .pager .info { color: #666; font-size: 13px; }
+
+/* Team rates */
+.team-rates-cell { font-size: 12px; color: #444; max-width: 280px; word-break: break-word; }
+.team-rates-list { border: 1px solid #e5e5e5; border-radius: 4px; padding: 6px; background: #fafafa; }
+.team-rates-list .team-rate-row input { padding: 6px 8px; }
+.team-rates-list .team-remove { padding: 2px 8px; line-height: 1.2; }

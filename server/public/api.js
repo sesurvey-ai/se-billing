@@ -67,6 +67,16 @@ const api = {
     upsert: (id, fields) => req("PUT", `/api/amphur-table/${encodeURIComponent(id)}`, fields),
     remove: (id) => req("DELETE", `/api/amphur-table/${encodeURIComponent(id)}`),
   },
+  tumbonFeeOverride: {
+    list:   () => req("GET", "/api/tumbon-fee-override"),
+    upsert: (id, fields) => req("PUT", `/api/tumbon-fee-override/${encodeURIComponent(id)}`, fields),
+    remove: (id) => req("DELETE", `/api/tumbon-fee-override/${encodeURIComponent(id)}`),
+  },
+  surveyorTeams: {
+    list:   () => req("GET", "/api/surveyor-teams"),
+    upsert: (code, team) => req("PUT", `/api/surveyor-teams/${encodeURIComponent(code)}`, { team }),
+    remove: (code) => req("DELETE", `/api/surveyor-teams/${encodeURIComponent(code)}`),
+  },
   enabledProvinces: {
     list: () => req("GET", "/api/enabled-provinces"),
     set:  (ids) => req("PUT", "/api/enabled-provinces", { ids }),

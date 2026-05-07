@@ -27,6 +27,8 @@
     <button class="tab" data-tab="province-map">จังหวัด (Simple)</button>
     <button class="tab" data-tab="amphur-map">อำเภอ override (Simple)</button>
     <button class="tab" data-tab="tumbon-map">ตำบล override (Simple)</button>
+    <button class="tab" data-tab="tumbon-override">ตำบลพิเศษ (Sub-area)</button>
+    <button class="tab" data-tab="surveyor-teams">ทีม Surveyor</button>
     <button class="tab" data-tab="enabled">Whitelist จังหวัด</button>
     <button class="tab" data-tab="modifiers">Modifier defaults</button>
   </nav>
@@ -46,7 +48,8 @@
           <thead>
             <tr>
               <th>amphurID</th><th>จังหวัด</th><th>อำเภอ</th>
-              <th class="center">พนักงาน</th><th class="center">ค่าบริการ_12</th><th class="center">ค่าบริการ_34</th><th class="center">ค่าพาหนะ</th><th class="center">รูป</th><th></th>
+              <th class="center">พนักงาน</th><th class="center">ค่าบริการ_12</th><th class="center">ค่าบริการ_34</th><th class="center">ค่าพาหนะ</th><th class="center">รูป</th>
+              <th class="center">เรทตามทีม</th><th></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -103,6 +106,47 @@
           <tbody></tbody>
         </table>
         <div class="empty-state hidden" id="empty-tumbon-map">ยังไม่มีรายการ</div>
+      </div>
+    </section>
+
+    <section class="panel hidden" data-panel="tumbon-override">
+      <div class="panel-header">
+        <h2>ตำบลพิเศษ — Sub-area override</h2>
+        <p class="hint">ใช้ override อำเภอแม่เมื่อ user ติ๊ก checkbox sub-area (เช่น บ่อวินใต้ศรีราชา, พลูตาหลวงใต้สัตหีบ) — รองรับเรทแยกตามทีม</p>
+        <div class="panel-actions">
+          <button id="add-tumbon-override" class="btn btn-primary">+ เพิ่มตำบลพิเศษ</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="table-tumbon-override">
+          <thead>
+            <tr>
+              <th>tumbonID</th><th>label</th><th>อำเภอแม่</th>
+              <th class="center">ค่าบริการ_12</th><th class="center">ค่าบริการ_34</th><th class="center">ค่าพาหนะ</th><th class="center">รูป</th>
+              <th class="center">เรทตามทีม</th><th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-tumbon-override">ยังไม่มีรายการ</div>
+      </div>
+    </section>
+
+    <section class="panel hidden" data-panel="surveyor-teams">
+      <div class="panel-header">
+        <h2>ทีม Surveyor</h2>
+        <p class="hint">map รหัสพนักงาน (SECxxx) → ชื่อทีม — ใช้คู่กับ "เรทตามทีม" ใน Multi-field/Sub-area</p>
+        <div class="panel-actions">
+          <input type="search" id="search-surveyor-teams" placeholder="ค้นรหัสหรือชื่อทีม..." class="search" />
+          <button id="add-surveyor-team" class="btn btn-primary">+ เพิ่มพนักงาน</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="table-surveyor-teams">
+          <thead><tr><th>รหัส (SECxxx)</th><th>ทีม</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-surveyor-teams">ยังไม่มีรายการ</div>
       </div>
     </section>
 

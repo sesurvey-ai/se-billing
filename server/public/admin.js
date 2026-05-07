@@ -74,6 +74,7 @@ function renderAmphurTable() {
       <td class="center">${row.INS_INVEST_34 ?? "—"}</td>
       <td class="center">${row.INS_TRANS ?? "—"}</td>
       <td class="center">${row.INS_PHOTO_12 ?? "—"}</td>
+      <td class="team-rates-cell">${summarizeTeamRates(row.SUR_INVEST_BY_TEAM)}</td>
       <td class="actions">
         <button class="btn btn-icon" data-action="edit-amphur-table" data-id="${id}">แก้</button>
         <button class="btn btn-icon btn-danger" data-action="delete-amphur-table" data-id="${id}">ลบ</button>
@@ -149,6 +150,60 @@ function renderTumbonMap() {
   empty.classList.toggle("hidden", ids.length > 0);
 }
 
+function renderTumbonOverride() {
+  const tbody = document.querySelector("#table-tumbon-override tbody");
+  const empty = document.getElementById("empty-tumbon-override");
+  tbody.innerHTML = "";
+  const map = state.config.TUMBON_FEE_OVERRIDE || {};
+  const ids = Object.keys(map).sort();
+  for (const id of ids) {
+    const row = map[id];
+    const aid = row.parentAmphur || "";
+    const aname = state.ref.byAmphurId[aid] || aid;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${id}</td>
+      <td>${row.label || "—"}</td>
+      <td>${aid} ${aname}</td>
+      <td class="center">${row.INS_INVEST_12 ?? "—"}</td>
+      <td class="center">${row.INS_INVEST_34 ?? "—"}</td>
+      <td class="center">${row.INS_TRANS ?? "—"}</td>
+      <td class="center">${row.INS_PHOTO_12 ?? "—"}</td>
+      <td class="team-rates-cell">${summarizeTeamRates(row.SUR_INVEST_BY_TEAM)}</td>
+      <td class="actions">
+        <button class="btn btn-icon" data-action="edit-tumbon-override" data-id="${id}">แก้</button>
+        <button class="btn btn-icon btn-danger" data-action="delete-tumbon-override" data-id="${id}">ลบ</button>
+      </td>`;
+    tbody.appendChild(tr);
+  }
+  empty.classList.toggle("hidden", ids.length > 0);
+}
+
+function renderSurveyorTeams() {
+  const search = (document.getElementById("search-surveyor-teams")?.value || "").trim().toLowerCase();
+  const tbody = document.querySelector("#table-surveyor-teams tbody");
+  const empty = document.getElementById("empty-surveyor-teams");
+  tbody.innerHTML = "";
+  const map = state.config.SURVEYOR_TEAMS || {};
+  const codes = Object.keys(map).sort();
+  let count = 0;
+  for (const code of codes) {
+    const team = map[code];
+    if (search && !`${code} ${team}`.toLowerCase().includes(search)) continue;
+    count++;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${code}</td>
+      <td>${team}</td>
+      <td class="actions">
+        <button class="btn btn-icon" data-action="edit-surveyor-team" data-id="${code}">แก้</button>
+        <button class="btn btn-icon btn-danger" data-action="delete-surveyor-team" data-id="${code}">ลบ</button>
+      </td>`;
+    tbody.appendChild(tr);
+  }
+  empty.classList.toggle("hidden", count > 0);
+}
+
 function renderEnabled() {
   const container = document.getElementById("enabled-list");
   container.innerHTML = "";
@@ -182,6 +237,8 @@ function renderAll() {
   renderProvinceMap();
   renderAmphurMap();
   renderTumbonMap();
+  renderTumbonOverride();
+  renderSurveyorTeams();
   renderEnabled();
   renderModifiers();
 }
@@ -212,6 +269,78 @@ function readNumberInput(id) {
   return isNaN(n) ? null : n;
 }
 
+/** ── Team-rates editor (dynamic rows) ── */
+function suggestTeamNames() {
+  // unique teams จาก SURVEYOR_TEAMS เพื่อ pre-populate dropdown
+  const set = new Set(Object.values(state.config?.SURVEYOR_TEAMS || {}));
+  return Array.from(set).sort();
+}
+
+function teamRatesEditorHtml(byTeam) {
+  const entries = Object.entries(byTeam || {});
+  const suggestions = suggestTeamNames();
+  const datalistId = "team-name-suggestions";
+  const dl = `<datalist id="${datalistId}">${suggestions.map(t => `<option value="${t}">`).join("")}</datalist>`;
+  const rowsHtml = entries.length
+    ? entries.map(([t, v]) => teamRowHtml(t, v, datalistId)).join("")
+    : suggestions.slice(0, 3).map(t => teamRowHtml(t, "", datalistId)).join("");
+  return `
+    <div class="form-row">
+      <label>เรท SUR_INVEST แยกตามทีม (ถ้ามีจะ override SUR_INVEST flat ด้านบน)</label>
+      <div id="team-rates-list" class="team-rates-list">${rowsHtml}</div>
+      <button type="button" id="team-rates-add" class="btn btn-icon" style="margin-top:6px">+ เพิ่มทีม</button>
+      ${dl}
+    </div>
+  `;
+}
+
+function teamRowHtml(team, rate, datalistId) {
+  return `
+    <div class="team-rate-row" style="display:flex;gap:6px;margin-bottom:4px;align-items:center">
+      <input type="text" class="team-name" placeholder="ชื่อทีม" value="${team || ""}" list="${datalistId}" style="flex:2"/>
+      <input type="number" class="team-rate" placeholder="เรท" value="${rate ?? ""}" min="0" style="flex:1"/>
+      <button type="button" class="btn btn-icon btn-danger team-remove">×</button>
+    </div>
+  `;
+}
+
+function setupTeamRatesEditor() {
+  const list = document.getElementById("team-rates-list");
+  if (!list) return;
+  const datalistId = "team-name-suggestions";
+  document.getElementById("team-rates-add")?.addEventListener("click", () => {
+    list.insertAdjacentHTML("beforeend", teamRowHtml("", "", datalistId));
+  });
+  list.addEventListener("click", (e) => {
+    if (e.target.classList?.contains("team-remove")) {
+      e.target.closest(".team-rate-row")?.remove();
+    }
+  });
+}
+
+/** อ่านค่าจาก team-rates-list — คืน { team: rate } หรือ null ถ้าว่างหมด/ไม่มี */
+function readTeamRates() {
+  const list = document.getElementById("team-rates-list");
+  if (!list) return null;
+  const obj = {};
+  for (const row of list.querySelectorAll(".team-rate-row")) {
+    const t = row.querySelector(".team-name")?.value.trim();
+    const r = row.querySelector(".team-rate")?.value.trim();
+    if (!t || r === "") continue;
+    const n = Number(r);
+    if (!isNaN(n)) obj[t] = n;
+  }
+  return Object.keys(obj).length === 0 ? null : obj;
+}
+
+/** สรุปสั้นๆ ของ team rates ใน table cell */
+function summarizeTeamRates(byTeam) {
+  if (!byTeam) return "—";
+  const entries = Object.entries(byTeam);
+  if (entries.length === 0) return "—";
+  return entries.map(([t, v]) => `${t}:${v}`).join(", ");
+}
+
 // ─── Add/Edit AMPHUR_FEE_TABLE ───
 function openAmphurTableModal(id = null) {
   const isEdit = id !== null;
@@ -219,12 +348,19 @@ function openAmphurTableModal(id = null) {
   const provinceOptions = state.ref.provinces
     .map(p => `<option value="${p.provinceID}" ${isEdit && id.startsWith(p.provinceID) ? "selected" : ""}>${p.provinceID} ${p.provincename}</option>`)
     .join("");
-  const fieldsHtml = TABLE_FIELDS.map(f => `
-    <div class="form-row">
-      <label>${f.label}${f.required ? " *" : ""}</label>
-      <input type="number" id="fld-${f.key}" min="0" value="${existing[f.key] ?? (isEdit ? "" : f.default)}" />
-    </div>
-  `).join("");
+  // SUR_INVEST ใน multi-field มี 2 โหมด:
+  //  (a) flat — เลขเดียวต่ออำเภอ (เก่า: ระยอง)
+  //  (b) by-team — เรทแยกตามทีม surveyor (ใหม่: ชลบุรี)
+  // Modal ให้ทั้ง 2 ช่อง — ถ้ากรอก by-team จะ override flat
+  const tableFieldsHtml = TABLE_FIELDS.map(f => {
+    const required = f.key === "SUR_INVEST" ? false : f.required; // SUR_INVEST optional ตอนใช้ by-team
+    return `
+      <div class="form-row">
+        <label>${f.label}${required ? " *" : ""}</label>
+        <input type="number" id="fld-${f.key}" min="0" value="${existing[f.key] ?? (isEdit ? "" : f.default)}" />
+      </div>
+    `;
+  }).join("");
 
   const body = `
     <div class="form-row">
@@ -241,7 +377,8 @@ function openAmphurTableModal(id = null) {
       </select>
       <span class="error-msg" id="err-amphur"></span>
     </div>
-    <div class="form-grid">${fieldsHtml}</div>
+    <div class="form-grid">${tableFieldsHtml}</div>
+    ${teamRatesEditorHtml(existing.SUR_INVEST_BY_TEAM)}
   `;
 
   openModal(isEdit ? `แก้ ${id} ${state.ref.byAmphurId[id] || ""}` : "เพิ่มอำเภอ (Multi-field)", body, async () => {
@@ -257,8 +394,14 @@ function openAmphurTableModal(id = null) {
     const obj = {};
     for (const f of TABLE_FIELDS) {
       const v = readNumberInput(`fld-${f.key}`);
-      if (f.required && v === null) return false;
       if (v !== null) obj[f.key] = v;
+    }
+    const byTeam = readTeamRates();
+    if (byTeam) obj.SUR_INVEST_BY_TEAM = byTeam;
+    // ต้องมี SUR_INVEST flat หรือ SUR_INVEST_BY_TEAM อย่างน้อย 1
+    if (obj.SUR_INVEST === undefined && !byTeam) {
+      document.getElementById("err-amphur").textContent = "ต้องกรอก SUR_INVEST flat หรือเรทตามทีม อย่างน้อย 1";
+      return false;
     }
     await api.amphurTable.upsert(amphurID, obj);
     state.config.AMPHUR_FEE_TABLE[amphurID] = obj;
@@ -266,6 +409,7 @@ function openAmphurTableModal(id = null) {
     showStatus(`บันทึก ${amphurID} ${state.ref.byAmphurId[amphurID] || ""}`);
     return true;
   });
+  setupTeamRatesEditor();
 
   if (!isEdit) {
     const provSel = document.getElementById("sel-province");
@@ -460,6 +604,157 @@ function openTumbonMapModal(id = null) {
   }
 }
 
+// ─── Add/Edit TUMBON_FEE_OVERRIDE (sub-area) ───
+function openTumbonOverrideModal(id = null) {
+  const isEdit = id !== null;
+  const map = state.config.TUMBON_FEE_OVERRIDE || {};
+  const existing = isEdit ? map[id] : {};
+  const provinceOptions = state.ref.provinces
+    .map(p => `<option value="${p.provinceID}" ${isEdit && id.startsWith(p.provinceID) ? "selected" : ""}>${p.provinceID} ${p.provincename}</option>`)
+    .join("");
+
+  const fieldsHtml = TABLE_FIELDS.filter(f => f.key !== "SUR_INVEST").map(f => `
+    <div class="form-row">
+      <label>${f.label}</label>
+      <input type="number" id="fld-${f.key}" min="0" value="${existing[f.key] ?? ""}" />
+    </div>
+  `).join("");
+
+  const body = `
+    <div class="form-row">
+      <label>จังหวัด *</label>
+      <select id="sel-province" ${isEdit ? "disabled" : ""}>
+        <option value="">-- เลือก --</option>${provinceOptions}
+      </select>
+    </div>
+    <div class="form-row">
+      <label>อำเภอแม่ (parent) *</label>
+      <select id="sel-amphur" ${isEdit ? "disabled" : ""}>
+        <option value="">-- เลือกจังหวัดก่อน --</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>ตำบล *</label>
+      <select id="sel-tumbon" ${isEdit ? "disabled" : ""}>
+        <option value="">-- เลือกอำเภอก่อน --</option>
+      </select>
+      <span class="error-msg" id="err-tumbon"></span>
+    </div>
+    <div class="form-row">
+      <label>Label (ขึ้นบน checkbox sub-area) *</label>
+      <input type="text" id="fld-label" value="${existing.label || ""}" placeholder="เช่น บ่อวิน" />
+    </div>
+    <div class="form-grid">${fieldsHtml}</div>
+    ${teamRatesEditorHtml(existing.SUR_INVEST_BY_TEAM)}
+  `;
+
+  openModal(isEdit ? `แก้ ${id} ${existing.label || ""}` : "เพิ่มตำบลพิเศษ (Sub-area)", body, async () => {
+    const tid = isEdit ? id : document.getElementById("sel-tumbon").value;
+    const aid = isEdit ? existing.parentAmphur : document.getElementById("sel-amphur").value;
+    const label = (document.getElementById("fld-label").value || "").trim();
+    if (!tid || !aid) {
+      document.getElementById("err-tumbon").textContent = "กรุณาเลือกตำบล + อำเภอ";
+      return false;
+    }
+    if (!label) {
+      document.getElementById("err-tumbon").textContent = "กรอก label";
+      return false;
+    }
+    if (!isEdit && map[tid]) {
+      document.getElementById("err-tumbon").textContent = "ตำบลนี้มีอยู่แล้ว";
+      return false;
+    }
+    const fields = { label, parentAmphur: aid };
+    for (const f of TABLE_FIELDS) {
+      if (f.key === "SUR_INVEST") continue;
+      const v = readNumberInput(`fld-${f.key}`);
+      if (v !== null) fields[f.key] = v;
+    }
+    const byTeam = readTeamRates();
+    if (byTeam) fields.SUR_INVEST_BY_TEAM = byTeam;
+    await api.tumbonFeeOverride.upsert(tid, fields);
+    state.config.TUMBON_FEE_OVERRIDE = state.config.TUMBON_FEE_OVERRIDE || {};
+    state.config.TUMBON_FEE_OVERRIDE[tid] = fields;
+    renderTumbonOverride();
+    showStatus(`บันทึก ${tid} ${label}`);
+    return true;
+  });
+
+  setupTeamRatesEditor();
+
+  if (!isEdit) {
+    const provSel = document.getElementById("sel-province");
+    const ampSel  = document.getElementById("sel-amphur");
+    const tumSel  = document.getElementById("sel-tumbon");
+    provSel.addEventListener("change", () => {
+      const pid = provSel.value;
+      ampSel.innerHTML = '<option value="">-- เลือก --</option>';
+      tumSel.innerHTML = '<option value="">-- เลือกอำเภอก่อน --</option>';
+      if (!pid) return;
+      state.ref.amphurs.filter(a => a.amphurID.startsWith(pid)).forEach(a => {
+        const opt = document.createElement("option");
+        opt.value = a.amphurID;
+        opt.textContent = `${a.amphurID} ${a.amphurname}`;
+        ampSel.appendChild(opt);
+      });
+    });
+    ampSel.addEventListener("change", () => {
+      const aid = ampSel.value;
+      tumSel.innerHTML = '<option value="">-- เลือก --</option>';
+      if (!aid) return;
+      state.ref.tumbons.filter(t => t.tumbonID.startsWith(aid)).forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.tumbonID;
+        opt.textContent = `${t.tumbonID} ${t.tumbonname}`;
+        tumSel.appendChild(opt);
+      });
+    });
+    // เมื่อเลือก tumbon ให้ auto-fill label จากชื่อตำบล (user แก้ได้)
+    tumSel.addEventListener("change", () => {
+      const tid = tumSel.value;
+      const labelInput = document.getElementById("fld-label");
+      if (tid && !labelInput.value) {
+        const tname = state.ref.byTumbonId[tid] || "";
+        labelInput.value = tname;
+      }
+    });
+  }
+}
+
+// ─── Add/Edit SURVEYOR_TEAMS ───
+function openSurveyorTeamModal(code = null) {
+  const isEdit = code !== null;
+  const map = state.config.SURVEYOR_TEAMS || {};
+  const existingTeam = isEdit ? map[code] : "";
+  const teamOptions = suggestTeamNames()
+    .map(t => `<option value="${t}">`)
+    .join("");
+  const body = `
+    <div class="form-row">
+      <label>รหัสพนักงาน (SECxxx) *</label>
+      <input type="text" id="fld-code" value="${code || ""}" ${isEdit ? "disabled" : ""} placeholder="SEC125" />
+      <span class="error-msg" id="err-code"></span>
+    </div>
+    <div class="form-row">
+      <label>ทีม *</label>
+      <input type="text" id="fld-team" value="${existingTeam}" list="team-suggestions" placeholder="เช่น เมืองชลบุรี" />
+      <datalist id="team-suggestions">${teamOptions}</datalist>
+    </div>
+  `;
+  openModal(isEdit ? `แก้ ${code}` : "เพิ่มพนักงาน → ทีม", body, async () => {
+    const c = isEdit ? code : (document.getElementById("fld-code").value || "").trim().toUpperCase();
+    const t = (document.getElementById("fld-team").value || "").trim();
+    if (!c || !t) { document.getElementById("err-code").textContent = "กรอกครบ"; return false; }
+    if (!isEdit && map[c]) { document.getElementById("err-code").textContent = "รหัสนี้มีอยู่แล้ว"; return false; }
+    await api.surveyorTeams.upsert(c, t);
+    state.config.SURVEYOR_TEAMS = state.config.SURVEYOR_TEAMS || {};
+    state.config.SURVEYOR_TEAMS[c] = t;
+    renderSurveyorTeams();
+    showStatus(`บันทึก ${c} → ${t}`);
+    return true;
+  });
+}
+
 // ─── Action handlers ───
 async function handleAction(action, id) {
   const map = {
@@ -495,6 +790,23 @@ async function handleAction(action, id) {
       renderTumbonMap();
       showStatus(`ลบ ${id}`);
     },
+    "edit-tumbon-override":   () => openTumbonOverrideModal(id),
+    "delete-tumbon-override": async () => {
+      const lbl = state.config.TUMBON_FEE_OVERRIDE?.[id]?.label || "";
+      if (!confirm(`ลบตำบลพิเศษ ${id} ${lbl}?`)) return;
+      await api.tumbonFeeOverride.remove(id);
+      delete state.config.TUMBON_FEE_OVERRIDE[id];
+      renderTumbonOverride();
+      showStatus(`ลบ ${id}`);
+    },
+    "edit-surveyor-team":   () => openSurveyorTeamModal(id),
+    "delete-surveyor-team": async () => {
+      if (!confirm(`ลบ ${id} → ${state.config.SURVEYOR_TEAMS?.[id] || ""}?`)) return;
+      await api.surveyorTeams.remove(id);
+      delete state.config.SURVEYOR_TEAMS[id];
+      renderSurveyorTeams();
+      showStatus(`ลบ ${id}`);
+    },
   };
   if (map[action]) {
     try { await map[action](); }
@@ -506,12 +818,14 @@ async function handleAction(action, id) {
 function exportJson() {
   const c = state.config;
   const payload = {
-    PROVINCE_FEE_MAP: c.PROVINCE_FEE_MAP,
-    AMPHUR_FEE_MAP:   c.AMPHUR_FEE_MAP,
-    TUMBON_FEE_MAP:   c.TUMBON_FEE_MAP,
-    AMPHUR_FEE_TABLE: c.AMPHUR_FEE_TABLE,
-    enabledProvinces: c.enabledProvinces,
-    modifierFees:     c.modifierFees,
+    PROVINCE_FEE_MAP:    c.PROVINCE_FEE_MAP,
+    AMPHUR_FEE_MAP:      c.AMPHUR_FEE_MAP,
+    TUMBON_FEE_MAP:      c.TUMBON_FEE_MAP,
+    AMPHUR_FEE_TABLE:    c.AMPHUR_FEE_TABLE,
+    TUMBON_FEE_OVERRIDE: c.TUMBON_FEE_OVERRIDE || {},
+    SURVEYOR_TEAMS:      c.SURVEYOR_TEAMS      || {},
+    enabledProvinces:    c.enabledProvinces,
+    modifierFees:        c.modifierFees,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -561,6 +875,16 @@ async function importJson(file) {
     const newT = new Set(Object.keys(data.TUMBON_FEE_MAP));
     for (const id of oldT) if (!newT.has(id)) calls.push(api.tumbonOverrides.remove(id));
     for (const [id, fee] of Object.entries(data.TUMBON_FEE_MAP)) calls.push(api.tumbonOverrides.upsert(id, Number(fee)));
+    // tumbon_fee_override (sub-area)
+    const oldTo = new Set(Object.keys(cur.TUMBON_FEE_OVERRIDE || {}));
+    const newTo = new Set(Object.keys(data.TUMBON_FEE_OVERRIDE || {}));
+    for (const id of oldTo) if (!newTo.has(id)) calls.push(api.tumbonFeeOverride.remove(id));
+    for (const [id, row] of Object.entries(data.TUMBON_FEE_OVERRIDE || {})) calls.push(api.tumbonFeeOverride.upsert(id, row));
+    // surveyor_teams
+    const oldS = new Set(Object.keys(cur.SURVEYOR_TEAMS || {}));
+    const newS = new Set(Object.keys(data.SURVEYOR_TEAMS || {}));
+    for (const code of oldS) if (!newS.has(code)) calls.push(api.surveyorTeams.remove(code));
+    for (const [code, team] of Object.entries(data.SURVEYOR_TEAMS || {})) calls.push(api.surveyorTeams.upsert(code, team));
     // enabled + modifiers
     calls.push(api.enabledProvinces.set(data.enabledProvinces));
     calls.push(api.modifiers.set(data.modifierFees));
@@ -589,12 +913,15 @@ async function main() {
   await loadAll();
   renderAll();
 
-  document.getElementById("add-amphur-table").onclick = () => openAmphurTableModal();
-  document.getElementById("add-province-map").onclick = () => openProvinceMapModal();
-  document.getElementById("add-amphur-map").onclick   = () => openAmphurMapModal();
-  document.getElementById("add-tumbon-map").onclick   = () => openTumbonMapModal();
+  document.getElementById("add-amphur-table").onclick     = () => openAmphurTableModal();
+  document.getElementById("add-province-map").onclick     = () => openProvinceMapModal();
+  document.getElementById("add-amphur-map").onclick       = () => openAmphurMapModal();
+  document.getElementById("add-tumbon-map").onclick       = () => openTumbonMapModal();
+  document.getElementById("add-tumbon-override").onclick  = () => openTumbonOverrideModal();
+  document.getElementById("add-surveyor-team").onclick    = () => openSurveyorTeamModal();
 
   document.getElementById("search-amphur-table").addEventListener("input", renderAmphurTable);
+  document.getElementById("search-surveyor-teams")?.addEventListener("input", renderSurveyorTeams);
 
   document.getElementById("save-modifiers").onclick = async () => {
     const a = readNumberInput("mod-outOfArea");

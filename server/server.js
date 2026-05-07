@@ -34,6 +34,7 @@ import { readFileSync, existsSync } from "node:fs";
 import {
   seedFromDefaults, seedFrom, readConfig,
   ProvinceRate, AmphurOverride, TumbonOverride, AmphurTable,
+  TumbonOverrideTable, SurveyorTeams,
   EnabledProvinces, Modifiers, Captures,
 } from "./db.js";
 
@@ -126,17 +127,76 @@ app.put("/api/amphur-table/:id", (req, res) => {
   if (!id) return res.status(400).json({ error: "id required" });
   const b = req.body || {};
   const norm = (v) => (v === null || v === undefined || v === "") ? null : Number(v);
+  // SUR_INVEST_BY_TEAM: object { team: rate } — coerce values to Number, drop empties
+  let byTeam = null;
+  if (b.SUR_INVEST_BY_TEAM && typeof b.SUR_INVEST_BY_TEAM === "object") {
+    byTeam = {};
+    for (const [k, v] of Object.entries(b.SUR_INVEST_BY_TEAM)) {
+      const n = Number(v);
+      if (Number.isFinite(n)) byTeam[String(k)] = n;
+    }
+    if (Object.keys(byTeam).length === 0) byTeam = null;
+  }
   AmphurTable.upsert(id, {
     SUR_INVEST:    norm(b.SUR_INVEST),
     INS_INVEST_12: norm(b.INS_INVEST_12),
     INS_INVEST_34: norm(b.INS_INVEST_34),
     INS_TRANS:     norm(b.INS_TRANS),
     INS_PHOTO_12:  norm(b.INS_PHOTO_12),
+    SUR_INVEST_BY_TEAM: byTeam,
   });
   res.json({ ok: true, amphur_id: id });
 });
 app.delete("/api/amphur-table/:id", (req, res) => {
   AmphurTable.remove(req.params.id);
+  res.json({ ok: true });
+});
+
+// ── Tumbon override (sub-area: บ่อวิน, พลูตาหลวง) ─────────────────────────
+app.get("/api/tumbon-fee-override", (_req, res) => res.json(TumbonOverrideTable.list()));
+app.put("/api/tumbon-fee-override/:id", (req, res) => {
+  const id = String(req.params.id || "").trim();
+  if (!id) return res.status(400).json({ error: "id required" });
+  const b = req.body || {};
+  if (!b.label || !b.parentAmphur) {
+    return res.status(400).json({ error: "label + parentAmphur required" });
+  }
+  const norm = (v) => (v === null || v === undefined || v === "") ? null : Number(v);
+  let byTeam = null;
+  if (b.SUR_INVEST_BY_TEAM && typeof b.SUR_INVEST_BY_TEAM === "object") {
+    byTeam = {};
+    for (const [k, v] of Object.entries(b.SUR_INVEST_BY_TEAM)) {
+      const n = Number(v);
+      if (Number.isFinite(n)) byTeam[String(k)] = n;
+    }
+    if (Object.keys(byTeam).length === 0) byTeam = null;
+  }
+  TumbonOverrideTable.upsert(id, {
+    label: b.label, parentAmphur: b.parentAmphur,
+    INS_INVEST_12: norm(b.INS_INVEST_12),
+    INS_INVEST_34: norm(b.INS_INVEST_34),
+    INS_TRANS:     norm(b.INS_TRANS),
+    INS_PHOTO_12:  norm(b.INS_PHOTO_12),
+    SUR_INVEST_BY_TEAM: byTeam,
+  });
+  res.json({ ok: true, tumbon_id: id });
+});
+app.delete("/api/tumbon-fee-override/:id", (req, res) => {
+  TumbonOverrideTable.remove(req.params.id);
+  res.json({ ok: true });
+});
+
+// ── Surveyor teams (SECxxx → team) ─────────────────────────────────────────
+app.get("/api/surveyor-teams", (_req, res) => res.json(SurveyorTeams.list()));
+app.put("/api/surveyor-teams/:code", (req, res) => {
+  const code = String(req.params.code || "").trim();
+  const team = String(req.body?.team || "").trim();
+  if (!code || !team) return res.status(400).json({ error: "code + team required" });
+  SurveyorTeams.upsert(code, team);
+  res.json({ ok: true, sec_code: code, team });
+});
+app.delete("/api/surveyor-teams/:code", (req, res) => {
+  SurveyorTeams.remove(req.params.code);
   res.json({ ok: true });
 });
 

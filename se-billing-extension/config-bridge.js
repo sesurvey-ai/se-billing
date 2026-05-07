@@ -56,10 +56,12 @@
   const TAG = "[ISurveyHelper/config]";
 
   // ── เริ่มต้นด้วย empty maps (loader จะ broadcast data มาภายหลัง) ──
-  window.PROVINCE_FEE_MAP = window.PROVINCE_FEE_MAP || {};
-  window.AMPHUR_FEE_MAP   = window.AMPHUR_FEE_MAP   || {};
-  window.TUMBON_FEE_MAP   = window.TUMBON_FEE_MAP   || {};
-  window.AMPHUR_FEE_TABLE = window.AMPHUR_FEE_TABLE || {};
+  window.PROVINCE_FEE_MAP    = window.PROVINCE_FEE_MAP    || {};
+  window.AMPHUR_FEE_MAP      = window.AMPHUR_FEE_MAP      || {};
+  window.TUMBON_FEE_MAP      = window.TUMBON_FEE_MAP      || {};
+  window.AMPHUR_FEE_TABLE    = window.AMPHUR_FEE_TABLE    || {};
+  window.TUMBON_FEE_OVERRIDE = window.TUMBON_FEE_OVERRIDE || {};
+  window.SURVEYOR_TEAMS      = window.SURVEYOR_TEAMS      || {};
 
   // ── Static config อยู่ใน window.ISURVEY_HELPER_CONFIG เลย ──
   // dynamic fields (modifierFees, enabledProvinces, userProvincePreferences)
@@ -84,10 +86,12 @@
     if (d.type !== "config-data-response" || !d.payload) return;
 
     const p = d.payload;
-    window.PROVINCE_FEE_MAP = p.PROVINCE_FEE_MAP || {};
-    window.AMPHUR_FEE_MAP   = p.AMPHUR_FEE_MAP   || {};
-    window.TUMBON_FEE_MAP   = p.TUMBON_FEE_MAP   || {};
-    window.AMPHUR_FEE_TABLE = p.AMPHUR_FEE_TABLE || {};
+    window.PROVINCE_FEE_MAP    = p.PROVINCE_FEE_MAP    || {};
+    window.AMPHUR_FEE_MAP      = p.AMPHUR_FEE_MAP      || {};
+    window.TUMBON_FEE_MAP      = p.TUMBON_FEE_MAP      || {};
+    window.AMPHUR_FEE_TABLE    = p.AMPHUR_FEE_TABLE    || {};
+    window.TUMBON_FEE_OVERRIDE = p.TUMBON_FEE_OVERRIDE || {};
+    window.SURVEYOR_TEAMS      = p.SURVEYOR_TEAMS      || {};
     if (p.modifierFees) window.ISURVEY_HELPER_CONFIG.modifierFees = p.modifierFees;
     if (p.enabledProvinces) window.ISURVEY_HELPER_CONFIG.enabledProvinces = p.enabledProvinces;
     if (Array.isArray(p.userProvincePreferences)) {
@@ -102,6 +106,8 @@
         `amphur=${Object.keys(window.AMPHUR_FEE_MAP).length},`,
         `tumbon=${Object.keys(window.TUMBON_FEE_MAP).length},`,
         `amphurTable=${Object.keys(window.AMPHUR_FEE_TABLE).length},`,
+        `tumbonOverride=${Object.keys(window.TUMBON_FEE_OVERRIDE).length},`,
+        `surveyorTeams=${Object.keys(window.SURVEYOR_TEAMS).length},`,
         `enabledProvinces=${window.ISURVEY_HELPER_CONFIG.enabledProvinces.length}`);
     } else {
       // re-broadcast (e.g. after admin save) — content.js poll picks up new values

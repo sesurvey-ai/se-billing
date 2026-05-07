@@ -39,7 +39,7 @@
     },
     {
       "matches": ["https://cloud.isurvey.mobi/*"],
-      "js": ["config-bridge.js", "content.js", "feature-out-of-area-amount.js", "feature-out-of-hours-amount.js", "feature-deduct-amount.js"],
+      "js": ["config-bridge.js", "content.js", "feature-out-of-area-amount.js", "feature-out-of-hours-amount.js", "feature-deduct-amount.js", "feature-sub-area-checkbox.js"],
       "run_at": "document_idle",
       "world": "MAIN",
       "all_frames": false

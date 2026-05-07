@@ -24,10 +24,12 @@
   // Maps + dynamic fields (modifierFees, enabledProvinces) มาจาก chrome.storage
   // ผ่าน config-bridge.js → set window.X. Static fields (selectors, debug, ฯลฯ)
   // อยู่ใน window.ISURVEY_HELPER_CONFIG ตลอดเพราะ config-bridge.js seed ก่อน content.js
-  const getProvinceMap  = () => window.PROVINCE_FEE_MAP || {};
-  const getAmphurMap    = () => window.AMPHUR_FEE_MAP   || {};
-  const getTumbonMap    = () => window.TUMBON_FEE_MAP   || {};
-  const getAmphurTable  = () => window.AMPHUR_FEE_TABLE || {};
+  const getProvinceMap     = () => window.PROVINCE_FEE_MAP    || {};
+  const getAmphurMap       = () => window.AMPHUR_FEE_MAP      || {};
+  const getTumbonMap       = () => window.TUMBON_FEE_MAP      || {};
+  const getAmphurTable     = () => window.AMPHUR_FEE_TABLE    || {};
+  const getTumbonOverride  = () => window.TUMBON_FEE_OVERRIDE || {};
+  const getSurveyorTeams   = () => window.SURVEYOR_TEAMS      || {};
   const getCFG = () => Object.assign(
     {
       pollIntervalMs: 500,
@@ -93,6 +95,8 @@
       serviceTypeCmpId:    'tab1_service_type',            // combo "ประเภทบริการ" — บริการ/ต่อเนื่อง/หน้าร้าน/พื้นที่เดียวกัน
       serviceTypeInput:    'input#tab1_service_type-inputEl',
       serviceTypeInputId:  'tab1_service_type-inputEl',
+      subAreaCmpId:        'tab1_chk_sub_area',            // checkbox sub-area (inject ได้ — feature-sub-area-checkbox.js)
+      subAreaInputId:      'tab1_chk_sub_area-inputEl',
     },
     CFG.selectors || {}
   );
@@ -268,6 +272,46 @@
   /** พนักงาน SE? — ตรวจชื่อ surveyor ขึ้นต้นด้วย "se" (case insensitive) */
   function isSurveyorSE() {
     return /^se/i.test(readSurveyorName());
+  }
+
+  /**
+   * อ่านรหัส SECxxx จาก surveyor name (e.g. "SEC148ฐนกร สดใส" → "SEC148")
+   * รองรับช่องว่างหรือไม่มีก็ได้ระหว่างรหัสกับชื่อ — match prefix "SEC" + ตัวเลข
+   */
+  function readSurveyorSecCode() {
+    const m = /^(SEC\d+)/i.exec(readSurveyorName());
+    return m ? m[1].toUpperCase() : null;
+  }
+
+  /** lookup ทีมของ surveyor ปัจจุบันจาก SURVEYOR_TEAMS — null ถ้าไม่มี code/ไม่ match */
+  function readSurveyorTeam() {
+    const code = readSurveyorSecCode();
+    if (!code) return null;
+    const teams = getSurveyorTeams();
+    return teams[code] || null;
+  }
+
+  /** sub-area checkbox state (inject โดย feature-sub-area-checkbox.js) */
+  function isSubAreaChecked() {
+    const cmp = getExtCmp(SEL.subAreaCmpId);
+    if (cmp && typeof cmp.getValue === "function") return cmp.getValue() === true;
+    const el = document.getElementById(SEL.subAreaInputId);
+    return !!(el && el.checked);
+  }
+
+  /**
+   * หา TUMBON_FEE_OVERRIDE entry ที่ parentAmphur ตรงกับ amphurId นี้
+   * คืน { tumbonId, entry } หรือ null
+   */
+  function findSubAreaForAmphur(amphurId) {
+    if (!amphurId) return null;
+    const map = getTumbonOverride();
+    for (const [tid, entry] of Object.entries(map)) {
+      if (String(entry.parentAmphur) === String(amphurId)) {
+        return { tumbonId: tid, entry };
+      }
+    }
+    return null;
   }
 
   function lookupName(level, id) {
@@ -456,6 +500,35 @@
   }
 
   /**
+   * จังหวัดนี้อยู่ใน fee config ใดๆ หรือไม่?
+   * ตรวจ 4 maps: PROVINCE_FEE_MAP โดยตรง + amphur/tumbon ที่ขึ้นต้นด้วย provinceId
+   * (amphur 4 หลัก = provinceID + 2 หลัก, tumbon 6 หลัก = provinceID + 4 หลัก)
+   *
+   * Note: คืน true ถ้า config ยังไม่ load (4 maps ว่างหมด) — กัน flicker ตอน boot
+   * ก่อน loader.js fetch /api/config สำเร็จ (ไม่งั้น clear ทุกฟิลด์ค้าง)
+   */
+  function isProvinceInDatabase(provinceId) {
+    if (!provinceId) return false;
+    const pid = String(provinceId);
+    const pm = getProvinceMap(), am = getAmphurMap(), at = getAmphurTable(), tm = getTumbonMap();
+    if (Object.keys(pm).length === 0 && Object.keys(am).length === 0 &&
+        Object.keys(at).length === 0 && Object.keys(tm).length === 0) {
+      return true; // config ยังไม่ load → assume in-DB (skip clear)
+    }
+    if (Object.prototype.hasOwnProperty.call(pm, pid)) return true;
+    const hasPrefix = (map) => Object.keys(map).some((k) => k.startsWith(pid));
+    return hasPrefix(am) || hasPrefix(at) || hasPrefix(tm);
+  }
+
+  /** เคลียร์ค่าบริการ/ค่าเดินทาง/ค่ารูป (เสนอ + อนุมัติ) — ใช้ตอนจังหวัดนอก DB */
+  function clearAllFeeFields(reason) {
+    setOneField(SEL.feeCmpId,       SEL.feeInput,       "", `SUR_INVEST [${reason} → clear]`);
+    setOneField(SEL.insInvestCmpId, SEL.insInvestInput, "", `INS_INVEST [${reason} → clear]`);
+    setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "", `INS_TRANS [${reason} → clear]`);
+    setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  "", `INS_PHOTO [${reason} → clear]`);
+  }
+
+  /**
    * ตั้งค่าฟิลด์ตัวเดียว (มี skip-if-same + flash + log) — utility สำหรับ multi-field mode
    * ส่ง value = "" หรือ null → clear ฟิลด์ (ใช้ตอน MtypeID เปลี่ยนแล้วฟิลด์เดิมไม่ valid อีกแล้ว)
    */
@@ -484,6 +557,13 @@
   /**
    * Multi-field mode: ใช้กับอำเภอที่อยู่ใน AMPHUR_FEE_TABLE
    * เติมหลายช่อง (SUR_INVEST / INS_INVEST / INS_TRANS / INS_PHOTO) ตาม MtypeID + SE/non-SE
+   *
+   * รองรับ 3 รูปแบบ entry:
+   *   (a) flat SUR_INVEST       — ระยอง ฯลฯ — ค่าเดียวต่ออำเภอ
+   *   (b) SUR_INVEST_BY_TEAM    — ชลบุรี — เรทแยกตามทีม surveyor (เมืองชลบุรี/ศรีราชา/บางละมุง)
+   *   (c) sub-area override     — ชลบุรี ตำบลพิเศษ (บ่อวิน/พลูตาหลวง) — checkbox ติ๊ก → ใช้ TUMBON_FEE_OVERRIDE
+   *
+   * Q1 policy: entry แบบ team-based + surveyor ไม่อยู่ทีมไหน → clear ทั้ง 4 ฟิลด์
    */
   function syncMultiFields(amphurId, tbl) {
     const mtype = readMtypeId();
@@ -491,43 +571,79 @@
     const mt12  = (mtype === "1" || mtype === "2");
     const mt34  = (mtype === "3" || mtype === "4");
 
-    // SUR_INVEST: เฉพาะ SE — ค่าเดียวต่ออำเภอ ทุก MtypeID + บวก modifier "นอกพื้นที่"/"นอกเวลา"
-    if (isSE && tbl.SUR_INVEST !== undefined) {
+    // ── Sub-area override: ถ้า amphur นี้มี tumbon override + checkbox ติ๊ก → swap entry ──
+    let effective = tbl;
+    let label = `amphur ${amphurId}`;
+    const sub = findSubAreaForAmphur(amphurId);
+    if (sub && isSubAreaChecked()) {
+      effective = sub.entry;
+      label = `tumbon ${sub.tumbonId} (${sub.entry.label})`;
+    }
+
+    // ── SUR_INVEST resolve (3 รูปแบบ) ──
+    let surBase = null;
+    let surLabel = "";
+    if (effective.SUR_INVEST_BY_TEAM) {
+      // (b)/(c) team-based — ต้องมี SE + matching team
+      if (isSE) {
+        const team = readSurveyorTeam();
+        if (team && effective.SUR_INVEST_BY_TEAM[team] !== undefined) {
+          surBase = effective.SUR_INVEST_BY_TEAM[team];
+          surLabel = `team=${team}`;
+        } else {
+          // Q1 policy: ทีมไม่ match → clear ทั้ง 4 ฟิลด์ (caller จะเช็ค surBase===null + byTeam)
+          // ปล่อย surBase=null + ลง clear branch ด้านล่าง
+        }
+      }
+    } else if (isSE && effective.SUR_INVEST !== undefined) {
+      // (a) flat — เดิม
+      surBase = effective.SUR_INVEST;
+    }
+
+    // ── ถ้า team-based แต่ surveyor ไม่อยู่ทีม → clear ทั้ง 4 ฟิลด์ + return ──
+    if (effective.SUR_INVEST_BY_TEAM && surBase === null) {
+      setOneField(SEL.feeCmpId,       SEL.feeInput,       "", `SUR_INVEST [${label}, surveyor ไม่อยู่ทีม → clear]`);
+      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, "", `INS_INVEST [${label}, surveyor ไม่อยู่ทีม → clear]`);
+      setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "", `INS_TRANS  [${label}, surveyor ไม่อยู่ทีม → clear]`);
+      setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  "", `INS_PHOTO  [${label}, surveyor ไม่อยู่ทีม → clear]`);
+      return;
+    }
+
+    // ── SUR_INVEST: เฉพาะ SE + มี base — บวก modifier ──
+    if (surBase !== null) {
       const mods = getActiveModifiers();
-      const total = mods.reduce((sum, m) => sum + m.amount, tbl.SUR_INVEST);
+      const total = mods.reduce((sum, m) => sum + m.amount, surBase);
       const modLabel = mods.length
         ? " " + mods.map(m => `${m.amount >= 0 ? "+" : ""}${m.amount} ${m.label}`).join(" ")
         : "";
       setOneField(SEL.feeCmpId, SEL.feeInput, total,
-        `SUR_INVEST [amphur ${amphurId}] (base ${tbl.SUR_INVEST}${modLabel})`);
+        `SUR_INVEST [${label}${surLabel ? ", " + surLabel : ""}] (base ${surBase}${modLabel})`);
     }
 
     // INS_INVEST: เลือกตาม MtypeID (1-2 vs 3-4)
-    if (mt12 && tbl.INS_INVEST_12 !== undefined) {
-      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, tbl.INS_INVEST_12,
-        `INS_INVEST [amphur ${amphurId}, MtypeID ${mtype}=เคลม${mtype === "1" ? "สด" : "แห้ง"}]`);
-    } else if (mt34 && tbl.INS_INVEST_34 !== undefined) {
-      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, tbl.INS_INVEST_34,
-        `INS_INVEST [amphur ${amphurId}, MtypeID ${mtype}=${mtype === "3" ? "ติดตาม" : "เจรจาสินไหม"}]`);
+    if (mt12 && effective.INS_INVEST_12 !== undefined) {
+      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, effective.INS_INVEST_12,
+        `INS_INVEST [${label}, MtypeID ${mtype}=เคลม${mtype === "1" ? "สด" : "แห้ง"}]`);
+    } else if (mt34 && effective.INS_INVEST_34 !== undefined) {
+      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, effective.INS_INVEST_34,
+        `INS_INVEST [${label}, MtypeID ${mtype}=${mtype === "3" ? "ติดตาม" : "เจรจาสินไหม"}]`);
     }
 
-    // INS_TRANS: ทุก MtypeID (ขึ้นกับอำเภออย่างเดียว) — ถ้า table ไม่ได้ระบุ → clear
-    // (เช่น กทม. ทุกอำเภอไม่มี INS_TRANS → field ต้องว่าง)
-    if (tbl.INS_TRANS !== undefined) {
-      setOneField(SEL.insTransCmpId, SEL.insTransInput, tbl.INS_TRANS,
-        `INS_TRANS [amphur ${amphurId}]`);
+    // INS_TRANS: ทุก MtypeID (ขึ้นกับอำเภออย่างเดียว) — ถ้า entry ไม่ได้ระบุ → clear
+    if (effective.INS_TRANS !== undefined) {
+      setOneField(SEL.insTransCmpId, SEL.insTransInput, effective.INS_TRANS,
+        `INS_TRANS [${label}]`);
     } else {
       setOneField(SEL.insTransCmpId, SEL.insTransInput, "",
-        `INS_TRANS [amphur ${amphurId} → ไม่ระบุ, clear]`);
+        `INS_TRANS [${label} → ไม่ระบุ, clear]`);
     }
 
-    // INS_PHOTO: เฉพาะ MtypeID 1-2 + table มี INS_PHOTO_12; กรณีอื่น (3-4 หรือ
-    // table ไม่ระบุเช่น กทม.) → clear
-    if (mt12 && tbl.INS_PHOTO_12 !== undefined) {
-      setOneField(SEL.insPhotoCmpId, SEL.insPhotoInput, tbl.INS_PHOTO_12,
-        `INS_PHOTO [amphur ${amphurId}, MtypeID ${mtype}]`);
+    // INS_PHOTO: เฉพาะ MtypeID 1-2 + entry มี INS_PHOTO_12; กรณีอื่น → clear
+    if (mt12 && effective.INS_PHOTO_12 !== undefined) {
+      setOneField(SEL.insPhotoCmpId, SEL.insPhotoInput, effective.INS_PHOTO_12,
+        `INS_PHOTO [${label}, MtypeID ${mtype}]`);
     } else {
-      const reason = mt34 ? `MtypeID ${mtype}` : `amphur ${amphurId} ไม่ระบุ`;
+      const reason = mt34 ? `MtypeID ${mtype}` : `${label} ไม่ระบุ`;
       setOneField(SEL.insPhotoCmpId, SEL.insPhotoInput, "",
         `INS_PHOTO [${reason} → clear]`);
     }
@@ -652,6 +768,16 @@
 
     // ค่าเรียกร้อง % — ทำเสมอ ไม่ขึ้นกับ whitelist
     syncClaimPercentages();
+
+    // จังหวัดถูกเลือกแล้วแต่ไม่อยู่ใน fee config ใดๆ → เคลียร์ 4 ฟิลด์ทันที
+    // (เช็คก่อน whitelist เพื่อให้เคลียร์ค่าค้างได้แม้จังหวัดไม่อยู่ใน enabledProvinces
+    //  เช่น หนองคาย — ไม่อยู่ทั้งใน PROVINCE_FEE_MAP และ enabledProvinces)
+    // ตรวจแค่ provinceId อย่างเดียว — ไม่ต้องรอเลือกอำเภอ
+    if (provinceId && !isProvinceInDatabase(provinceId)) {
+      clearAllFeeFields(`province ${provinceId} นอกฐานข้อมูล`);
+      updateDeductWarning();
+      return;
+    }
 
     if (!isProvinceEnabled(provinceId)) return; // นอก whitelist → ไม่แตะ fee field
 
@@ -839,6 +965,7 @@
         t.id === SEL.surveyorNameInputId ||
         t.id === SEL.recvClaimInputId ||
         t.id === SEL.serviceTypeInputId ||
+        t.id === SEL.subAreaInputId ||
         (t.type === "radio" && t.name === SEL.inOutRadioName);
       if (matches) {
         // sync ทันทีหลัง Ext กระจาย event ภายใน
