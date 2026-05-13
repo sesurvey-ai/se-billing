@@ -558,12 +558,14 @@
    * Multi-field mode: ใช้กับอำเภอที่อยู่ใน AMPHUR_FEE_TABLE
    * เติมหลายช่อง (SUR_INVEST / INS_INVEST / INS_TRANS / INS_PHOTO) ตาม MtypeID + SE/non-SE
    *
-   * รองรับ 3 รูปแบบ entry:
-   *   (a) flat SUR_INVEST       — ระยอง ฯลฯ — ค่าเดียวต่ออำเภอ
-   *   (b) SUR_INVEST_BY_TEAM    — ชลบุรี — เรทแยกตามทีม surveyor (เมืองชลบุรี/ศรีราชา/บางละมุง)
-   *   (c) sub-area override     — ชลบุรี ตำบลพิเศษ (บ่อวิน/พลูตาหลวง) — checkbox ติ๊ก → ใช้ TUMBON_FEE_OVERRIDE
+   * รองรับ 4 รูปแบบ entry:
+   *   (a) flat SUR_INVEST                       — ระยอง ฯลฯ — ค่าเดียวต่ออำเภอ
+   *   (b) SUR_INVEST_BY_TEAM (ไม่มี flat)       — ชลบุรี — เรทแยกตามทีม (Q1 policy: ทีมไม่ match → clear)
+   *   (c) sub-area override                     — ชลบุรี ตำบลพิเศษ (บ่อวิน/พลูตาหลวง) ผ่าน checkbox
+   *   (d) flat + BY_TEAM override (กาญจนบุรี)   — มีทั้ง SUR_INVEST flat + SUR_INVEST_BY_TEAM/INS_TRANS_BY_TEAM
+   *       → ทีม match ใช้ override, ไม่ match ใช้ flat (fallback)
    *
-   * Q1 policy: entry แบบ team-based + surveyor ไม่อยู่ทีมไหน → clear ทั้ง 4 ฟิลด์
+   * Q1 policy ยังอยู่: ถ้า entry มี BY_TEAM แต่ "ไม่มี" SUR_INVEST flat + ทีมไม่ match → clear ทั้ง 4 ฟิลด์
    */
   function syncMultiFields(amphurId, tbl) {
     const mtype = readMtypeId();
@@ -580,28 +582,31 @@
       label = `tumbon ${sub.tumbonId} (${sub.entry.label})`;
     }
 
-    // ── SUR_INVEST resolve (3 รูปแบบ) ──
+    // surveyor team (ใช้ทั้ง SUR และ INS_TRANS override)
+    const surveyorTeam = readSurveyorTeam();
+    const hasSurFlat = (effective.SUR_INVEST !== undefined && effective.SUR_INVEST !== null);
+    const hasSurByTeam = !!effective.SUR_INVEST_BY_TEAM;
+
+    // ── SUR_INVEST resolve ──
     let surBase = null;
     let surLabel = "";
-    if (effective.SUR_INVEST_BY_TEAM) {
-      // (b)/(c) team-based — ต้องมี SE + matching team
-      if (isSE) {
-        const team = readSurveyorTeam();
-        if (team && effective.SUR_INVEST_BY_TEAM[team] !== undefined) {
-          surBase = effective.SUR_INVEST_BY_TEAM[team];
-          surLabel = `team=${team}`;
-        } else {
-          // Q1 policy: ทีมไม่ match → clear ทั้ง 4 ฟิลด์ (caller จะเช็ค surBase===null + byTeam)
-          // ปล่อย surBase=null + ลง clear branch ด้านล่าง
-        }
+    if (isSE) {
+      // 1) ลอง team override ก่อน
+      if (hasSurByTeam && surveyorTeam && effective.SUR_INVEST_BY_TEAM[surveyorTeam] !== undefined) {
+        surBase = effective.SUR_INVEST_BY_TEAM[surveyorTeam];
+        surLabel = `team=${surveyorTeam}`;
       }
-    } else if (isSE && effective.SUR_INVEST !== undefined) {
-      // (a) flat — เดิม
-      surBase = effective.SUR_INVEST;
+      // 2) fallback: flat SUR_INVEST (กาญจนบุรี เคส d — surveyor นอกทีมยังได้เรทกลาง)
+      else if (hasSurFlat) {
+        surBase = effective.SUR_INVEST;
+        surLabel = hasSurByTeam
+          ? `flat fallback (team ${surveyorTeam || "ไม่ระบุ"} ไม่ match)`
+          : "";
+      }
     }
 
-    // ── ถ้า team-based แต่ surveyor ไม่อยู่ทีม → clear ทั้ง 4 ฟิลด์ + return ──
-    if (effective.SUR_INVEST_BY_TEAM && surBase === null) {
+    // ── Q1 policy: เฉพาะ entry แบบ pure team-based (ไม่มี flat) + ทีมไม่ match → clear ทั้ง 4 ฟิลด์ ──
+    if (hasSurByTeam && !hasSurFlat && surBase === null) {
       setOneField(SEL.feeCmpId,       SEL.feeInput,       "", `SUR_INVEST [${label}, surveyor ไม่อยู่ทีม → clear]`);
       setOneField(SEL.insInvestCmpId, SEL.insInvestInput, "", `INS_INVEST [${label}, surveyor ไม่อยู่ทีม → clear]`);
       setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "", `INS_TRANS  [${label}, surveyor ไม่อยู่ทีม → clear]`);
@@ -629,13 +634,24 @@
         `INS_INVEST [${label}, MtypeID ${mtype}=${mtype === "3" ? "ติดตาม" : "เจรจาสินไหม"}]`);
     }
 
-    // INS_TRANS: ทุก MtypeID (ขึ้นกับอำเภออย่างเดียว) — ถ้า entry ไม่ได้ระบุ → clear
-    if (effective.INS_TRANS !== undefined) {
-      setOneField(SEL.insTransCmpId, SEL.insTransInput, effective.INS_TRANS,
-        `INS_TRANS [${label}]`);
+    // INS_TRANS resolve — รองรับ team override เช่นเดียวกับ SUR
+    //   ถ้ามี INS_TRANS_BY_TEAM + team match → ใช้ override
+    //   else ถ้ามี INS_TRANS flat → ใช้ flat
+    //   else → clear
+    let transValue = null;
+    let transLabel = label;
+    const hasTransByTeam = !!effective.INS_TRANS_BY_TEAM;
+    if (hasTransByTeam && surveyorTeam && effective.INS_TRANS_BY_TEAM[surveyorTeam] !== undefined) {
+      transValue = effective.INS_TRANS_BY_TEAM[surveyorTeam];
+      transLabel = `${label}, team=${surveyorTeam}`;
+    } else if (effective.INS_TRANS !== undefined) {
+      transValue = effective.INS_TRANS;
+      if (hasTransByTeam) transLabel = `${label}, flat fallback`;
+    }
+    if (transValue !== null) {
+      setOneField(SEL.insTransCmpId, SEL.insTransInput, transValue, `INS_TRANS [${transLabel}]`);
     } else {
-      setOneField(SEL.insTransCmpId, SEL.insTransInput, "",
-        `INS_TRANS [${label} → ไม่ระบุ, clear]`);
+      setOneField(SEL.insTransCmpId, SEL.insTransInput, "", `INS_TRANS [${label} → ไม่ระบุ, clear]`);
     }
 
     // INS_PHOTO: เฉพาะ MtypeID 1-2 + entry มี INS_PHOTO_12; กรณีอื่น → clear

@@ -47,7 +47,8 @@ db.exec(`
     ins_invest_34      INTEGER,
     ins_trans          INTEGER,
     ins_photo_12       INTEGER,
-    sur_invest_by_team TEXT       -- JSON: { team: rate } | NULL = ใช้ sur_invest flat แทน
+    sur_invest_by_team TEXT,      -- JSON: { team: rate } | NULL = ใช้ sur_invest flat แทน
+    ins_trans_by_team  TEXT       -- JSON: { team: rate } | NULL = ใช้ ins_trans flat แทน
   );
   CREATE TABLE IF NOT EXISTS tumbon_fee_override (
     tumbon_id          TEXT PRIMARY KEY,
@@ -57,7 +58,8 @@ db.exec(`
     ins_invest_34      INTEGER,
     ins_trans          INTEGER,
     ins_photo_12       INTEGER,
-    sur_invest_by_team TEXT
+    sur_invest_by_team TEXT,
+    ins_trans_by_team  TEXT
   );
   CREATE TABLE IF NOT EXISTS surveyor_teams (
     sec_code TEXT PRIMARY KEY,
@@ -111,6 +113,9 @@ ensureColumn("captures", "incomplete_docs", "INTEGER DEFAULT 0");
 ensureColumn("captures", "inspector_name",  "TEXT");
 // v2.8: Chonburi team-based rates
 ensureColumn("amphur_table", "sur_invest_by_team", "TEXT");
+// v2.9: Kanchanaburi per-team INS_TRANS override (+ flat fallback)
+ensureColumn("amphur_table",        "ins_trans_by_team",  "TEXT");
+ensureColumn("tumbon_fee_override", "ins_trans_by_team",  "TEXT");
 
 /** ── Settings helpers (JSON values) ────────────────────────────────────────── */
 function setSetting(key, value) {
@@ -184,8 +189,8 @@ export function seedFrom(payload) {
     for (const [id, fee] of Object.entries(payload.TUMBON_FEE_MAP || {})) insT.run(String(id), Number(fee));
 
     const insTbl = db.prepare(`
-      INSERT INTO amphur_table(amphur_id, sur_invest, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO amphur_table(amphur_id, sur_invest, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team, ins_trans_by_team)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     for (const [id, row] of Object.entries(payload.AMPHUR_FEE_TABLE || {})) {
       insTbl.run(
@@ -195,13 +200,14 @@ export function seedFrom(payload) {
         row.INS_INVEST_34 ?? null,
         row.INS_TRANS ?? null,
         row.INS_PHOTO_12 ?? null,
-        jsonOrNull(row.SUR_INVEST_BY_TEAM)
+        jsonOrNull(row.SUR_INVEST_BY_TEAM),
+        jsonOrNull(row.INS_TRANS_BY_TEAM)
       );
     }
 
     const insTo = db.prepare(`
-      INSERT INTO tumbon_fee_override(tumbon_id, label, parent_amphur, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO tumbon_fee_override(tumbon_id, label, parent_amphur, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team, ins_trans_by_team)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     for (const [id, row] of Object.entries(payload.TUMBON_FEE_OVERRIDE || {})) {
       insTo.run(
@@ -212,7 +218,8 @@ export function seedFrom(payload) {
         row.INS_INVEST_34 ?? null,
         row.INS_TRANS ?? null,
         row.INS_PHOTO_12 ?? null,
-        jsonOrNull(row.SUR_INVEST_BY_TEAM)
+        jsonOrNull(row.SUR_INVEST_BY_TEAM),
+        jsonOrNull(row.INS_TRANS_BY_TEAM)
       );
     }
 
@@ -245,7 +252,7 @@ export function readConfig() {
   }
   const AMPHUR_FEE_TABLE = {};
   for (const r of db.prepare(`
-    SELECT amphur_id, sur_invest, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team
+    SELECT amphur_id, sur_invest, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team, ins_trans_by_team
     FROM amphur_table
   `).all()) {
     const row = {};
@@ -254,13 +261,15 @@ export function readConfig() {
     if (r.ins_invest_34 !== null) row.INS_INVEST_34 = r.ins_invest_34;
     if (r.ins_trans     !== null) row.INS_TRANS     = r.ins_trans;
     if (r.ins_photo_12  !== null) row.INS_PHOTO_12  = r.ins_photo_12;
-    const byTeam = parseJsonObj(r.sur_invest_by_team);
-    if (byTeam) row.SUR_INVEST_BY_TEAM = byTeam;
+    const surByTeam   = parseJsonObj(r.sur_invest_by_team);
+    if (surByTeam)   row.SUR_INVEST_BY_TEAM = surByTeam;
+    const transByTeam = parseJsonObj(r.ins_trans_by_team);
+    if (transByTeam) row.INS_TRANS_BY_TEAM  = transByTeam;
     AMPHUR_FEE_TABLE[r.amphur_id] = row;
   }
   const TUMBON_FEE_OVERRIDE = {};
   for (const r of db.prepare(`
-    SELECT tumbon_id, label, parent_amphur, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team
+    SELECT tumbon_id, label, parent_amphur, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team, ins_trans_by_team
     FROM tumbon_fee_override
   `).all()) {
     const row = { label: r.label, parentAmphur: r.parent_amphur };
@@ -268,8 +277,10 @@ export function readConfig() {
     if (r.ins_invest_34 !== null) row.INS_INVEST_34 = r.ins_invest_34;
     if (r.ins_trans     !== null) row.INS_TRANS     = r.ins_trans;
     if (r.ins_photo_12  !== null) row.INS_PHOTO_12  = r.ins_photo_12;
-    const byTeam = parseJsonObj(r.sur_invest_by_team);
-    if (byTeam) row.SUR_INVEST_BY_TEAM = byTeam;
+    const surByTeam   = parseJsonObj(r.sur_invest_by_team);
+    if (surByTeam)   row.SUR_INVEST_BY_TEAM = surByTeam;
+    const transByTeam = parseJsonObj(r.ins_trans_by_team);
+    if (transByTeam) row.INS_TRANS_BY_TEAM  = transByTeam;
     TUMBON_FEE_OVERRIDE[r.tumbon_id] = row;
   }
   const SURVEYOR_TEAMS = {};
@@ -312,22 +323,24 @@ export const TumbonOverride = {
 
 export const AmphurTable = {
   list: () => db.prepare(`
-    SELECT amphur_id, sur_invest, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team
+    SELECT amphur_id, sur_invest, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team, ins_trans_by_team
     FROM amphur_table ORDER BY amphur_id
   `).all().map(r => ({
     ...r,
     sur_invest_by_team: parseJsonObj(r.sur_invest_by_team),
+    ins_trans_by_team:  parseJsonObj(r.ins_trans_by_team),
   })),
   upsert: (id, fields) => db.prepare(`
-    INSERT INTO amphur_table(amphur_id, sur_invest, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO amphur_table(amphur_id, sur_invest, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team, ins_trans_by_team)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(amphur_id) DO UPDATE SET
       sur_invest         = excluded.sur_invest,
       ins_invest_12      = excluded.ins_invest_12,
       ins_invest_34      = excluded.ins_invest_34,
       ins_trans          = excluded.ins_trans,
       ins_photo_12       = excluded.ins_photo_12,
-      sur_invest_by_team = excluded.sur_invest_by_team
+      sur_invest_by_team = excluded.sur_invest_by_team,
+      ins_trans_by_team  = excluded.ins_trans_by_team
   `).run(
     String(id),
     fields.SUR_INVEST ?? null,
@@ -335,22 +348,24 @@ export const AmphurTable = {
     fields.INS_INVEST_34 ?? null,
     fields.INS_TRANS ?? null,
     fields.INS_PHOTO_12 ?? null,
-    jsonOrNull(fields.SUR_INVEST_BY_TEAM)
+    jsonOrNull(fields.SUR_INVEST_BY_TEAM),
+    jsonOrNull(fields.INS_TRANS_BY_TEAM)
   ),
   remove: (id) => db.prepare("DELETE FROM amphur_table WHERE amphur_id = ?").run(String(id)),
 };
 
 export const TumbonOverrideTable = {
   list: () => db.prepare(`
-    SELECT tumbon_id, label, parent_amphur, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team
+    SELECT tumbon_id, label, parent_amphur, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team, ins_trans_by_team
     FROM tumbon_fee_override ORDER BY tumbon_id
   `).all().map(r => ({
     ...r,
     sur_invest_by_team: parseJsonObj(r.sur_invest_by_team),
+    ins_trans_by_team:  parseJsonObj(r.ins_trans_by_team),
   })),
   upsert: (id, fields) => db.prepare(`
-    INSERT INTO tumbon_fee_override(tumbon_id, label, parent_amphur, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tumbon_fee_override(tumbon_id, label, parent_amphur, ins_invest_12, ins_invest_34, ins_trans, ins_photo_12, sur_invest_by_team, ins_trans_by_team)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(tumbon_id) DO UPDATE SET
       label              = excluded.label,
       parent_amphur      = excluded.parent_amphur,
@@ -358,7 +373,8 @@ export const TumbonOverrideTable = {
       ins_invest_34      = excluded.ins_invest_34,
       ins_trans          = excluded.ins_trans,
       ins_photo_12       = excluded.ins_photo_12,
-      sur_invest_by_team = excluded.sur_invest_by_team
+      sur_invest_by_team = excluded.sur_invest_by_team,
+      ins_trans_by_team  = excluded.ins_trans_by_team
   `).run(
     String(id),
     String(fields.label || ""),
@@ -367,7 +383,8 @@ export const TumbonOverrideTable = {
     fields.INS_INVEST_34 ?? null,
     fields.INS_TRANS ?? null,
     fields.INS_PHOTO_12 ?? null,
-    jsonOrNull(fields.SUR_INVEST_BY_TEAM)
+    jsonOrNull(fields.SUR_INVEST_BY_TEAM),
+    jsonOrNull(fields.INS_TRANS_BY_TEAM)
   ),
   remove: (id) => db.prepare("DELETE FROM tumbon_fee_override WHERE tumbon_id = ?").run(String(id)),
 };

@@ -74,7 +74,7 @@ function renderAmphurTable() {
       <td class="center">${row.INS_INVEST_34 ?? "—"}</td>
       <td class="center">${row.INS_TRANS ?? "—"}</td>
       <td class="center">${row.INS_PHOTO_12 ?? "—"}</td>
-      <td class="team-rates-cell">${summarizeTeamRates(row.SUR_INVEST_BY_TEAM)}</td>
+      <td class="team-rates-cell">${summarizeTeamRatesCombined(row)}</td>
       <td class="actions">
         <button class="btn btn-icon" data-action="edit-amphur-table" data-id="${id}">แก้</button>
         <button class="btn btn-icon btn-danger" data-action="delete-amphur-table" data-id="${id}">ลบ</button>
@@ -169,7 +169,7 @@ function renderTumbonOverride() {
       <td class="center">${row.INS_INVEST_34 ?? "—"}</td>
       <td class="center">${row.INS_TRANS ?? "—"}</td>
       <td class="center">${row.INS_PHOTO_12 ?? "—"}</td>
-      <td class="team-rates-cell">${summarizeTeamRates(row.SUR_INVEST_BY_TEAM)}</td>
+      <td class="team-rates-cell">${summarizeTeamRatesCombined(row)}</td>
       <td class="actions">
         <button class="btn btn-icon" data-action="edit-tumbon-override" data-id="${id}">แก้</button>
         <button class="btn btn-icon btn-danger" data-action="delete-tumbon-override" data-id="${id}">ลบ</button>
@@ -276,27 +276,34 @@ function suggestTeamNames() {
   return Array.from(set).sort();
 }
 
-function teamRatesEditorHtml(byTeam) {
+/**
+ * Team rates editor — generic, supports หลาย field (SUR_INVEST_BY_TEAM, INS_TRANS_BY_TEAM)
+ * key: ใช้แยก id ใน DOM (เช่น "sur" หรือ "trans")
+ */
+function teamRatesEditorHtml(byTeam, opts = {}) {
+  const { key = "sur", title = "เรท SUR_INVEST แยกตามทีม (override SUR_INVEST flat)" } = opts;
   const entries = Object.entries(byTeam || {});
   const suggestions = suggestTeamNames();
   const datalistId = "team-name-suggestions";
-  const dl = `<datalist id="${datalistId}">${suggestions.map(t => `<option value="${t}">`).join("")}</datalist>`;
+  const dl = key === "sur"
+    ? `<datalist id="${datalistId}">${suggestions.map(t => `<option value="${t}">`).join("")}</datalist>`
+    : "";  // datalist รวม shared ระหว่างหลาย editor ใน modal เดียว — ประกาศครั้งเดียวพอ
   const rowsHtml = entries.length
-    ? entries.map(([t, v]) => teamRowHtml(t, v, datalistId)).join("")
-    : suggestions.slice(0, 3).map(t => teamRowHtml(t, "", datalistId)).join("");
+    ? entries.map(([t, v]) => teamRowHtml(t, v, datalistId, key)).join("")
+    : ""; // editor ของ INS_TRANS_BY_TEAM/optional — ไม่ pre-populate
   return `
     <div class="form-row">
-      <label>เรท SUR_INVEST แยกตามทีม (ถ้ามีจะ override SUR_INVEST flat ด้านบน)</label>
-      <div id="team-rates-list" class="team-rates-list">${rowsHtml}</div>
-      <button type="button" id="team-rates-add" class="btn btn-icon" style="margin-top:6px">+ เพิ่มทีม</button>
+      <label>${title}</label>
+      <div id="team-rates-list-${key}" class="team-rates-list" data-key="${key}">${rowsHtml}</div>
+      <button type="button" id="team-rates-add-${key}" class="btn btn-icon" style="margin-top:6px">+ เพิ่มทีม</button>
       ${dl}
     </div>
   `;
 }
 
-function teamRowHtml(team, rate, datalistId) {
+function teamRowHtml(team, rate, datalistId, key = "sur") {
   return `
-    <div class="team-rate-row" style="display:flex;gap:6px;margin-bottom:4px;align-items:center">
+    <div class="team-rate-row" data-key="${key}" style="display:flex;gap:6px;margin-bottom:4px;align-items:center">
       <input type="text" class="team-name" placeholder="ชื่อทีม" value="${team || ""}" list="${datalistId}" style="flex:2"/>
       <input type="number" class="team-rate" placeholder="เรท" value="${rate ?? ""}" min="0" style="flex:1"/>
       <button type="button" class="btn btn-icon btn-danger team-remove">×</button>
@@ -304,23 +311,25 @@ function teamRowHtml(team, rate, datalistId) {
   `;
 }
 
-function setupTeamRatesEditor() {
-  const list = document.getElementById("team-rates-list");
-  if (!list) return;
+function setupTeamRatesEditor(keys = ["sur"]) {
   const datalistId = "team-name-suggestions";
-  document.getElementById("team-rates-add")?.addEventListener("click", () => {
-    list.insertAdjacentHTML("beforeend", teamRowHtml("", "", datalistId));
-  });
-  list.addEventListener("click", (e) => {
-    if (e.target.classList?.contains("team-remove")) {
-      e.target.closest(".team-rate-row")?.remove();
-    }
-  });
+  for (const key of keys) {
+    const list = document.getElementById(`team-rates-list-${key}`);
+    if (!list) continue;
+    document.getElementById(`team-rates-add-${key}`)?.addEventListener("click", () => {
+      list.insertAdjacentHTML("beforeend", teamRowHtml("", "", datalistId, key));
+    });
+    list.addEventListener("click", (e) => {
+      if (e.target.classList?.contains("team-remove")) {
+        e.target.closest(".team-rate-row")?.remove();
+      }
+    });
+  }
 }
 
-/** อ่านค่าจาก team-rates-list — คืน { team: rate } หรือ null ถ้าว่างหมด/ไม่มี */
-function readTeamRates() {
-  const list = document.getElementById("team-rates-list");
+/** อ่านค่าจาก team-rates-list-<key> — คืน { team: rate } หรือ null ถ้าว่างหมด/ไม่มี */
+function readTeamRates(key = "sur") {
+  const list = document.getElementById(`team-rates-list-${key}`);
   if (!list) return null;
   const obj = {};
   for (const row of list.querySelectorAll(".team-rate-row")) {
@@ -333,12 +342,23 @@ function readTeamRates() {
   return Object.keys(obj).length === 0 ? null : obj;
 }
 
-/** สรุปสั้นๆ ของ team rates ใน table cell */
+/** สรุปสั้นๆ ของ team rates ใน table cell — เฉพาะ field เดียว */
 function summarizeTeamRates(byTeam) {
   if (!byTeam) return "—";
   const entries = Object.entries(byTeam);
   if (entries.length === 0) return "—";
   return entries.map(([t, v]) => `${t}:${v}`).join(", ");
+}
+
+/** สรุปรวม SUR + TRANS by-team สำหรับ table cell */
+function summarizeTeamRatesCombined(row) {
+  const sur   = row?.SUR_INVEST_BY_TEAM;
+  const trans = row?.INS_TRANS_BY_TEAM;
+  if (!sur && !trans) return "—";
+  const parts = [];
+  if (sur)   parts.push(`SUR: ${summarizeTeamRates(sur)}`);
+  if (trans) parts.push(`TRANS: ${summarizeTeamRates(trans)}`);
+  return parts.join(" / ");
 }
 
 // ─── Add/Edit AMPHUR_FEE_TABLE ───
@@ -378,7 +398,8 @@ function openAmphurTableModal(id = null) {
       <span class="error-msg" id="err-amphur"></span>
     </div>
     <div class="form-grid">${tableFieldsHtml}</div>
-    ${teamRatesEditorHtml(existing.SUR_INVEST_BY_TEAM)}
+    ${teamRatesEditorHtml(existing.SUR_INVEST_BY_TEAM, { key: "sur", title: "เรท SUR_INVEST แยกตามทีม (override SUR_INVEST flat ด้านบน)" })}
+    ${teamRatesEditorHtml(existing.INS_TRANS_BY_TEAM,  { key: "trans", title: "เรท INS_TRANS (ค่าพาหนะ) แยกตามทีม (override INS_TRANS flat ด้านบน)" })}
   `;
 
   openModal(isEdit ? `แก้ ${id} ${state.ref.byAmphurId[id] || ""}` : "เพิ่มอำเภอ (Multi-field)", body, async () => {
@@ -396,10 +417,12 @@ function openAmphurTableModal(id = null) {
       const v = readNumberInput(`fld-${f.key}`);
       if (v !== null) obj[f.key] = v;
     }
-    const byTeam = readTeamRates();
-    if (byTeam) obj.SUR_INVEST_BY_TEAM = byTeam;
+    const surByTeam   = readTeamRates("sur");
+    const transByTeam = readTeamRates("trans");
+    if (surByTeam)   obj.SUR_INVEST_BY_TEAM = surByTeam;
+    if (transByTeam) obj.INS_TRANS_BY_TEAM  = transByTeam;
     // ต้องมี SUR_INVEST flat หรือ SUR_INVEST_BY_TEAM อย่างน้อย 1
-    if (obj.SUR_INVEST === undefined && !byTeam) {
+    if (obj.SUR_INVEST === undefined && !surByTeam) {
       document.getElementById("err-amphur").textContent = "ต้องกรอก SUR_INVEST flat หรือเรทตามทีม อย่างน้อย 1";
       return false;
     }
@@ -409,7 +432,7 @@ function openAmphurTableModal(id = null) {
     showStatus(`บันทึก ${amphurID} ${state.ref.byAmphurId[amphurID] || ""}`);
     return true;
   });
-  setupTeamRatesEditor();
+  setupTeamRatesEditor(["sur", "trans"]);
 
   if (!isEdit) {
     const provSel = document.getElementById("sel-province");
@@ -645,7 +668,8 @@ function openTumbonOverrideModal(id = null) {
       <input type="text" id="fld-label" value="${existing.label || ""}" placeholder="เช่น บ่อวิน" />
     </div>
     <div class="form-grid">${fieldsHtml}</div>
-    ${teamRatesEditorHtml(existing.SUR_INVEST_BY_TEAM)}
+    ${teamRatesEditorHtml(existing.SUR_INVEST_BY_TEAM, { key: "sur", title: "เรท SUR_INVEST แยกตามทีม" })}
+    ${teamRatesEditorHtml(existing.INS_TRANS_BY_TEAM,  { key: "trans", title: "เรท INS_TRANS (ค่าพาหนะ) แยกตามทีม" })}
   `;
 
   openModal(isEdit ? `แก้ ${id} ${existing.label || ""}` : "เพิ่มตำบลพิเศษ (Sub-area)", body, async () => {
@@ -670,8 +694,10 @@ function openTumbonOverrideModal(id = null) {
       const v = readNumberInput(`fld-${f.key}`);
       if (v !== null) fields[f.key] = v;
     }
-    const byTeam = readTeamRates();
-    if (byTeam) fields.SUR_INVEST_BY_TEAM = byTeam;
+    const surByTeam   = readTeamRates("sur");
+    const transByTeam = readTeamRates("trans");
+    if (surByTeam)   fields.SUR_INVEST_BY_TEAM = surByTeam;
+    if (transByTeam) fields.INS_TRANS_BY_TEAM  = transByTeam;
     await api.tumbonFeeOverride.upsert(tid, fields);
     state.config.TUMBON_FEE_OVERRIDE = state.config.TUMBON_FEE_OVERRIDE || {};
     state.config.TUMBON_FEE_OVERRIDE[tid] = fields;
@@ -680,7 +706,7 @@ function openTumbonOverrideModal(id = null) {
     return true;
   });
 
-  setupTeamRatesEditor();
+  setupTeamRatesEditor(["sur", "trans"]);
 
   if (!isEdit) {
     const provSel = document.getElementById("sel-province");

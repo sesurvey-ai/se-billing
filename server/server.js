@@ -127,23 +127,24 @@ app.put("/api/amphur-table/:id", (req, res) => {
   if (!id) return res.status(400).json({ error: "id required" });
   const b = req.body || {};
   const norm = (v) => (v === null || v === undefined || v === "") ? null : Number(v);
-  // SUR_INVEST_BY_TEAM: object { team: rate } — coerce values to Number, drop empties
-  let byTeam = null;
-  if (b.SUR_INVEST_BY_TEAM && typeof b.SUR_INVEST_BY_TEAM === "object") {
-    byTeam = {};
-    for (const [k, v] of Object.entries(b.SUR_INVEST_BY_TEAM)) {
+  // *_BY_TEAM: object { team: rate } — coerce values to Number, drop empties
+  const normByTeam = (raw) => {
+    if (!raw || typeof raw !== "object") return null;
+    const out = {};
+    for (const [k, v] of Object.entries(raw)) {
       const n = Number(v);
-      if (Number.isFinite(n)) byTeam[String(k)] = n;
+      if (Number.isFinite(n)) out[String(k)] = n;
     }
-    if (Object.keys(byTeam).length === 0) byTeam = null;
-  }
+    return Object.keys(out).length ? out : null;
+  };
   AmphurTable.upsert(id, {
     SUR_INVEST:    norm(b.SUR_INVEST),
     INS_INVEST_12: norm(b.INS_INVEST_12),
     INS_INVEST_34: norm(b.INS_INVEST_34),
     INS_TRANS:     norm(b.INS_TRANS),
     INS_PHOTO_12:  norm(b.INS_PHOTO_12),
-    SUR_INVEST_BY_TEAM: byTeam,
+    SUR_INVEST_BY_TEAM: normByTeam(b.SUR_INVEST_BY_TEAM),
+    INS_TRANS_BY_TEAM:  normByTeam(b.INS_TRANS_BY_TEAM),
   });
   res.json({ ok: true, amphur_id: id });
 });
@@ -162,22 +163,23 @@ app.put("/api/tumbon-fee-override/:id", (req, res) => {
     return res.status(400).json({ error: "label + parentAmphur required" });
   }
   const norm = (v) => (v === null || v === undefined || v === "") ? null : Number(v);
-  let byTeam = null;
-  if (b.SUR_INVEST_BY_TEAM && typeof b.SUR_INVEST_BY_TEAM === "object") {
-    byTeam = {};
-    for (const [k, v] of Object.entries(b.SUR_INVEST_BY_TEAM)) {
+  const normByTeam = (raw) => {
+    if (!raw || typeof raw !== "object") return null;
+    const out = {};
+    for (const [k, v] of Object.entries(raw)) {
       const n = Number(v);
-      if (Number.isFinite(n)) byTeam[String(k)] = n;
+      if (Number.isFinite(n)) out[String(k)] = n;
     }
-    if (Object.keys(byTeam).length === 0) byTeam = null;
-  }
+    return Object.keys(out).length ? out : null;
+  };
   TumbonOverrideTable.upsert(id, {
     label: b.label, parentAmphur: b.parentAmphur,
     INS_INVEST_12: norm(b.INS_INVEST_12),
     INS_INVEST_34: norm(b.INS_INVEST_34),
     INS_TRANS:     norm(b.INS_TRANS),
     INS_PHOTO_12:  norm(b.INS_PHOTO_12),
-    SUR_INVEST_BY_TEAM: byTeam,
+    SUR_INVEST_BY_TEAM: normByTeam(b.SUR_INVEST_BY_TEAM),
+    INS_TRANS_BY_TEAM:  normByTeam(b.INS_TRANS_BY_TEAM),
   });
   res.json({ ok: true, tumbon_id: id });
 });
