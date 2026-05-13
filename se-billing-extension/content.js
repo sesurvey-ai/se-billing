@@ -605,8 +605,9 @@
       }
     }
 
-    // ── Q1 policy: เฉพาะ entry แบบ pure team-based (ไม่มี flat) + ทีมไม่ match → clear ทั้ง 4 ฟิลด์ ──
-    if (hasSurByTeam && !hasSurFlat && surBase === null) {
+    // ── Q1 policy: SE surveyor + entry pure team-based (ไม่มี flat) + ทีมไม่ match → clear ทั้ง 4 ฟิลด์ ──
+    // non-SE (ชื่อไม่ขึ้น "SE/SEC") = ผู้สำรวจนอกระบบบริษัท → ปล่อยให้กรอกเอง ไม่ clear
+    if (isSE && hasSurByTeam && !hasSurFlat && surBase === null) {
       setOneField(SEL.feeCmpId,       SEL.feeInput,       "", `SUR_INVEST [${label}, surveyor ไม่อยู่ทีม → clear]`);
       setOneField(SEL.insInvestCmpId, SEL.insInvestInput, "", `INS_INVEST [${label}, surveyor ไม่อยู่ทีม → clear]`);
       setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "", `INS_TRANS  [${label}, surveyor ไม่อยู่ทีม → clear]`);
