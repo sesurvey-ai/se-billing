@@ -520,8 +520,19 @@
     return hasPrefix(am) || hasPrefix(at) || hasPrefix(tm);
   }
 
-  /** เคลียร์ค่าบริการ/ค่าเดินทาง/ค่ารูป (เสนอ + อนุมัติ) — ใช้ตอนจังหวัดนอก DB */
-  function clearAllFeeFields(reason) {
+  /**
+   * เคลียร์ค่าบริการ/ค่าเดินทาง/ค่ารูป (เสนอ + อนุมัติ) — ใช้ตอนจังหวัดนอก DB / surveyor ไม่อยู่ทีม
+   *
+   * Sticky-clear (ต่อ namespace): ถ้า `key` เหมือนรอบ poll ก่อนของ namespace นั้น → skip ทั้งหมด
+   * ปล่อยให้ user พิมพ์ค่าเองได้ (เดิม poll 500ms เคลียร์ทับทุกครั้ง พิมพ์ไม่ได้)
+   * แยก 2 namespace เพราะ 2 เงื่อนไข (out-of-DB / team-mismatch) ต้อง reset แยก ไม่งั้นการ
+   * reset เคสหนึ่งจะทำลาย sticky behavior ของอีกเคสตอนเปลี่ยนสถานะระหว่าง branch
+   */
+  const _lastClearKey = { outOfDb: null, teamMismatch: null };
+  function resetClearKey(namespace) { _lastClearKey[namespace] = null; }
+  function clearAllFeeFields(reason, namespace, key) {
+    if (key != null && _lastClearKey[namespace] === key) return;
+    _lastClearKey[namespace] = key ?? null;
     setOneField(SEL.feeCmpId,       SEL.feeInput,       "", `SUR_INVEST [${reason} → clear]`);
     setOneField(SEL.insInvestCmpId, SEL.insInvestInput, "", `INS_INVEST [${reason} → clear]`);
     setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "", `INS_TRANS [${reason} → clear]`);
@@ -607,13 +618,18 @@
 
     // ── Q1 policy: SE surveyor + entry pure team-based (ไม่มี flat) + ทีมไม่ match → clear ทั้ง 4 ฟิลด์ ──
     // non-SE (ชื่อไม่ขึ้น "SE/SEC") = ผู้สำรวจนอกระบบบริษัท → ปล่อยให้กรอกเอง ไม่ clear
+    // ใช้ sticky-clear (clearAllFeeFields with key) — clear ครั้งเดียวตอน enter เงื่อนไข
+    // poll รอบถัดไปที่ยังเข้าเงื่อนไขเดิม → skip ปล่อยให้ user พิมพ์ค่าเองได้
     if (isSE && hasSurByTeam && !hasSurFlat && surBase === null) {
-      setOneField(SEL.feeCmpId,       SEL.feeInput,       "", `SUR_INVEST [${label}, surveyor ไม่อยู่ทีม → clear]`);
-      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, "", `INS_INVEST [${label}, surveyor ไม่อยู่ทีม → clear]`);
-      setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "", `INS_TRANS  [${label}, surveyor ไม่อยู่ทีม → clear]`);
-      setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  "", `INS_PHOTO  [${label}, surveyor ไม่อยู่ทีม → clear]`);
+      clearAllFeeFields(
+        `${label}, surveyor ไม่อยู่ทีม`,
+        "teamMismatch",
+        `${amphurId}:${surveyorTeam || ""}`
+      );
       return;
     }
+    // ออกจาก Q1 path (set surBase ได้) — reset namespace ให้ครั้งถัดไปที่กลับเข้า Q1 จะ clear ค่าค้าง
+    resetClearKey("teamMismatch");
 
     // ── SUR_INVEST: เฉพาะ SE + มี base — บวก modifier ──
     if (surBase !== null) {
@@ -786,17 +802,23 @@
     // ค่าเรียกร้อง % — ทำเสมอ ไม่ขึ้นกับ whitelist
     syncClaimPercentages();
 
-    // จังหวัดถูกเลือกแล้วแต่ไม่อยู่ใน fee config ใดๆ → เคลียร์ 4 ฟิลด์ทันที
+    // จังหวัดถูกเลือกแล้วแต่ไม่อยู่ใน fee config ใดๆ → เคลียร์ 4 ฟิลด์ครั้งเดียว (sticky)
     // (เช็คก่อน whitelist เพื่อให้เคลียร์ค่าค้างได้แม้จังหวัดไม่อยู่ใน enabledProvinces
     //  เช่น หนองคาย — ไม่อยู่ทั้งใน PROVINCE_FEE_MAP และ enabledProvinces)
     // ตรวจแค่ provinceId อย่างเดียว — ไม่ต้องรอเลือกอำเภอ
+    // Sticky-clear key = provinceId → clear ครั้งเดียวตอนเลือกจังหวัดนี้ครั้งแรก
+    // หลังจากนั้น user พิมพ์ค่าเองในช่อง SUR_INVEST ได้ (poll ไม่ทับ)
     if (provinceId && !isProvinceInDatabase(provinceId)) {
-      clearAllFeeFields(`province ${provinceId} นอกฐานข้อมูล`);
+      clearAllFeeFields(`province ${provinceId} นอกฐานข้อมูล`, "outOfDb", provinceId);
       updateDeductWarning();
       return;
     }
 
     if (!isProvinceEnabled(provinceId)) return; // นอก whitelist → ไม่แตะ fee field
+
+    // ออกจาก out-of-DB branch (จังหวัดอยู่ใน DB) → reset namespace ให้ครั้งถัดไปที่กลับสู่
+    // out-of-DB (เช่น user สลับ ระยอง ↔ หนองคาย) เคลียร์ค่าระยองที่ extension เซ็ตค้างไว้ได้
+    resetClearKey("outOfDb");
 
     // "ต่อเนื่อง" override — ถ้า matched → set 4 fields fixed + return
     if (applyContinuousOverride(provinceId)) {
