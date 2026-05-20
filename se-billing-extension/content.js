@@ -72,6 +72,7 @@
       surveyorNameCmpId:   'tab1_surveyor_name',
       surveyorNameInput:   'input#tab1_surveyor_name-inputEl',
       surveyorNameInputId: 'tab1_surveyor_name-inputEl',
+      ossCompanyInputId:   'tab1_OSS_company-inputEl',   // surveyor นอกบริษัท — ใส่ชื่อบริษัทแทนชื่อ surveyor
       insInvestCmpId:      'tab1_INS_INVEST',
       insInvestInput:      'input#tab1_INS_INVEST-inputEl',
       insTransCmpId:       'tab1_INS_TRANS',
@@ -269,8 +270,17 @@
     return (el && el.value ? String(el.value) : "").trim();
   }
 
-  /** พนักงาน SE? — ตรวจชื่อ surveyor ขึ้นต้นด้วย "se" (case insensitive) */
+  /**
+   * พนักงาน SE? — ตรวจชื่อ surveyor ขึ้นต้นด้วย "se" (case insensitive)
+   *
+   * ครอบคลุม OSS (surveyor นอกบริษัท): host populate `tab1_OSS_company-inputEl`
+   * เมื่อเปิดเคลมที่ผู้ทำงานจริงเป็น OSS — `tab1_surveyor_name-inputEl` อาจ sticky
+   * ค่า SE prefix จาก SE ผู้มอบหมายงานไว้ ทำให้ regex check อ่านเป็น SE ผิด
+   * ดังนั้น: `tab1_OSS_company` มีค่าใดๆ = OSS (non-SE) เสมอ — เช็คก่อน regex
+   */
   function isSurveyorSE() {
+    const ossEl = document.getElementById(SEL.ossCompanyInputId);
+    if (ossEl && ossEl.value && ossEl.value.trim()) return false;
     return /^se/i.test(readSurveyorName());
   }
 
@@ -533,7 +543,10 @@
   function clearAllFeeFields(reason, namespace, key) {
     if (key != null && _lastClearKey[namespace] === key) return;
     _lastClearKey[namespace] = key ?? null;
-    setOneField(SEL.feeCmpId,       SEL.feeInput,       "", `SUR_INVEST [${reason} → clear]`);
+    // non-SE (รวม OSS): SUR_INVEST = user-controlled → ไม่ clear (เพื่อไม่ทับค่าที่พิมพ์)
+    if (isSurveyorSE()) {
+      setOneField(SEL.feeCmpId,     SEL.feeInput,       "", `SUR_INVEST [${reason} → clear]`);
+    }
     setOneField(SEL.insInvestCmpId, SEL.insInvestInput, "", `INS_INVEST [${reason} → clear]`);
     setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "", `INS_TRANS [${reason} → clear]`);
     setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  "", `INS_PHOTO [${reason} → clear]`);
@@ -684,8 +697,13 @@
 
   /**
    * Simple mode: SUR_INVEST อย่างเดียว (เดิม) — กทม., สมุทรปราการ ฯลฯ
+   *
+   * non-SE (รวม OSS): ปล่อยให้ user กรอก SUR_INVEST เอง — ไม่เติม
+   * (INS_* fields ไม่อยู่ใน Simple mode อยู่แล้ว)
    */
   function syncSurInvestSimple(provinceId, amphurId, tumbonId) {
+    if (!isSurveyorSE()) return;
+
     const feeEl = document.querySelector(SEL.feeInput);
     if (!feeEl) return;
 
@@ -715,9 +733,9 @@
   }
 
   /**
-   * RECV_CLAIM (ค่าเรียกร้อง) > 0 → คำนวณ %:
-   *   SUR_CLAIM  = RECV_CLAIM * 5%
-   *   INS_CLAIM  = RECV_CLAIM * 10%
+   * RECV_CLAIM (ค่าเรียกร้อง) > 0 → คำนวณ % ตามชื่อ surveyor:
+   *   SE     : SUR_CLAIM = RECV * 5%,  INS_CLAIM = RECV * 10%
+   *   non-SE : SUR_CLAIM = RECV * 10%, INS_CLAIM = RECV * 10%
    * ถ้า ≤ 0 หรือว่าง → clear ทั้งสอง
    * ทำงานทุก mode (ไม่ขึ้นกับ AMPHUR_FEE_TABLE หรือ enabledProvinces)
    */
@@ -740,10 +758,15 @@
       return;
     }
 
-    const pct5  = Math.round(num * 0.05 * 100) / 100;
-    const pct10 = Math.round(num * 0.10 * 100) / 100;
-    setOneField(SEL.surClaimCmpId, SEL.surClaimInput, pct5,  `SUR_CLAIM (5% ของ ${num})`);
-    setOneField(SEL.insClaimCmpId, SEL.insClaimInput, pct10, `INS_CLAIM (10% ของ ${num})`);
+    const isSE   = isSurveyorSE();
+    const surPct = isSE ? 0.05 : 0.10;
+    const surVal = Math.round(num * surPct * 100) / 100;
+    const insVal = Math.round(num * 0.10  * 100) / 100;
+    const tag    = isSE ? "SE" : "non-SE";
+    setOneField(SEL.surClaimCmpId, SEL.surClaimInput, surVal,
+      `SUR_CLAIM (${surPct * 100}% ของ ${num}, ${tag})`);
+    setOneField(SEL.insClaimCmpId, SEL.insClaimInput, insVal,
+      `INS_CLAIM (10% ของ ${num}, ${tag})`);
   }
 
   /**
@@ -781,7 +804,10 @@
     if (!rule) return false; // MtypeID 3/4 — ไม่มี rule → fallthrough
 
     const tag = `ต่อเนื่อง [${rule.label}]`;
-    setOneField(SEL.feeCmpId,       SEL.feeInput,       rule.sur,   `SUR_INVEST ${tag}`);
+    // non-SE (รวม OSS): ปล่อยให้ user กรอก SUR_INVEST เอง — เติมเฉพาะ INS_*
+    if (isSurveyorSE()) {
+      setOneField(SEL.feeCmpId,     SEL.feeInput,       rule.sur,   `SUR_INVEST ${tag}`);
+    }
     setOneField(SEL.insInvestCmpId, SEL.insInvestInput, rule.ins,   `INS_INVEST ${tag}`);
     setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  rule.photo, `INS_PHOTO ${tag}`);
     setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "",         `INS_TRANS ${tag} → clear`);

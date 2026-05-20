@@ -41,6 +41,7 @@
       surveyorNameCmpId:   'tab1_surveyor_name',
       surveyorNameInput:   'input#tab1_surveyor_name-inputEl',
       surveyorNameInputId: 'tab1_surveyor_name-inputEl',
+      ossCompanyInputId:   'tab1_OSS_company-inputEl',
       insInvestCmpId:      'tab1_INS_INVEST',
       insInvestInput:      'input#tab1_INS_INVEST-inputEl',
       insTransCmpId:       'tab1_INS_TRANS',

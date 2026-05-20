@@ -39,18 +39,37 @@ async function getApiToken() {
 }
 
 async function setApiToken(token) {
-  const clean = String(token || "").trim();
+  // strip zero-width / BOM chars (U+200B..U+200D, U+FEFF) that hitchhike on paste, then trim
+  const clean = String(token || "").replace(/[​-‍﻿]/g, "").trim();
   await chrome.storage.local.set({ apiToken: clean });
   return clean;
 }
 
+// HTTP headers must be ISO-8859-1 (code points 0-255). Real bearer tokens are
+// always printable ASCII, so anything outside that range is a paste artifact.
+function isHeaderSafe(s) {
+  for (let i = 0; i < s.length; i++) {
+    if (s.charCodeAt(i) > 0xFF) return false;
+  }
+  return true;
+}
+
 async function fetchJson(path, opts = {}) {
   const base = await getServerUrl();
-  const token = await getApiToken();
   const url = base + path;
   const headers = Object.assign({}, opts.headers || {});
-  if (token) headers["Authorization"] = "Bearer " + token;
-  const r = await fetch(url, { ...opts, headers });
+  if (!opts.skipAuth) {
+    const token = await getApiToken();
+    if (token) {
+      if (!isHeaderSafe(token)) {
+        throw new Error("API token มีตัวอักษรที่ไม่ใช่ ASCII (อาจ paste มีอักขระล่องหน) — กรุณาพิมพ์/วาง token ใหม่");
+      }
+      headers["Authorization"] = "Bearer " + token;
+    }
+  }
+  // strip our internal flag before passing to fetch
+  const { skipAuth: _ignore, ...fetchOpts } = opts;
+  const r = await fetch(url, { ...fetchOpts, headers });
   if (!r.ok) {
     const txt = await r.text().catch(() => "");
     throw new Error(`${opts.method || "GET"} ${url} → ${r.status} ${txt}`);
@@ -101,7 +120,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           break;
         }
         case "ping-server": {
-          const healthz = await fetchJson("/healthz");
+          // ทดสอบเฉพาะ reachability — ข้าม auth เพื่อแยก issue "URL ผิด" ออกจาก "token เสีย"
+          const healthz = await fetchJson("/healthz", { skipAuth: true });
           sendResponse({ ok: true, healthz });
           break;
         }

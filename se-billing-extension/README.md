@@ -163,17 +163,21 @@ TUMBON_FEE_MAP   = { "100303": 1100 };      // ตำบลในหนองจ
 > Modifiers (outOfArea/outOfHours/deduct) **ไม่ apply** ในโหมด "ต่อเนื่อง"
 > เพราะเป็น fixed rate ตามตาราง
 
-### Auto-calc % ของค่าเรียกร้อง (v2.3.0+)
+### Auto-calc % ของค่าเรียกร้อง (v2.3.0+, surveyor-aware v2.7.4+)
 
-ทำงานทุก mode ไม่ขึ้นกับจังหวัด/อำเภอ — เป็นเปอร์เซ็นต์ตรง ๆ ของยอดเรียกร้อง:
+ทำงานทุก mode ไม่ขึ้นกับจังหวัด/อำเภอ — เป็นเปอร์เซ็นต์ของยอดเรียกร้อง โดย `SUR_CLAIM`
+ขึ้นกับชื่อ surveyor (ขึ้นต้นด้วย "SE" หรือไม่):
 
-| Field ปลายทาง | ค่า | Source |
+| Surveyor | `tab1_SUR_CLAIM` | `tab1_INS_CLAIM` |
 |---|---|---|
-| `tab1_SUR_CLAIM` | `RECV_CLAIM × 5%` | `tab1_RECV_CLAIM` (numberfield ค่าเรียกร้อง) |
-| `tab1_INS_CLAIM` | `RECV_CLAIM × 10%` | `tab1_RECV_CLAIM` |
+| ขึ้นต้นด้วย `SE` | `RECV_CLAIM × 5%`  | `RECV_CLAIM × 10%` |
+| ไม่ขึ้นต้นด้วย `SE` | `RECV_CLAIM × 10%` | `RECV_CLAIM × 10%` |
+
+Source: `tab1_RECV_CLAIM` (numberfield ค่าเรียกร้อง) + `tab1_surveyor_name-inputEl` (regex `/^se/i`)
 
 ถ้า `RECV_CLAIM ≤ 0` หรือว่าง → clear ทั้งสอง. round 2 decimal places.
-Trigger 4 ทาง: native input/change + Ext component change + polling 500ms (safety net)
+Trigger 4 ทาง: native input/change + Ext component change + polling 500ms (safety net).
+re-fire อัตโนมัติเมื่อ surveyor name เปลี่ยนด้วย (listener เดิมที่ผูกกับ `tab1_surveyor_name`)
 
 ตั้ง `modifierFees.outOfArea = 0` หรือ `outOfHours = 0` เพื่อปิด default amount (numberfield ยังโผล่ขึ้นให้กรอกเองได้)
 
@@ -469,6 +473,7 @@ se-billing-extension/
 
 | Version | การเปลี่ยนแปลง |
 |---------|--------------|
+| **2.7.4** | **SUR_CLAIM % แยกตาม surveyor SE / non-SE**: เพิ่มเช็ค `isSurveyorSE()` ใน `syncClaimPercentages()` — ถ้าชื่อขึ้นต้นด้วย "SE" → SUR_CLAIM = RECV × 5% (เดิม); ถ้าไม่ขึ้นต้นด้วย SE → SUR_CLAIM = RECV × **10%**. INS_CLAIM คงที่ 10% ทุกกรณี. listener สำหรับ `tab1_surveyor_name` มีอยู่แล้ว → re-fire อัตโนมัติเมื่อเปลี่ยนชื่อ surveyor ([content.js:724-754](./content.js)) |
 | **2.7.3** | **Fix: ช่อง SUR_INVEST พิมพ์ค่าเองได้เมื่อไม่เข้าเงื่อนไขใดๆ** — ก่อนหน้านี้ poll 500ms เรียก `clearAllFeeFields` ใหม่ทุกครั้งที่จังหวัดอยู่นอก DB หรือ surveyor ไม่อยู่ในทีม (Q1 policy) → ค่าที่ user พิมพ์เข้าไปถูกล้างทันทีรอบถัดไป กรอกข้อมูลเองไม่ได้. Fix: เปลี่ยน `clearAllFeeFields` เป็น **sticky-clear แบบ 2 namespace แยก** (`outOfDb` / `teamMismatch`) — clear ครั้งเดียวตอน enter เงื่อนไข, รอบ poll ต่อๆ ไปที่ key เหมือนเดิม → skip ปล่อยให้ user พิมพ์ค่าได้; เมื่อจังหวัด/ทีมเปลี่ยน → key เปลี่ยน → clear ค่าค้างของ branch ก่อนหน้าได้ครั้งเดียว. Reset key แยกแต่ละ branch ทำให้ออกจาก condition หนึ่งไม่ทำลาย sticky ของอีก condition ([content.js](./content.js)) |
 | **2.6.0** | **"ต่อเนื่อง" service-type override**: เพิ่ม `tab1_service_type` (combo) — ถ้าเลือก "ต่อเนื่อง" จะ override fee fields ด้วย fixed rate ก่อน multi-field/simple. Rules: (1) MtypeID 2 ทุกจังหวัด → SUR=50, INS=100, PHOTO=50, TRANS=clear; (2) MtypeID 1 + BMR (10/11/12/13) → SUR=100, INS=300, PHOTO=50, TRANS=clear; (3) MtypeID 1 non-BMR → SUR=100, INS=500, PHOTO=50, TRANS=clear; (4) MtypeID 3/4 → fall through ไป logic ปกติ. ไม่ apply modifiers ในโหมดนี้. ผูก Ext change event listener สำหรับ `tab1_service_type` ทำให้ sync ทันที |
 | **2.5.0** | **Per-user province popup**: เพิ่ม `action.default_popup` (popup.html/.css/.js) — user คลิก extension icon เปิด popup ติ๊กเลือกจังหวัดที่ใช้งานประจำ (search + เลือกทั้งหมด/ล้างทั้งหมด + counter). บันทึกใน `chrome.storage.local["userProvincePreferences"]` (per-machine/per-user). loader.js ฟัง `chrome.storage.onChanged` → re-broadcast config ทันที (ไม่ต้องรอ poll 30s). content.js เพิ่ม `filterProvinceCombobox()` ที่ apply Ext store filter (`store.addFilter([{id: "__iSurveyHelperUserPref", filterFn: ...}])`) ตาม preference. ติ๊ก 0 = แสดงครบ 77. ไม่กรอง dropdown อำเภอ |
