@@ -276,7 +276,10 @@ app.post("/api/captures", (req, res) => {
     tumbon_id:     b.tumbon_id     || null,
     tumbon_name:   b.tumbon_name   || ref.byTumbonId[String(b.tumbon_id || "")] || null,
     mtype_id:      b.mtype_id      || null,
+    claim_no:      b.claim_no      || null,
+    survey_no:     b.survey_no     || null,
     surveyor_name: b.surveyor_name || null,
+    oss_company:   b.oss_company   || null,
     is_se:         !!b.is_se,
     inspector_name: b.inspector_name || null,
     sur_invest:    b.sur_invest    ?? null,
@@ -322,12 +325,14 @@ app.get("/api/captures.xlsx", async (req, res) => {
   // Layout match หน้า /captures: ลบ Mode + SE column, รวม "นอกพื้นที่/ยอด" เป็นช่องเดียว,
   // เพิ่ม "รวมบริษัท" / "รวมพนักงาน", "พนักงาน" = base derive (ไม่ใช่ sur_invest ใน DB)
   ws.columns = [
-    { header: "เวลา",            key: "ts",              width: 22 },
+    { header: "วัน-เวลา",          key: "ts",              width: 22 },
+    { header: "เลขเคลม",          key: "claim_no",        width: 18 },
+    { header: "เลขเซอร์เวย์",      key: "survey_no",       width: 22 },
     { header: "จังหวัด",          key: "province_name",   width: 14 },
     { header: "อำเภอ",            key: "amphur_name",     width: 18 },
     { header: "ตำบล",             key: "tumbon_name",     width: 18 },
     { header: "MType",            key: "mtype_label",     width: 12 },
-    { header: "พนักงานสำรวจ",      key: "surveyor_label",  width: 28 },
+    { header: "พนักงานสำรวจ",      key: "surveyor_label",  width: 32 },
     { header: "เจ้าหน้าที่ตรวจ",   key: "inspector_name",  width: 22 },
     { header: "ค่าบริการ",         key: "ins_invest",      width: 10 },
     { header: "ค่าพาหนะ",         key: "ins_trans",       width: 10 },
@@ -354,13 +359,20 @@ app.get("/api/captures.xlsx", async (req, res) => {
                   + (Number(r.ins_trans)  || 0)
                   + (Number(r.ins_photo)  || 0);
 
+    // surveyor label: OSS_company มีค่า → แสดงบริษัท OSS + tag; ไม่งั้นแสดง surveyor SE
+    const surveyorLabel = r.oss_company
+      ? `${r.oss_company} (OSS)`
+      : (r.surveyor_name || "") + (r.is_se ? " (SE)" : "");
+
     ws.addRow({
       ts:               r.ts ? new Date(r.ts).toLocaleString("th-TH", { hour12: false }) : "",
+      claim_no:         r.claim_no  || "",
+      survey_no:        r.survey_no || "",
       province_name:    r.province_name || r.province_id || "",
       amphur_name:      r.amphur_name   || r.amphur_id   || "",
       tumbon_name:      r.tumbon_name   || r.tumbon_id   || "",
       mtype_label:      MTYPE[r.mtype_id] || r.mtype_id || "",
-      surveyor_label:   (r.surveyor_name || "") + (r.is_se ? " (SE)" : ""),
+      surveyor_label:   surveyorLabel,
       inspector_name:   r.inspector_name || "",
       ins_invest:       r.ins_invest ?? "",
       ins_trans:        r.ins_trans  ?? "",

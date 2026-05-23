@@ -35,7 +35,8 @@ function render() {
   let shown = 0;
   for (const r of state.rows) {
     if (search) {
-      const hay = [r.province_name, r.amphur_name, r.tumbon_name, r.surveyor_name, r.province_id, r.amphur_id, r.tumbon_id]
+      const hay = [r.province_name, r.amphur_name, r.tumbon_name, r.surveyor_name, r.oss_company,
+                   r.claim_no, r.survey_no, r.province_id, r.amphur_id, r.tumbon_id]
         .filter(Boolean).join(" ").toLowerCase();
       if (!hay.includes(search)) continue;
     }
@@ -54,14 +55,21 @@ function render() {
                    + (Number(r.ins_trans)  || 0)
                    + (Number(r.ins_photo)  || 0);
 
+    // surveyor cell: ถ้า oss_company มีค่า แสดง OSS company + tag (OSS), ไม่งั้นแสดง SE
+    const surveyorCell = r.oss_company
+      ? `${r.oss_company} <small>(OSS)</small>`
+      : `${r.surveyor_name || ""}${r.is_se ? " <small>(SE)</small>" : ""}`;
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="timestamp">${fmtTs(r.ts)}</td>
+      <td>${r.claim_no  || ""}</td>
+      <td>${r.survey_no || ""}</td>
       <td>${r.province_name || r.province_id || ""}</td>
       <td>${r.amphur_name   || r.amphur_id   || ""}</td>
       <td>${r.tumbon_name   || r.tumbon_id   || ""}</td>
       <td>${fmtMtype(r.mtype_id)}</td>
-      <td>${r.surveyor_name || ""}${r.is_se ? " <small>(SE)</small>" : ""}</td>
+      <td>${surveyorCell}</td>
       <td>${r.inspector_name || ""}</td>
       <td class="numeric">${r.ins_invest ?? ""}</td>
       <td class="numeric">${r.ins_trans  ?? ""}</td>

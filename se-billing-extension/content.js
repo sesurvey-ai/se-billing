@@ -73,6 +73,8 @@
       surveyorNameInput:   'input#tab1_surveyor_name-inputEl',
       surveyorNameInputId: 'tab1_surveyor_name-inputEl',
       ossCompanyInputId:   'tab1_OSS_company-inputEl',   // surveyor นอกบริษัท — ใส่ชื่อบริษัทแทนชื่อ surveyor
+      claimNoInputId:      'tab1_claim_no-inputEl',     // เลขเคลม (textfield, editable)
+      surveyNoInputId:     'tab1_survey_no-inputEl',    // เลขเซอร์เวย์ (textfield, readonly)
       insInvestCmpId:      'tab1_INS_INVEST',
       insInvestInput:      'input#tab1_INS_INVEST-inputEl',
       insTransCmpId:       'tab1_INS_TRANS',
@@ -282,6 +284,27 @@
     const ossEl = document.getElementById(SEL.ossCompanyInputId);
     if (ossEl && ossEl.value && ossEl.value.trim()) return false;
     return /^se/i.test(readSurveyorName());
+  }
+
+  /** อ่านชื่อบริษัท OSS (ผู้รับงานจริง) จาก tab1_OSS_company-inputEl — null ถ้าว่าง */
+  function readOssCompany() {
+    const el = document.getElementById(SEL.ossCompanyInputId);
+    const v = el && el.value ? String(el.value).trim() : "";
+    return v || null;
+  }
+
+  /** อ่านเลขเคลม จาก tab1_claim_no-inputEl */
+  function readClaimNo() {
+    const el = document.getElementById(SEL.claimNoInputId);
+    const v = el && el.value ? String(el.value).trim() : "";
+    return v || null;
+  }
+
+  /** อ่านเลขเซอร์เวย์ จาก tab1_survey_no-inputEl */
+  function readSurveyNo() {
+    const el = document.getElementById(SEL.surveyNoInputId);
+    const v = el && el.value ? String(el.value).trim() : "";
+    return v || null;
   }
 
   /**
@@ -928,7 +951,10 @@
       tumbon_id: tumbonId || null,
       tumbon_name: lookupName("tumbon", tumbonId) || null,
       mtype_id: readMtypeId() || null,
+      claim_no: readClaimNo(),
+      survey_no: readSurveyNo(),
       surveyor_name: surveyorName || null,
+      oss_company: readOssCompany(),
       is_se: isSurveyorSE(),
       inspector_name: readInspectorName(),
       sur_invest: readExtNumber(SEL.feeCmpId, SEL.feeInput),

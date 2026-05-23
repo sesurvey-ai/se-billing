@@ -82,7 +82,10 @@ db.exec(`
     tumbon_id       TEXT,
     tumbon_name     TEXT,
     mtype_id        TEXT,
+    claim_no        TEXT,
+    survey_no       TEXT,
     surveyor_name   TEXT,
+    oss_company     TEXT,
     is_se           INTEGER,
     inspector_name  TEXT,
     sur_invest      INTEGER,
@@ -111,6 +114,10 @@ function ensureColumn(table, column, ddl) {
 ensureColumn("captures", "late_submit",     "INTEGER DEFAULT 0");
 ensureColumn("captures", "incomplete_docs", "INTEGER DEFAULT 0");
 ensureColumn("captures", "inspector_name",  "TEXT");
+// v2.7.9: เก็บเลขเคลม + เลขเซอร์เวย์ + ชื่อบริษัท OSS (ถ้า OSS รับงาน)
+ensureColumn("captures", "claim_no",        "TEXT");
+ensureColumn("captures", "survey_no",       "TEXT");
+ensureColumn("captures", "oss_company",     "TEXT");
 // v2.8: Chonburi team-based rates
 ensureColumn("amphur_table", "sur_invest_by_team", "TEXT");
 // v2.9: Kanchanaburi per-team INS_TRANS override (+ flat fallback)
@@ -418,18 +425,21 @@ export const Captures = {
   insert: (rec) => db.prepare(`
     INSERT INTO captures(
       ts, province_id, province_name, amphur_id, amphur_name, tumbon_id, tumbon_name,
-      mtype_id, surveyor_name, is_se, inspector_name,
+      mtype_id, claim_no, survey_no, surveyor_name, oss_company, is_se, inspector_name,
       sur_invest, ins_invest, ins_trans, ins_photo,
       out_of_area, out_of_area_amt, out_of_hours, out_of_hours_amt, deduct_amt,
       late_submit, incomplete_docs,
       mode, raw
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     rec.ts || new Date().toISOString(),
     rec.province_id ?? null, rec.province_name ?? null,
     rec.amphur_id ?? null, rec.amphur_name ?? null,
     rec.tumbon_id ?? null, rec.tumbon_name ?? null,
-    rec.mtype_id ?? null, rec.surveyor_name ?? null, rec.is_se ? 1 : 0, rec.inspector_name ?? null,
+    rec.mtype_id ?? null,
+    rec.claim_no ?? null, rec.survey_no ?? null,
+    rec.surveyor_name ?? null, rec.oss_company ?? null,
+    rec.is_se ? 1 : 0, rec.inspector_name ?? null,
     rec.sur_invest ?? null, rec.ins_invest ?? null, rec.ins_trans ?? null, rec.ins_photo ?? null,
     rec.out_of_area ? 1 : 0, rec.out_of_area_amt ?? null,
     rec.out_of_hours ? 1 : 0, rec.out_of_hours_amt ?? null,
