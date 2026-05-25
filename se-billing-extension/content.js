@@ -868,31 +868,40 @@
     const key = `${provinceId || ""}:${amphurId || ""}`;
     if (_lastClearKey.notFound !== key) {
       _lastClearKey.notFound = key;
+      // (1) เคลียร์ SUR/INS_INVEST/INS_PHOTO ครั้งเดียว — ปล่อย user กรอกเอง (sticky)
       // non-SE / OSS: SUR_INVEST ปล่อย user คุม → ไม่ต้อง clear (กันทับค่าที่พิมพ์)
       if (isSurveyorSE()) {
         setOneField(SEL.feeCmpId,     SEL.feeInput,       "", "SUR_INVEST [ไม่พบ → clear]");
       }
       setOneField(SEL.insInvestCmpId, SEL.insInvestInput, "", "INS_INVEST [ไม่พบ → clear]");
       setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  "", "INS_PHOTO [ไม่พบ → clear]");
-    }
 
-    // INS_TRANS: ใช้เรทจาก AMPHUR_FEE_TABLE (Multi-Field) — Simple amphur ไม่มี → clear
-    const tbl = getAmphurTable()[amphurId];
-    let transValue = null;
-    if (tbl) {
-      const team = readSurveyorTeam();
-      if (tbl.INS_TRANS_BY_TEAM && team && tbl.INS_TRANS_BY_TEAM[team] !== undefined) {
-        transValue = tbl.INS_TRANS_BY_TEAM[team];
-      } else if (tbl.INS_TRANS !== undefined && tbl.INS_TRANS !== null) {
-        transValue = tbl.INS_TRANS;
+      // (2) INS_TRANS: ครั้งเดียวบน enter (sticky) — user เปลี่ยนได้
+      //   BMR (10/11/12/13) → fix 300
+      //   non-BMR → เรทเดิมจาก AMPHUR_FEE_TABLE (team override / flat); Simple amphur → ว่าง
+      let transValue = null;
+      const isBMR = BMR_PROVINCE_IDS.has(String(provinceId));
+      if (isBMR) {
+        transValue = 300;
+      } else {
+        const tbl = getAmphurTable()[amphurId];
+        if (tbl) {
+          const team = readSurveyorTeam();
+          if (tbl.INS_TRANS_BY_TEAM && team && tbl.INS_TRANS_BY_TEAM[team] !== undefined) {
+            transValue = tbl.INS_TRANS_BY_TEAM[team];
+          } else if (tbl.INS_TRANS !== undefined && tbl.INS_TRANS !== null) {
+            transValue = tbl.INS_TRANS;
+          }
+        }
       }
-    }
-    if (transValue !== null) {
-      setOneField(SEL.insTransCmpId, SEL.insTransInput, transValue,
-        `INS_TRANS [ไม่พบ, amphur ${amphurId}]`);
-    } else {
-      setOneField(SEL.insTransCmpId, SEL.insTransInput, "",
-        `INS_TRANS [ไม่พบ, no rate → clear]`);
+      if (transValue !== null) {
+        const tag = isBMR ? `BMR provinceId=${provinceId}` : `amphur ${amphurId}`;
+        setOneField(SEL.insTransCmpId, SEL.insTransInput, transValue,
+          `INS_TRANS [ไม่พบ, ${tag}]`);
+      } else {
+        setOneField(SEL.insTransCmpId, SEL.insTransInput, "",
+          `INS_TRANS [ไม่พบ, no rate → clear]`);
+      }
     }
     return true;
   }
