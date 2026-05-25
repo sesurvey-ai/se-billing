@@ -1,12 +1,10 @@
-// captures.js — list / filter / paginate captured records
-//   Admin mode (URL = /admin/captures): show delete buttons + clear all + hide public nav
-//   Public mode (URL = /captures): read-only, no delete UI
+// cancelled.js — เคลมยกเลิก (status='cancel') — แสดงคอลัมน์น้อยกว่า /captures
+//   (ไม่มี ค่าบริการ/ค่าพาหนะ/รูป/รวม เพราะงานยกเลิก ไม่มีค่าใช้จ่ายให้บริษัทเก็บ)
 "use strict";
 
 const ADMIN_MODE = window.location.pathname.startsWith("/admin");
 const PAGE_SIZE = 100;
-// captures.js แสดงเฉพาะ status=close (รวม legacy null) — เคลมยกเลิกอยู่ที่ /cancelled
-const state = { offset: 0, total: 0, rows: [], provinceId: null, search: "", status: "close" };
+const state = { offset: 0, total: 0, rows: [], provinceId: null, search: "", status: "cancel" };
 
 const $ = (id) => document.getElementById(id);
 
@@ -42,21 +40,7 @@ function render() {
       if (!hay.includes(search)) continue;
     }
     shown++;
-    // ── คำนวนยอดรวม ──
-    // "พนักงาน" = ค่าฐาน (base SUR) — extract กลับจาก sur_invest โดยลบ modifier + บวก deduct
-    //   (sur_invest ใน DB = base + outOfArea + outOfHours − deduct, extension setValue ค่านี้)
-    //   → base = sur_invest − outOfArea − outOfHours + deduct
-    const sur      = Number(r.sur_invest)       || 0;
-    const oaAmt    = r.out_of_area  ? (Number(r.out_of_area_amt)  || 0) : 0;
-    const ohAmt    = r.out_of_hours ? (Number(r.out_of_hours_amt) || 0) : 0;
-    const ded      = Number(r.deduct_amt) || 0;
-    const basePnk  = sur - oaAmt - ohAmt + ded;
-    const sumPnk   = basePnk + oaAmt + ohAmt - ded;       // = sur (math ตรงตามที่แสดง)
-    const sumCo    = (Number(r.ins_invest) || 0)
-                   + (Number(r.ins_trans)  || 0)
-                   + (Number(r.ins_photo)  || 0);
-
-    // surveyor cell: ถ้า oss_company มีค่า แสดง OSS company + tag (OSS), ไม่งั้นแสดง SE
+    // surveyor cell: OSS_company มีค่า → แสดง OSS + tag; ไม่งั้นแสดง SE + tag
     const surveyorCell = r.oss_company
       ? `${r.oss_company} <small>(OSS)</small>`
       : `${r.surveyor_name || ""}${r.is_se ? " <small>(SE)</small>" : ""}`;
@@ -72,17 +56,6 @@ function render() {
       <td>${fmtMtype(r.mtype_id)}</td>
       <td>${surveyorCell}</td>
       <td>${r.inspector_name || ""}</td>
-      <td class="numeric">${r.ins_invest ?? ""}</td>
-      <td class="numeric">${r.ins_trans  ?? ""}</td>
-      <td class="numeric">${r.ins_photo  ?? ""}</td>
-      <td class="numeric"><strong>${sumCo}</strong></td>
-      <td class="numeric">${basePnk}</td>
-      <td>${r.out_of_area  ? `<span class="amount-pos">+${r.out_of_area_amt  ?? 0}</span>` : ""}</td>
-      <td>${r.out_of_hours ? `<span class="amount-pos">+${r.out_of_hours_amt ?? 0}</span>` : ""}</td>
-      <td class="numeric">${r.deduct_amt ? `<span class="amount-neg">-${r.deduct_amt}</span>` : ""}</td>
-      <td>${r.late_submit     ? "✓" : ""}</td>
-      <td>${r.incomplete_docs ? "✓" : ""}</td>
-      <td class="numeric"><strong>${sumPnk}</strong></td>
       ${ADMIN_MODE ? `<td class="actions"><button class="btn btn-icon btn-danger" data-id="${r.id}">ลบ</button></td>` : ""}`;
     tbody.appendChild(tr);
   }
@@ -123,12 +96,10 @@ async function setupFilter() {
 }
 
 function applyMode() {
-  // ADMIN_MODE: แสดง nav-admin (Rates / Captures) + ซ่อน nav-public
-  // PUBLIC:    แสดง nav-public (Viewer / Captures) + ซ่อน admin-only elements
   const navPub = document.getElementById("nav-public");
   const navAdm = document.getElementById("nav-admin");
   if (ADMIN_MODE) {
-    document.title = "I Survey Helper — รายละเอียด (Admin)";
+    document.title = "SE-Billing — เคลมยกเลิก (Admin)";
     if (navPub) navPub.classList.add("hidden");
     if (navAdm) navAdm.classList.remove("hidden");
     document.body.classList.add("admin-mode");
@@ -160,18 +131,14 @@ async function main() {
     }
   });
   $("btn-refresh").addEventListener("click", load);
-
   $("btn-export").addEventListener("click", async () => {
-    try {
-      await api.captures.xlsxDownload({ provinceId: state.provinceId || undefined, status: state.status });
-    } catch (e) {
-      showStatus("Export ล้มเหลว: " + (e.message || e), true);
-    }
+    try { await api.captures.xlsxDownload({ provinceId: state.provinceId || undefined, status: state.status }); }
+    catch (e) { showStatus("Export ล้มเหลว: " + (e.message || e), true); }
   });
 
   if (ADMIN_MODE) {
     $("btn-clear").addEventListener("click", async () => {
-      if (!confirm("ลบ captures ทั้งหมด?")) return;
+      if (!confirm("ลบ captures ทั้งหมด (รวม close + cancel)?")) return;
       try { await api.captures.clear(); state.offset = 0; await load(); showStatus("ล้างแล้ว"); }
       catch (e) { showStatus(e.message, true); }
     });

@@ -86,18 +86,20 @@ const api = {
     set: (m) => req("PUT", "/api/modifiers", m),
   },
   captures: {
-    list:   ({ limit = 100, offset = 0, provinceId } = {}) => {
+    list:   ({ limit = 100, offset = 0, provinceId, status } = {}) => {
       const q = new URLSearchParams();
       q.set("limit", limit); q.set("offset", offset);
       if (provinceId) q.set("provinceId", provinceId);
+      if (status) q.set("status", status);
       return req("GET", `/api/captures?${q}`);
     },
     insert: (rec) => req("POST", "/api/captures", rec),
     remove: (id) => req("DELETE", `/api/captures/${id}`),
     clear:  () => req("DELETE", "/api/captures"),
-    xlsxDownload: async ({ provinceId } = {}) => {
+    xlsxDownload: async ({ provinceId, status } = {}) => {
       const q = new URLSearchParams();
       if (provinceId) q.set("provinceId", provinceId);
+      if (status) q.set("status", status);
       const qs = q.toString();
       const url = `/api/captures.xlsx${qs ? "?" + qs : ""}`;
       const token = getToken();

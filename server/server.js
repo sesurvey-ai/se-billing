@@ -278,6 +278,7 @@ app.post("/api/captures", (req, res) => {
     mtype_id:      b.mtype_id      || null,
     claim_no:      b.claim_no      || null,
     survey_no:     b.survey_no     || null,
+    case_status:   b.case_status   || null,   // "close" / "cancel" / null
     surveyor_name: b.surveyor_name || null,
     oss_company:   b.oss_company   || null,
     is_se:         !!b.is_se,
@@ -303,9 +304,11 @@ app.get("/api/captures", (req, res) => {
   const limit  = Math.min(Number(req.query.limit) || 200, 1000);
   const offset = Number(req.query.offset) || 0;
   const provinceId = req.query.provinceId ? String(req.query.provinceId) : null;
+  // status: "close" (รวม legacy null) / "cancel" / undefined = ทั้งหมด
+  const status = req.query.status === "close" || req.query.status === "cancel" ? req.query.status : null;
   res.json({
-    rows: Captures.list({ limit, offset, provinceId }),
-    total: Captures.count({ provinceId }),
+    rows: Captures.list({ limit, offset, provinceId, status }),
+    total: Captures.count({ provinceId, status }),
     limit, offset,
   });
 });
@@ -315,7 +318,8 @@ app.delete("/api/captures", (_req, res) => { Captures.removeAll(); res.json({ ok
 // ── Excel export ──────────────────────────────────────────────────────────
 app.get("/api/captures.xlsx", async (req, res) => {
   const provinceId = req.query.provinceId ? String(req.query.provinceId) : null;
-  const rows = Captures.list({ limit: 100000, offset: 0, provinceId });
+  const status = req.query.status === "close" || req.query.status === "cancel" ? req.query.status : null;
+  const rows = Captures.list({ limit: 100000, offset: 0, provinceId, status });
 
   const wb = new ExcelJS.Workbook();
   wb.creator = "I Survey Helper";
@@ -405,6 +409,8 @@ app.use(express.static(PUBLIC_DIR));
 app.get("/admin", (_req, res) => res.sendFile(join(PUBLIC_DIR, "admin.html")));
 app.get("/admin/captures", (_req, res) => res.sendFile(join(PUBLIC_DIR, "captures.html")));
 app.get("/captures", (_req, res) => res.sendFile(join(PUBLIC_DIR, "captures.html")));
+app.get("/admin/cancelled", (_req, res) => res.sendFile(join(PUBLIC_DIR, "cancelled.html")));
+app.get("/cancelled", (_req, res) => res.sendFile(join(PUBLIC_DIR, "cancelled.html")));
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 const seedResult = seedFromDefaults();

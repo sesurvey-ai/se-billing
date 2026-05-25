@@ -75,6 +75,8 @@
       ossCompanyInputId:   'tab1_OSS_company-inputEl',   // surveyor นอกบริษัท — ใส่ชื่อบริษัทแทนชื่อ surveyor
       claimNoInputId:      'tab1_claim_no-inputEl',     // เลขเคลม (textfield, editable)
       surveyNoInputId:     'tab1_survey_no-inputEl',    // เลขเซอร์เวย์ (textfield, readonly)
+      closeCaseInputId:    'close_case-inputEl',        // radio "ปิดการตรวจสอบ"
+      cancelCaseInputId:   'cancel_case-inputEl',       // radio "ยกเลิกเคลม"
       insInvestCmpId:      'tab1_INS_INVEST',
       insInvestInput:      'input#tab1_INS_INVEST-inputEl',
       insTransCmpId:       'tab1_INS_TRANS',
@@ -305,6 +307,20 @@
     const el = document.getElementById(SEL.surveyNoInputId);
     const v = el && el.value ? String(el.value).trim() : "";
     return v || null;
+  }
+
+  /**
+   * อ่านสถานะ "ยืนยันการตรวจสอบ" (supervisor_summary radio group)
+   *   close_case  = "ปิดการตรวจสอบ"  → "close"
+   *   cancel_case = "ยกเลิกเคลม"      → "cancel"
+   *   ไม่ได้เลือกอะไร                  → null
+   */
+  function readCaseStatus() {
+    const close = document.getElementById(SEL.closeCaseInputId);
+    if (close && close.checked) return "close";
+    const cancel = document.getElementById(SEL.cancelCaseInputId);
+    if (cancel && cancel.checked) return "cancel";
+    return null;
   }
 
   /**
@@ -953,6 +969,7 @@
       mtype_id: readMtypeId() || null,
       claim_no: readClaimNo(),
       survey_no: readSurveyNo(),
+      case_status: readCaseStatus(),
       surveyor_name: surveyorName || null,
       oss_company: readOssCompany(),
       is_se: isSurveyorSE(),

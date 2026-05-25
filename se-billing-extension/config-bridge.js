@@ -44,6 +44,8 @@
       ossCompanyInputId:   'tab1_OSS_company-inputEl',
       claimNoInputId:      'tab1_claim_no-inputEl',     // เลขเคลม
       surveyNoInputId:     'tab1_survey_no-inputEl',    // เลขเซอร์เวย์
+      closeCaseInputId:    'close_case-inputEl',        // radio "ปิดการตรวจสอบ"
+      cancelCaseInputId:   'cancel_case-inputEl',       // radio "ยกเลิกเคลม"
       insInvestCmpId:      'tab1_INS_INVEST',
       insInvestInput:      'input#tab1_INS_INVEST-inputEl',
       insTransCmpId:       'tab1_INS_TRANS',

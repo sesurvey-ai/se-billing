@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <title>SE-Billing — รายละเอียด</title>
+  <title>SE-Billing — เคลมยกเลิก</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
@@ -12,13 +12,13 @@
       <span id="status" class="status"></span>
       <div class="nav-links" id="nav-public">
         <a href="/">เรทราคา</a>
-        <a href="/captures" class="active">รายละเอียด</a>
-        <a href="/cancelled">เคลมยกเลิก</a>
+        <a href="/captures">รายละเอียด</a>
+        <a href="/cancelled" class="active">เคลมยกเลิก</a>
       </div>
       <div class="nav-links hidden" id="nav-admin">
         <a href="/admin">เรทราคา</a>
-        <a href="/admin/captures" class="active">รายละเอียด</a>
-        <a href="/admin/cancelled">เคลมยกเลิก</a>
+        <a href="/admin/captures">รายละเอียด</a>
+        <a href="/admin/cancelled" class="active">เคลมยกเลิก</a>
       </div>
       <button id="btn-refresh" class="btn">Refresh</button>
       <button id="btn-export" class="btn">Export Excel</button>
@@ -30,8 +30,8 @@
   <main>
     <div class="panel">
       <div class="panel-header">
-        <h2>ข้อมูลที่บันทึกจากหน้าเว็บ</h2>
-        <p class="hint">รายการที่ extension จับจากการกรอกฟอร์มบน cloud.isurvey.mobi (เก็บอัตโนมัติเมื่อ user submit หรือเปลี่ยนค่าหลัก)</p>
+        <h2>งานที่ถูกเลือก "ยกเลิกเคลม"</h2>
+        <p class="hint">รายการที่ผู้สำรวจกดยืนยันการตรวจสอบ พร้อมเลือก radio "ยกเลิกเคลม" (cancel_case)</p>
         <div class="panel-actions">
           <input type="search" id="search" placeholder="ค้นจังหวัด/อำเภอ/พนักงานสำรวจ/เลขเคลม/เลขเซอร์เวย์..." class="search" />
           <select id="filter-province">
@@ -53,23 +53,12 @@
               <th>MType</th>
               <th>พนักงานสำรวจ</th>
               <th>เจ้าหน้าที่ตรวจ</th>
-              <th class="numeric">ค่าบริการ</th>
-              <th class="numeric">ค่าพาหนะ</th>
-              <th class="numeric">รูป</th>
-              <th class="numeric">รวมบริษัท</th>
-              <th class="numeric">พนักงาน</th>
-              <th>นอกพื้นที่</th>
-              <th>นอกเวลา</th>
-              <th class="numeric">หัก</th>
-              <th>ส่งช้า</th>
-              <th>เอกสารไม่ครบ</th>
-              <th class="numeric">รวมพนักงาน</th>
               <th class="admin-only"></th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
         </table>
-        <div class="empty-state hidden" id="empty">ยังไม่มีรายการ</div>
+        <div class="empty-state hidden" id="empty">ยังไม่มีรายการยกเลิกเคลม</div>
       </div>
       <div class="pager">
         <button id="prev" class="btn">« ก่อน</button>
@@ -80,6 +69,6 @@
   </main>
 
   <script src="/api.js"></script>
-  <script src="/captures.js"></script>
+  <script src="/cancelled.js"></script>
 </body>
 </html>

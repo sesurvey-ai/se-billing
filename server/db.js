@@ -84,6 +84,7 @@ db.exec(`
     mtype_id        TEXT,
     claim_no        TEXT,
     survey_no       TEXT,
+    case_status     TEXT,
     surveyor_name   TEXT,
     oss_company     TEXT,
     is_se           INTEGER,
@@ -118,6 +119,10 @@ ensureColumn("captures", "inspector_name",  "TEXT");
 ensureColumn("captures", "claim_no",        "TEXT");
 ensureColumn("captures", "survey_no",       "TEXT");
 ensureColumn("captures", "oss_company",     "TEXT");
+// v2.7.11: เก็บสถานะ supervisor_summary radio ("close" / "cancel" / null)
+//   → แยกหน้าแสดง /captures (close + legacy null) vs /cancelled (cancel)
+ensureColumn("captures", "case_status",     "TEXT");
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_captures_status ON captures(case_status);"); } catch {}
 // v2.8: Chonburi team-based rates
 ensureColumn("amphur_table", "sur_invest_by_team", "TEXT");
 // v2.9: Kanchanaburi per-team INS_TRANS override (+ flat fallback)
@@ -425,19 +430,19 @@ export const Captures = {
   insert: (rec) => db.prepare(`
     INSERT INTO captures(
       ts, province_id, province_name, amphur_id, amphur_name, tumbon_id, tumbon_name,
-      mtype_id, claim_no, survey_no, surveyor_name, oss_company, is_se, inspector_name,
+      mtype_id, claim_no, survey_no, case_status, surveyor_name, oss_company, is_se, inspector_name,
       sur_invest, ins_invest, ins_trans, ins_photo,
       out_of_area, out_of_area_amt, out_of_hours, out_of_hours_amt, deduct_amt,
       late_submit, incomplete_docs,
       mode, raw
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     rec.ts || new Date().toISOString(),
     rec.province_id ?? null, rec.province_name ?? null,
     rec.amphur_id ?? null, rec.amphur_name ?? null,
     rec.tumbon_id ?? null, rec.tumbon_name ?? null,
     rec.mtype_id ?? null,
-    rec.claim_no ?? null, rec.survey_no ?? null,
+    rec.claim_no ?? null, rec.survey_no ?? null, rec.case_status ?? null,
     rec.surveyor_name ?? null, rec.oss_company ?? null,
     rec.is_se ? 1 : 0, rec.inspector_name ?? null,
     rec.sur_invest ?? null, rec.ins_invest ?? null, rec.ins_trans ?? null, rec.ins_photo ?? null,
@@ -448,14 +453,24 @@ export const Captures = {
     rec.mode ?? null,
     rec.raw ? JSON.stringify(rec.raw) : null
   ),
-  list: ({ limit = 200, offset = 0, provinceId } = {}) => {
-    const where = provinceId ? "WHERE province_id = ?" : "";
-    const args = provinceId ? [provinceId, limit, offset] : [limit, offset];
-    return db.prepare(`SELECT * FROM captures ${where} ORDER BY ts DESC LIMIT ? OFFSET ?`).all(...args);
+  // status filter: "close" → case_status='close' OR NULL (legacy), "cancel" → case_status='cancel', null = ทั้งหมด
+  list: ({ limit = 200, offset = 0, provinceId, status } = {}) => {
+    const conds = [];
+    const args = [];
+    if (provinceId) { conds.push("province_id = ?"); args.push(provinceId); }
+    if (status === "close")       { conds.push("(case_status = 'close' OR case_status IS NULL)"); }
+    else if (status === "cancel") { conds.push("case_status = 'cancel'"); }
+    const where = conds.length ? "WHERE " + conds.join(" AND ") : "";
+    return db.prepare(`SELECT * FROM captures ${where} ORDER BY ts DESC LIMIT ? OFFSET ?`).all(...args, limit, offset);
   },
-  count: ({ provinceId } = {}) => {
-    if (provinceId) return db.prepare("SELECT COUNT(*) AS n FROM captures WHERE province_id = ?").get(provinceId).n;
-    return db.prepare("SELECT COUNT(*) AS n FROM captures").get().n;
+  count: ({ provinceId, status } = {}) => {
+    const conds = [];
+    const args = [];
+    if (provinceId) { conds.push("province_id = ?"); args.push(provinceId); }
+    if (status === "close")       { conds.push("(case_status = 'close' OR case_status IS NULL)"); }
+    else if (status === "cancel") { conds.push("case_status = 'cancel'"); }
+    const where = conds.length ? "WHERE " + conds.join(" AND ") : "";
+    return db.prepare(`SELECT COUNT(*) AS n FROM captures ${where}`).get(...args).n;
   },
   removeAll: () => db.prepare("DELETE FROM captures").run(),
   remove: (id) => db.prepare("DELETE FROM captures WHERE id = ?").run(Number(id)),
