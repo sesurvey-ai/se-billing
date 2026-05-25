@@ -577,7 +577,7 @@
    * แยก 2 namespace เพราะ 2 เงื่อนไข (out-of-DB / team-mismatch) ต้อง reset แยก ไม่งั้นการ
    * reset เคสหนึ่งจะทำลาย sticky behavior ของอีกเคสตอนเปลี่ยนสถานะระหว่าง branch
    */
-  const _lastClearKey = { outOfDb: null, teamMismatch: null };
+  const _lastClearKey = { outOfDb: null, teamMismatch: null, notFound: null };
   function resetClearKey(namespace) { _lastClearKey[namespace] = null; }
   function clearAllFeeFields(reason, namespace, key) {
     if (key != null && _lastClearKey[namespace] === key) return;
@@ -854,10 +854,54 @@
   }
 
   /**
+   * "ไม่พบ" override — service_type = "ไม่พบ" (v2.7.12+, option ที่ extension inject เพิ่ม)
+   *   - SUR/INS_INVEST/INS_PHOTO: เคลียร์ sticky ครั้งแรก → ปล่อยให้ user กรอกเองได้
+   *   - INS_TRANS: ใช้เรทตาม amphur (Multi-Field team/flat fallback); Simple amphur → clear
+   *   - ไม่กระทบ SUR_CLAIM / INS_CLAIM (ทำใน syncClaimPercentages ปกติ)
+   * Sticky key = `${provinceId}:${amphurId}` — เปลี่ยน province/amphur ใหม่ → re-clear
+   *
+   * @returns {boolean} true ถ้า apply (caller skip normal Multi-Field/Simple)
+   */
+  function applyNotFoundOverride(provinceId, amphurId) {
+    if (readServiceType() !== "ไม่พบ") return false;
+
+    const key = `${provinceId || ""}:${amphurId || ""}`;
+    if (_lastClearKey.notFound !== key) {
+      _lastClearKey.notFound = key;
+      // non-SE / OSS: SUR_INVEST ปล่อย user คุม → ไม่ต้อง clear (กันทับค่าที่พิมพ์)
+      if (isSurveyorSE()) {
+        setOneField(SEL.feeCmpId,     SEL.feeInput,       "", "SUR_INVEST [ไม่พบ → clear]");
+      }
+      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, "", "INS_INVEST [ไม่พบ → clear]");
+      setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  "", "INS_PHOTO [ไม่พบ → clear]");
+    }
+
+    // INS_TRANS: ใช้เรทจาก AMPHUR_FEE_TABLE (Multi-Field) — Simple amphur ไม่มี → clear
+    const tbl = getAmphurTable()[amphurId];
+    let transValue = null;
+    if (tbl) {
+      const team = readSurveyorTeam();
+      if (tbl.INS_TRANS_BY_TEAM && team && tbl.INS_TRANS_BY_TEAM[team] !== undefined) {
+        transValue = tbl.INS_TRANS_BY_TEAM[team];
+      } else if (tbl.INS_TRANS !== undefined && tbl.INS_TRANS !== null) {
+        transValue = tbl.INS_TRANS;
+      }
+    }
+    if (transValue !== null) {
+      setOneField(SEL.insTransCmpId, SEL.insTransInput, transValue,
+        `INS_TRANS [ไม่พบ, amphur ${amphurId}]`);
+    } else {
+      setOneField(SEL.insTransCmpId, SEL.insTransInput, "",
+        `INS_TRANS [ไม่พบ, no rate → clear]`);
+    }
+    return true;
+  }
+
+  /**
    * Entry point: เลือก mode ตามว่า amphurId อยู่ใน AMPHUR_FEE_TABLE หรือไม่
    *   - อยู่ → multi-field (ระยอง)
    *   - ไม่อยู่ → simple SUR_INVEST (กทม. ฯลฯ)
-   * "ต่อเนื่อง" override ทำงานก่อน — ถ้า apply แล้วจะ short-circuit
+   * "ต่อเนื่อง" / "ไม่พบ" override ทำงานก่อน — ถ้า apply แล้วจะ short-circuit
    */
   function syncFeeFromLocation() {
     const provinceId = readHiddenValue(SEL.provinceHidden);
@@ -887,9 +931,17 @@
 
     // "ต่อเนื่อง" override — ถ้า matched → set 4 fields fixed + return
     if (applyContinuousOverride(provinceId)) {
+      resetClearKey("notFound");
       updateDeductWarning();
       return;
     }
+
+    // "ไม่พบ" override — ล้าง SUR/INS_INVEST/INS_PHOTO (sticky) + กรอก INS_TRANS จาก amphur table
+    if (applyNotFoundOverride(provinceId, amphurId)) {
+      updateDeductWarning();
+      return;
+    }
+    resetClearKey("notFound"); // ออกจาก notFound branch — reset key
 
     const tbl = getAmphurTable()[amphurId];
     if (tbl) {
@@ -1151,6 +1203,32 @@
     enableTypeAhead(SEL.provinceCmpId);
     enableTypeAhead(SEL.amphurCmpId);
     enableTypeAhead(SEL.tumbonCmpId);
+    injectServiceTypeOption("ไม่พบ");
+  }
+
+  /**
+   * เพิ่ม option ใน combo tab1_service_type (host มี 4 ตัว: บริการ/ต่อเนื่อง/หน้าร้าน/พื้นที่เดียวกัน)
+   * ใช้ flag กัน double-add + re-apply อัตโนมัติถ้า Ext recreate cmp
+   * พฤติกรรมเมื่อ user เลือก "ไม่พบ": ดู applyNotFoundOverride()
+   */
+  function injectServiceTypeOption(label) {
+    const cmp = getExtCmp(SEL.serviceTypeCmpId);
+    if (!cmp || !cmp.store) return false;
+    const flagKey = "__iSurveyHelperOpt_" + label;
+    if (cmp[flagKey]) return true;
+    try {
+      const records = cmp.store.getRange();
+      const has = records.some(r => (r.data && r.data.item) === label);
+      if (!has) {
+        cmp.store.add({ item: label });
+        log(`Service type option "${label}" injected`);
+      }
+      cmp[flagKey] = true;
+    } catch (e) {
+      warn(`Failed to inject service_type option "${label}":`, e);
+      return false;
+    }
+    return true;
   }
 
   /**
