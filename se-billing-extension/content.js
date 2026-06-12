@@ -1090,6 +1090,12 @@
   //   - อ่านค่าผ่าน Ext cmp ก่อน → ตรวจได้แม้ฟิลด์อยู่แท็บที่ยังไม่เคยเปิด (ยังไม่ render)
   // ─────────────────────────────────────────────────────────
 
+  // ★ Kill-switch ระดับโค้ด (v2.7.17): ปิดการตรวจ/บล็อก/ไฮไลต์ทั้งหมดชั่วคราว
+  //   เหตุ: พบเคสกรอกครบ 19 ฟิลด์แล้วยังโดนบล็อก (root cause อยู่ระหว่างหา —
+  //   สงสัยฟิลด์ในรายการไม่มีอยู่จริงในฟอร์มบางแบบ ซึ่ง "หาไม่เจอ = ขาด" จะบล็อกถาวร)
+  //   เปิดกลับ: เปลี่ยนเป็น true + bump version (server-side list ต้องเติมกลับด้วย)
+  const REQUIRED_FIELDS_ENFORCEMENT = false;
+
   const getRequiredFields = () => getCFG().requiredFields || [];
 
   function getSaveButtonIds() {
@@ -1194,6 +1200,7 @@
    * setTimeout 0 ให้ Ext sync ค่าภายในก่อนค่อยอ่าน
    */
   function attachRequiredFieldListeners() {
+    if (!REQUIRED_FIELDS_ENFORCEMENT) return;
     if (window.__iSurveyHelperRequiredListenerAttached) return;
     window.__iSurveyHelperRequiredListenerAttached = true;
     const handler = (ev) => {
@@ -1449,7 +1456,7 @@
       syncFeeFromLocation();
       // ไฮไลต์ฟิลด์บังคับแบบ live ทุกรอบ — ว่าง = กรอบแดง, มีค่า = กรอบหาย
       // (ครอบเคสที่ delegated listener ไม่จับ เช่น Ext set ค่าเอง / combo เลือกจาก dropdown)
-      validateRequiredFields();
+      if (REQUIRED_FIELDS_ENFORCEMENT) validateRequiredFields();
     }, CFG.pollIntervalMs);
   }
 
@@ -1472,14 +1479,16 @@
       try { btn = ev.target.closest(selector); } catch (_) { return; } // id แปลกใน config → selector พัง: ไม่ block อะไร
       if (!btn) return;
 
-      const { ok, missing } = validateRequiredFields();
-      if (!ok) {
-        ev.preventDefault();
-        ev.stopImmediatePropagation();
-        showRequiredFieldsAlert(missing);
-        log(`Save blocked (#${btn.id}): ขาด ${missing.length} ฟิลด์ —`,
-          missing.map((m) => m.label).join(", "));
-        return;
+      if (REQUIRED_FIELDS_ENFORCEMENT) {
+        const { ok, missing } = validateRequiredFields();
+        if (!ok) {
+          ev.preventDefault();
+          ev.stopImmediatePropagation();
+          showRequiredFieldsAlert(missing);
+          log(`Save blocked (#${btn.id}): ขาด ${missing.length} ฟิลด์ —`,
+            missing.map((m) => m.label).join(", "));
+          return;
+        }
       }
 
       if (btn.id === "tab1_save") {
