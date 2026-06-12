@@ -244,9 +244,40 @@ export function seedFrom(payload) {
     for (const id of payload.enabledProvinces || []) insE.run(String(id));
 
     setSetting("modifierFees", payload.modifierFees || { outOfArea: 0, outOfHours: 0 });
+    // requiredFields/saveButtonIds: เซ็ตเฉพาะเมื่อ payload มี — ไม่งั้นคงค่าเดิม
+    // (เป็น operational config ของ extension ไม่ใช่ข้อมูลเรท)
+    if (Array.isArray(payload.requiredFields)) setSetting("requiredFields", payload.requiredFields);
+    if (Array.isArray(payload.saveButtonIds))  setSetting("saveButtonIds",  payload.saveButtonIds);
   });
   return { seeded: true };
 }
+
+/** ── Required fields (extension บล็อกปุ่มบันทึกถ้าฟิลด์เหล่านี้ว่าง) ─────────
+ * id = DOM input id บนหน้า isurvey (ลงท้าย -inputEl); label = ข้อความแจ้งเตือน
+ * default ครอบคลุม 19 ฟิลด์ที่ emcs บังคับกรอก (ใช้เมื่อยังไม่เคยตั้งค่าใน DB)
+ */
+const DEFAULT_REQUIRED_FIELDS = [
+  { id: "tab1_policy_no-inputEl",        label: "กรมธรรม์เลขที่" },
+  { id: "tab2_acc_date-inputEl",         label: "วันที่เกิดเหตุ" },
+  { id: "tab2_acc_time-inputEl",         label: "เวลาที่เกิดเหตุ" },
+  { id: "tab2_acc_place-inputEl",        label: "สถานที่เกิดเหตุ" },
+  { id: "tab2_acc_provinceID-inputEl",   label: "จังหวัด (ที่เกิดเหตุ)" },
+  { id: "tab2_acc_amphurID-inputEl",     label: "เขต/อำเภอ (ที่เกิดเหตุ)" },
+  { id: "tab2_acc_type_desc-inputEl",    label: "สาเหตุการเกิดเหตุ" },
+  { id: "tab2_acc_verdictID-inputEl",    label: "ผลคดี" },
+  { id: "tab3_plate_no-inputEl",         label: "ทะเบียน" },
+  { id: "tab3_vehTID-inputEl",           label: "ประเภทรถ" },
+  { id: "tab3_policy_TypeID-inputEl",    label: "ประเภท (กรมธรรม์)" },
+  { id: "tab3_plate_provinceID-inputEl", label: "จังหวัด (ทะเบียนรถ)" },
+  { id: "tab3_drv_name-inputEl",         label: "ชื่อผู้ขับขี่" },
+  { id: "tab3_relation-inputEl",         label: "ความสัมพันธ์กับเจ้าของรถ" },
+  { id: "tab3_age-inputEl",              label: "อายุ" },
+  { id: "tab3_birthdate-inputEl",        label: "วัน/เดือน/ปี เกิด" },
+  { id: "tab3_drv_phone-inputEl",        label: "เบอร์โทร" },
+  { id: "tab3_IDcard_no-inputEl",        label: "บัตรประชาชน" },
+  { id: "tab3_lic_no-inputEl",           label: "เลขที่ใบขับขี่" },
+];
+const DEFAULT_SAVE_BUTTON_IDS = ["tab1_save"];
 
 /** ── Read whole config — ใช้ทั้ง extension fetch + admin/viewer ─────────── */
 export function readConfig() {
@@ -301,10 +332,13 @@ export function readConfig() {
   }
   const enabledProvinces = db.prepare("SELECT province_id FROM enabled_provinces").all().map(r => r.province_id);
   const modifierFees = getSetting("modifierFees", { outOfArea: 0, outOfHours: 0 });
+  const requiredFields = getSetting("requiredFields", DEFAULT_REQUIRED_FIELDS);
+  const saveButtonIds  = getSetting("saveButtonIds",  DEFAULT_SAVE_BUTTON_IDS);
   return {
     PROVINCE_FEE_MAP, AMPHUR_FEE_MAP, TUMBON_FEE_MAP, AMPHUR_FEE_TABLE,
     TUMBON_FEE_OVERRIDE, SURVEYOR_TEAMS,
     enabledProvinces, modifierFees,
+    requiredFields, saveButtonIds,
   };
 }
 
@@ -423,6 +457,26 @@ export const EnabledProvinces = {
 export const Modifiers = {
   get: () => getSetting("modifierFees", { outOfArea: 0, outOfHours: 0 }),
   set: (obj) => setSetting("modifierFees", obj),
+};
+
+export const RequiredFields = {
+  get: () => ({
+    fields:        getSetting("requiredFields", DEFAULT_REQUIRED_FIELDS),
+    saveButtonIds: getSetting("saveButtonIds",  DEFAULT_SAVE_BUTTON_IDS),
+  }),
+  // set เฉพาะ key ที่ส่งมา (fields / saveButtonIds) — อีกตัวคงเดิม
+  set: ({ fields, saveButtonIds } = {}) => {
+    if (Array.isArray(fields)) {
+      const clean = fields
+        .map(f => ({ id: String(f?.id || "").trim(), label: String(f?.label || "").trim() }))
+        .filter(f => f.id);
+      setSetting("requiredFields", clean);
+    }
+    if (Array.isArray(saveButtonIds)) {
+      const ids = saveButtonIds.map(s => String(s || "").trim()).filter(Boolean);
+      setSetting("saveButtonIds", ids.length ? ids : DEFAULT_SAVE_BUTTON_IDS);
+    }
+  },
 };
 
 /** ── Captures ───────────────────────────────────────────────────────────── */

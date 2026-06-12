@@ -13,6 +13,7 @@
  *   GET  /api/amphur-table           CRUD: GET, PUT, DELETE :id
  *   GET  /api/enabled-provinces      → string[] / PUT body { ids: [...] }
  *   GET  /api/modifiers              → object   / PUT body { outOfArea, outOfHours }
+ *   GET  /api/required-fields        → { fields, saveButtonIds } / PUT body เดียวกัน (ฟิลด์บังคับกรอก)
  *   GET  /api/reference              → ส่ง reference จังหวัด/อำเภอ/ตำบล (จาก se-billing-extension/data/*.json)
  *
  *   POST /api/captures               → extension ส่งข้อมูล form ที่ user กรอก
@@ -35,7 +36,7 @@ import {
   seedFromDefaults, seedFrom, readConfig,
   ProvinceRate, AmphurOverride, TumbonOverride, AmphurTable,
   TumbonOverrideTable, SurveyorTeams,
-  EnabledProvinces, Modifiers, Captures,
+  EnabledProvinces, Modifiers, RequiredFields, Captures,
 } from "./db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -219,6 +220,20 @@ app.put("/api/modifiers", (req, res) => {
   };
   Modifiers.set(out);
   res.json({ ok: true, ...out });
+});
+
+// ── Required fields (extension บล็อกปุ่มบันทึกถ้าฟิลด์ยังว่าง) ─────────────
+app.get("/api/required-fields", (_req, res) => res.json(RequiredFields.get()));
+app.put("/api/required-fields", (req, res) => {
+  const b = req.body || {};
+  if (b.fields !== undefined && !Array.isArray(b.fields)) {
+    return res.status(400).json({ error: "fields must be an array of {id, label}" });
+  }
+  if (b.saveButtonIds !== undefined && !Array.isArray(b.saveButtonIds)) {
+    return res.status(400).json({ error: "saveButtonIds must be an array of strings" });
+  }
+  RequiredFields.set({ fields: b.fields, saveButtonIds: b.saveButtonIds });
+  res.json({ ok: true, ...RequiredFields.get() });
 });
 
 // ── Reference data (จังหวัด/อำเภอ/ตำบล) ───────────────────────────────────

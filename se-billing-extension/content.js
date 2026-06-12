@@ -1081,6 +1081,155 @@
   }
 
   // ─────────────────────────────────────────────────────────
+  // Required fields: บังคับกรอกก่อนบันทึก (config จาก server: requiredFields)
+  //   - กดปุ่มบันทึก (saveButtonIds, default tab1_save) แล้วฟิลด์บังคับยังว่าง
+  //     → block event ไม่ให้ I Survey บันทึก + แจ้งรายการที่ขาด
+  //   - กรอบแดงแสดงแบบ live ตลอดเวลา: ฟิลด์ว่าง/ถูกลบ = แดงทันที,
+  //     เริ่มมีค่า = หายทันที (delegated input/change + poll 500ms)
+  //   - เลือก "ยกเลิกเคลม" → ไม่ตรวจ (งานยกเลิกไม่ต้องกรอกครบ)
+  //   - อ่านค่าผ่าน Ext cmp ก่อน → ตรวจได้แม้ฟิลด์อยู่แท็บที่ยังไม่เคยเปิด (ยังไม่ render)
+  // ─────────────────────────────────────────────────────────
+
+  const getRequiredFields = () => getCFG().requiredFields || [];
+
+  function getSaveButtonIds() {
+    const ids = getCFG().saveButtonIds;
+    return (Array.isArray(ids) && ids.length) ? ids : ["tab1_save"];
+  }
+
+  function isValueFilled(v) {
+    if (v === null || v === undefined) return false;
+    if (typeof v === "string") return v.trim() !== "";
+    if (Array.isArray(v)) return v.length > 0;
+    return true; // number / Date / boolean — มีค่าแล้ว
+  }
+
+  /** อ่านค่าฟิลด์บังคับ: Ext cmp (id ตัด -inputEl ออก) → fallback DOM input */
+  function readRequiredFieldValue(inputId) {
+    const cmpId = String(inputId).replace(/-inputEl$/, "");
+    const cmp = getExtCmp(cmpId);
+    if (cmp && typeof cmp.getValue === "function") {
+      try { return { found: true, value: cmp.getValue() }; } catch (_) { /* fallthrough DOM */ }
+    }
+    const el = document.getElementById(inputId);
+    if (el) return { found: true, value: el.value };
+    return { found: false, value: null };
+  }
+
+  /** ข้อความเตือนที่โชว์ในช่องว่าง (placeholder) + tooltip */
+  const REQUIRED_MSG = "กรุณากรอกข้อมูล";
+
+  /** style ทำ placeholder เป็นสีแดง — best-effort (CSP เข้มอาจ block แต่ placeholder ยังโชว์สีเทา) */
+  function ensureRequiredStyle() {
+    if (document.getElementById("isurvey-required-style")) return;
+    try {
+      const st = document.createElement("style");
+      st.id = "isurvey-required-style";
+      st.textContent = ".isurvey-required-missing::placeholder{color:#dc2626;opacity:.75;}";
+      (document.head || document.documentElement).appendChild(st);
+    } catch (_) { /* placeholder จะเป็นสีเทา default */ }
+  }
+
+  /**
+   * ไฮไลต์ฟิลด์ที่ขาด (เฉพาะตัวที่ render แล้ว) + เคลียร์ตัวที่กรอกแล้ว
+   *   ขาด: กรอบแดง + placeholder "กรุณากรอกข้อมูล" (เก็บ placeholder เดิมของ host ไว้คืน)
+   *   ครบ: ถอดทุกอย่างกลับสภาพเดิม
+   */
+  function updateRequiredHighlights(missing) {
+    ensureRequiredStyle();
+    const missingIds = new Set(missing.map((m) => m.id));
+    for (const f of getRequiredFields()) {
+      if (!f || !f.id) continue;
+      const el = document.getElementById(f.id);
+      if (!el) continue;
+      if (missingIds.has(f.id)) {
+        el.style.outline = "2px solid #dc2626";
+        el.style.outlineOffset = "-1px";
+        if (el.dataset.reqOrigPlaceholder === undefined) {
+          el.dataset.reqOrigPlaceholder = el.getAttribute("placeholder") || "";
+        }
+        el.setAttribute("placeholder", REQUIRED_MSG);
+        el.title = `${REQUIRED_MSG} — ${f.label || f.id}`;
+        el.classList.add("isurvey-required-missing");
+      } else {
+        el.style.outline = "";
+        el.style.outlineOffset = "";
+        if (el.dataset.reqOrigPlaceholder !== undefined) {
+          if (el.dataset.reqOrigPlaceholder) el.setAttribute("placeholder", el.dataset.reqOrigPlaceholder);
+          else el.removeAttribute("placeholder");
+          delete el.dataset.reqOrigPlaceholder;
+        }
+        el.classList.remove("isurvey-required-missing");
+        if (el.title && el.title.indexOf(REQUIRED_MSG) === 0) el.title = "";
+      }
+    }
+  }
+
+  /**
+   * ตรวจฟิลด์บังคับทั้งหมด — คืน { ok, missing: [{id, label}] }
+   * ฟิลด์ที่หาไม่เจอทั้ง Ext cmp และ DOM = ถือว่าขาด (กันพลาดดีกว่าปล่อยผ่าน)
+   */
+  function validateRequiredFields() {
+    const fields = getRequiredFields();
+    if (!fields.length) return { ok: true, missing: [] };
+    if (readCaseStatus() === "cancel") {
+      updateRequiredHighlights([]);
+      return { ok: true, missing: [] };
+    }
+    const missing = [];
+    for (const f of fields) {
+      if (!f || !f.id) continue;
+      const r = readRequiredFieldValue(f.id);
+      if (!r.found || !isValueFilled(r.value)) {
+        missing.push({ id: f.id, label: f.label || f.id });
+      }
+    }
+    updateRequiredHighlights(missing);
+    return { ok: missing.length === 0, missing };
+  }
+
+  /**
+   * Delegated listener: พิมพ์/ลบ/เปลี่ยนค่าในฟิลด์บังคับ → refresh กรอบแดงทันที
+   * (ลบจนว่าง = แดงขึ้นทันที, พิมพ์ตัวแรก = แดงหายทันที — ไม่ต้องรอ poll 500ms)
+   * setTimeout 0 ให้ Ext sync ค่าภายในก่อนค่อยอ่าน
+   */
+  function attachRequiredFieldListeners() {
+    if (window.__iSurveyHelperRequiredListenerAttached) return;
+    window.__iSurveyHelperRequiredListenerAttached = true;
+    const handler = (ev) => {
+      const id = ev.target && ev.target.id;
+      if (!id) return;
+      if (!getRequiredFields().some((f) => f && f.id === id)) return;
+      setTimeout(validateRequiredFields, 0);
+    };
+    document.addEventListener("input", handler, true);
+    document.addEventListener("change", handler, true);
+    log("Required-field live listener attached (input/change delegated)");
+  }
+
+  /** แจ้งรายการฟิลด์ที่ขาด จัดกลุ่มตามแท็บ — Ext.Msg ถ้ามี, fallback alert */
+  function showRequiredFieldsAlert(missing) {
+    const byTab = {};
+    for (const m of missing) {
+      const tab = (/^tab\d+/.exec(m.id) || ["อื่นๆ"])[0];
+      (byTab[tab] = byTab[tab] || []).push(m.label);
+    }
+    const lines = Object.keys(byTab).sort().map((t) => {
+      const name = /^tab\d+$/.test(t) ? "แท็บ " + t.replace("tab", "") : t;
+      return "• " + name + ": " + byTab[t].join(", ");
+    });
+    const title = "ข้อมูลไม่ครบ — ยังบันทึกไม่ได้";
+    const body = "กรุณากรอกข้อมูลให้ครบ " + missing.length + " ช่อง:\n\n" + lines.join("\n");
+    try {
+      if (typeof Ext !== "undefined" && Ext.Msg && typeof Ext.Msg.alert === "function") {
+        Ext.Msg.alert(title, body.replace(/\n/g, "<br>"));
+        return;
+      }
+    } catch (_) { /* fallthrough alert */ }
+    window.alert(title + "\n\n" + body);
+  }
+
+  // ─────────────────────────────────────────────────────────
   // Watchers: location hidden inputs + modifier inputs + polling
   // ─────────────────────────────────────────────────────────
 
@@ -1298,27 +1447,47 @@
       enableAllTypeAhead();
       filterProvinceCombobox();
       syncFeeFromLocation();
+      // ไฮไลต์ฟิลด์บังคับแบบ live ทุกรอบ — ว่าง = กรอบแดง, มีค่า = กรอบหาย
+      // (ครอบเคสที่ delegated listener ไม่จับ เช่น Ext set ค่าเอง / combo เลือกจาก dropdown)
+      validateRequiredFields();
     }, CFG.pollIntervalMs);
   }
 
   /**
-   * Listener สำหรับปุ่ม "ยืนยันการตรวจสอบ" (#tab1_save)
-   * — ใช้ delegated click ที่ document เผื่อปุ่มถูก re-render
-   * — capture phase เพื่ออ่าน state ก่อน Ext จะส่ง form ออกไป
-   * — delay 100ms ให้ Ext sync state รอบสุดท้ายก่อนเรา read
-   * — ไม่ preventDefault — ปล่อยให้ I Survey save ปกติ
+   * Listener ปุ่มบันทึก (default #tab1_save "ยืนยันการตรวจสอบ" — เพิ่ม id ได้จาก /admin)
+   * — delegated click ที่ document แบบ capture phase → ทำงานก่อน handler ของ Ext เสมอ
+   *   และทนต่อการที่ปุ่มถูก re-render
+   * — ฟิลด์บังคับยังว่าง → preventDefault + stopImmediatePropagation = I Survey ไม่บันทึก
+   * — ครบ → ปล่อยผ่านปกติ; เฉพาะ #tab1_save ส่ง capture (delay 100ms ให้ Ext sync ก่อน)
    */
   function attachSaveButtonListener() {
     if (window.__iSurveyHelperSaveListenerAttached) return;
     window.__iSurveyHelperSaveListenerAttached = true;
 
     document.addEventListener("click", (ev) => {
-      const btn = ev.target && ev.target.closest && ev.target.closest("#tab1_save");
+      if (!ev.target || typeof ev.target.closest !== "function") return;
+      const esc = (id) => (window.CSS && CSS.escape) ? CSS.escape(id) : id;
+      const selector = getSaveButtonIds().map((id) => "#" + esc(id)).join(", ");
+      let btn = null;
+      try { btn = ev.target.closest(selector); } catch (_) { return; } // id แปลกใน config → selector พัง: ไม่ block อะไร
       if (!btn) return;
-      log("ยืนยันการตรวจสอบ clicked → capture in 100ms");
-      setTimeout(captureNow, 100);
+
+      const { ok, missing } = validateRequiredFields();
+      if (!ok) {
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        showRequiredFieldsAlert(missing);
+        log(`Save blocked (#${btn.id}): ขาด ${missing.length} ฟิลด์ —`,
+          missing.map((m) => m.label).join(", "));
+        return;
+      }
+
+      if (btn.id === "tab1_save") {
+        log("ยืนยันการตรวจสอบ clicked → capture in 100ms");
+        setTimeout(captureNow, 100);
+      }
     }, true);
-    log('Save-button listener attached (#tab1_save)');
+    log("Save-button listener attached (required-field gate + capture)");
   }
 
   // ─────────────────────────────────────────────────────────
@@ -1367,6 +1536,7 @@
     enableAllTypeAhead();
     filterProvinceCombobox();
     attachModifierListeners();
+    attachRequiredFieldListeners();
     attachSaveButtonListener();
     syncFeeFromLocation();
     startPolling();

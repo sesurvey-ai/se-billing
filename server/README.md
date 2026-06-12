@@ -45,6 +45,7 @@ node server.js
 | GET / PUT (`:id`) / DELETE (`:id`) | `/api/amphur-table` | `{ SUR_INVEST, INS_INVEST_12, INS_INVEST_34, INS_TRANS, INS_PHOTO_12 }` | CRUD multi-field |
 | GET / PUT | `/api/enabled-provinces` | `{ ids: [...] }` | string[] |
 | GET / PUT | `/api/modifiers` | `{ outOfArea, outOfHours }` | object |
+| GET / PUT | `/api/required-fields` | `{ fields: [{id, label}], saveButtonIds: [...] }` | ฟิลด์บังคับกรอก — extension block ปุ่มบันทึกถ้ายังว่าง (v2.7.16) |
 | POST / GET / DELETE / DELETE (`:id`) | `/api/captures` | rec | เก็บ/อ่าน/ลบ capture log |
 | GET    | `/api/captures.xlsx?provinceId=…` | — | ดาวน์โหลด Excel ของ captures (ExcelJS) |
 

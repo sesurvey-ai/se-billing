@@ -232,6 +232,34 @@ function renderModifiers() {
   document.getElementById("mod-outOfHours").value = state.config.modifierFees.outOfHours ?? 100;
 }
 
+// ─── Render: requiredFields ───
+function tabOfFieldId(id) {
+  const m = /^tab(\d+)/.exec(String(id || ""));
+  return m ? `แท็บ ${m[1]}` : "—";
+}
+
+function renderRequiredFields() {
+  const tbody = document.querySelector("#table-required-fields tbody");
+  const empty = document.getElementById("empty-required-fields");
+  tbody.innerHTML = "";
+  const fields = state.config.requiredFields || [];
+  fields.forEach((f, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${tabOfFieldId(f.id)}</td>
+      <td><code>${f.id}</code></td>
+      <td>${f.label || ""}</td>
+      <td class="actions">
+        <button class="btn btn-icon" data-action="edit-required-field" data-id="${idx}">แก้</button>
+        <button class="btn btn-icon btn-danger" data-action="delete-required-field" data-id="${idx}">ลบ</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  empty.classList.toggle("hidden", fields.length > 0);
+  const sb = document.getElementById("fld-save-buttons");
+  if (sb) sb.value = (state.config.saveButtonIds || ["tab1_save"]).join(", ");
+}
+
 function renderAll() {
   renderAmphurTable();
   renderProvinceMap();
@@ -241,6 +269,7 @@ function renderAll() {
   renderSurveyorTeams();
   renderEnabled();
   renderModifiers();
+  renderRequiredFields();
 }
 
 // ─── Modal helpers ───
@@ -781,6 +810,47 @@ function openSurveyorTeamModal(code = null) {
   });
 }
 
+// ─── Add/Edit requiredFields ───
+async function saveRequiredFields() {
+  await api.requiredFields.set({
+    fields:        state.config.requiredFields || [],
+    saveButtonIds: state.config.saveButtonIds  || ["tab1_save"],
+  });
+}
+
+function openRequiredFieldModal(index = null) {
+  const isEdit = index !== null;
+  const fields = state.config.requiredFields || [];
+  const existing = isEdit ? fields[index] : { id: "", label: "" };
+  const body = `
+    <div class="form-row">
+      <label>Input ID (จากหน้า isurvey, ลงท้าย -inputEl) *</label>
+      <input type="text" id="fld-req-id" value="${existing.id || ""}" placeholder="tab2_acc_date-inputEl" />
+      <span class="error-msg" id="err-req"></span>
+    </div>
+    <div class="form-row">
+      <label>ป้ายชื่อ (ข้อความที่แสดงตอนเตือน) *</label>
+      <input type="text" id="fld-req-label" value="${existing.label || ""}" placeholder="วันที่เกิดเหตุ" />
+    </div>
+  `;
+  openModal(isEdit ? `แก้ ${existing.label || existing.id}` : "เพิ่มฟิลด์บังคับ", body, async () => {
+    const id    = (document.getElementById("fld-req-id").value || "").trim();
+    const label = (document.getElementById("fld-req-label").value || "").trim();
+    if (!id || !label) { document.getElementById("err-req").textContent = "กรอกให้ครบทั้ง 2 ช่อง"; return false; }
+    if (fields.some((f, i) => f.id === id && i !== index)) {
+      document.getElementById("err-req").textContent = "Input ID นี้มีอยู่แล้ว";
+      return false;
+    }
+    const next = fields.slice();
+    if (isEdit) next[index] = { id, label }; else next.push({ id, label });
+    state.config.requiredFields = next;
+    await saveRequiredFields();
+    renderRequiredFields();
+    showStatus(`บันทึก ${label}`);
+    return true;
+  });
+}
+
 // ─── Action handlers ───
 async function handleAction(action, id) {
   const map = {
@@ -833,6 +903,17 @@ async function handleAction(action, id) {
       renderSurveyorTeams();
       showStatus(`ลบ ${id}`);
     },
+    "edit-required-field":   () => openRequiredFieldModal(Number(id)),
+    "delete-required-field": async () => {
+      const fields = state.config.requiredFields || [];
+      const f = fields[Number(id)];
+      if (!f) return;
+      if (!confirm(`ลบฟิลด์บังคับ "${f.label || f.id}"?`)) return;
+      state.config.requiredFields = fields.filter((_, i) => i !== Number(id));
+      await saveRequiredFields();
+      renderRequiredFields();
+      showStatus(`ลบ ${f.label || f.id}`);
+    },
   };
   if (map[action]) {
     try { await map[action](); }
@@ -852,6 +933,8 @@ function exportJson() {
     SURVEYOR_TEAMS:      c.SURVEYOR_TEAMS      || {},
     enabledProvinces:    c.enabledProvinces,
     modifierFees:        c.modifierFees,
+    requiredFields:      c.requiredFields      || [],
+    saveButtonIds:       c.saveButtonIds       || ["tab1_save"],
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -914,6 +997,12 @@ async function importJson(file) {
     // enabled + modifiers
     calls.push(api.enabledProvinces.set(data.enabledProvinces));
     calls.push(api.modifiers.set(data.modifierFees));
+    // requiredFields/saveButtonIds: optional (ไฟล์ export เก่าไม่มี key นี้ — ข้ามได้)
+    if (Array.isArray(data.requiredFields) || Array.isArray(data.saveButtonIds)) {
+      calls.push(api.requiredFields.set({
+        fields: data.requiredFields, saveButtonIds: data.saveButtonIds,
+      }));
+    }
     await Promise.all(calls);
     await reloadConfig();
     renderAll();
@@ -945,6 +1034,18 @@ async function main() {
   document.getElementById("add-tumbon-map").onclick       = () => openTumbonMapModal();
   document.getElementById("add-tumbon-override").onclick  = () => openTumbonOverrideModal();
   document.getElementById("add-surveyor-team").onclick    = () => openSurveyorTeamModal();
+  document.getElementById("add-required-field").onclick   = () => openRequiredFieldModal();
+
+  document.getElementById("save-save-buttons").onclick = async () => {
+    const raw = document.getElementById("fld-save-buttons").value || "";
+    const ids = raw.split(",").map(s => s.trim()).filter(Boolean);
+    state.config.saveButtonIds = ids.length ? ids : ["tab1_save"];
+    try {
+      await saveRequiredFields();
+      renderRequiredFields();
+      showStatus("บันทึกรายการปุ่มบันทึก");
+    } catch (e) { showStatus(e.message, true); }
+  };
 
   document.getElementById("search-amphur-table").addEventListener("input", renderAmphurTable);
   document.getElementById("search-surveyor-teams")?.addEventListener("input", renderSurveyorTeams);

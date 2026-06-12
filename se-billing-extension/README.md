@@ -58,6 +58,7 @@ node server.js     # ฟัง http://localhost:3200
 - **จังหวัด (Simple)** / **อำเภอ override** / **ตำบล override**
 - **Whitelist จังหวัด** — ติ๊กเปิด/ปิดต่อจังหวัด
 - **Modifier defaults** — outOfArea / outOfHours
+- **ฟิลด์บังคับ** — รายการฟิลด์ที่ต้องกรอกก่อนกด "ยืนยันการตรวจสอบ" + รายการปุ่มบันทึกที่ดักตรวจ (v2.7.16)
 - **Import/Export JSON** + **Reset to defaults**
 
 **Live update:** บันทึกที่ /admin → server เก็บลง SQLite → extension's `loader.js` poll ทุก 30s
@@ -473,6 +474,7 @@ se-billing-extension/
 
 | Version | การเปลี่ยนแปลง |
 |---------|--------------|
+| **2.7.16** | **บังคับกรอกฟิลด์ก่อนบันทึก (Required fields)**: กดปุ่ม "ยืนยันการตรวจสอบ" (`#tab1_save`) แล้วฟิลด์บังคับยังว่าง → extension **block การบันทึก** (preventDefault + stopImmediatePropagation ใน capture phase ก่อน Ext handler) + แจ้งรายการที่ขาดจัดกลุ่มตามแท็บ (Ext.Msg.alert / fallback alert). <br>**กรอบแดง live ตลอดเวลา**: ฟิลด์บังคับว่าง/ถูกลบค่า → outline แดง + placeholder "กรุณากรอกข้อมูล" (สีแดงผ่าน injected style; เก็บ placeholder เดิมของ host ไว้คืน) + tooltip ขึ้นทันที, เริ่มพิมพ์/มีค่า → หายทันที (delegated input/change listener + poll 500ms ครอบเคส Ext set ค่าเอง; combo ต้องเลือกจากรายการจริงถึงนับว่ามีค่า). <br>**เงื่อนไข**: เลือก "ยกเลิกเคลม" → ไม่ตรวจ (งานยกเลิกไม่บังคับ); อ่านค่าผ่าน `Ext.getCmp(id ตัด -inputEl).getValue()` ก่อน → ตรวจได้แม้ฟิลด์อยู่แท็บที่ยังไม่เคยเปิด, fallback DOM; ฟิลด์ที่หาไม่เจอเลย = ถือว่าขาด. <br>**Config จาก server** (แก้ได้โดยไม่ต้องออก extension ใหม่): `requiredFields` = `[{id, label}]` (default 19 ฟิลด์: tab1 กรมธรรม์ / tab2 ข้อมูลเกิดเหตุ 7 ฟิลด์ / tab3 รถ+ผู้ขับขี่ 11 ฟิลด์), `saveButtonIds` = ปุ่มที่ดักตรวจ (default `["tab1_save"]` — เพิ่ม id ปุ่มบันทึกทางอื่นได้). จัดการผ่านแท็บใหม่ "ฟิลด์บังคับ" ในหน้า `/admin` + endpoint `GET/PUT /api/required-fields` ([content.js validateRequiredFields](./content.js), [server/db.js](../server/db.js), [server/public/admin.js](../server/public/admin.js)) |
 | **2.7.15** | **Release marker** — ไม่มีการเปลี่ยนแปลงโค้ดจาก v2.7.14. bump เพื่ออัพ Chrome Web Store package ใหม่หลังเพิ่ม BMR rule สำหรับ "ไม่พบ" override |
 | **2.7.14** | **"ไม่พบ" — INS_TRANS แยกตาม BMR**: ปรับ `applyNotFoundOverride()` ให้ INS_TRANS ตอบสนองตามจังหวัด: <br>• **BMR** (กทม. 10 / นนทบุรี 12 / สมุทรปราการ 11 / ปทุมธานี 13) → **INS_TRANS = 300** (fix) <br>• **non-BMR** → INS_TRANS = เรทเดิมจาก `AMPHUR_FEE_TABLE` (team override / flat); Simple amphur ไม่มีเรท → ว่าง <br>SUR_INVEST / INS_INVEST / INS_PHOTO ยัง sticky-clear เหมือนเดิม. ย้ายการ set INS_TRANS เข้าใน sticky block (set ครั้งเดียวบน enter) → user เปลี่ยนค่าได้หลัง first-set ([content.js applyNotFoundOverride](./content.js)) |
 | **2.7.13** | **Release marker — v2.7.12 ทดสอบ live ผ่านครบ**: ไม่มีการเปลี่ยนแปลงโค้ดจาก v2.7.12. ทดสอบ behavior ของ "ไม่พบ" บนหน้า iSurvey จริง (amphur 1101, สมุทรปราการ) — เลือก service_type="ไม่พบ" → SUR_INVEST/INS_INVEST/INS_PHOTO ถูก sticky-clear ทั้ง 3 ฟิลด์, INS_TRANS=500 (ตรงเรท AMPHUR_FEE_TABLE) ตาม spec |

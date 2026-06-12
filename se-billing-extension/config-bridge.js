@@ -76,6 +76,8 @@
       modifierFees: { outOfArea: 0, outOfHours: 0 }, // จะถูก override
       enabledProvinces: [],                            // จะถูก override
       userProvincePreferences: [],                     // จะถูก override (จาก popup)
+      requiredFields: [],                              // จะถูก override (ฟิลด์บังคับกรอก)
+      saveButtonIds: ["tab1_save"],                    // จะถูก override (ปุ่มบันทึกที่ดักตรวจ)
     },
     STATIC_CONFIG,
     window.ISURVEY_HELPER_CONFIG || {}
@@ -101,6 +103,12 @@
     if (p.enabledProvinces) window.ISURVEY_HELPER_CONFIG.enabledProvinces = p.enabledProvinces;
     if (Array.isArray(p.userProvincePreferences)) {
       window.ISURVEY_HELPER_CONFIG.userProvincePreferences = p.userProvincePreferences;
+    }
+    if (Array.isArray(p.requiredFields)) {
+      window.ISURVEY_HELPER_CONFIG.requiredFields = p.requiredFields;
+    }
+    if (Array.isArray(p.saveButtonIds) && p.saveButtonIds.length) {
+      window.ISURVEY_HELPER_CONFIG.saveButtonIds = p.saveButtonIds;
     }
 
     if (!received) {

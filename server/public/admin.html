@@ -32,6 +32,7 @@
     <button class="tab" data-tab="surveyor-teams">ทีม Surveyor</button>
     <button class="tab" data-tab="enabled">Whitelist จังหวัด</button>
     <button class="tab" data-tab="modifiers">Modifier defaults</button>
+    <button class="tab" data-tab="required-fields">ฟิลด์บังคับ</button>
   </nav>
 
   <main>
@@ -176,6 +177,31 @@
           <span class="unit">บาท</span>
         </label>
         <button id="save-modifiers" class="btn btn-primary">บันทึก</button>
+      </div>
+    </section>
+
+    <section class="panel hidden" data-panel="required-fields">
+      <div class="panel-header">
+        <h2>ฟิลด์บังคับกรอก (Required fields)</h2>
+        <p class="hint">extension จะบล็อกปุ่ม "ยืนยันการตรวจสอบ" ถ้าฟิลด์เหล่านี้ยังว่าง — ยกเว้นเคส "ยกเลิกเคลม" ไม่ตรวจ
+          / Input ID = id ของช่องกรอกบนหน้า isurvey (ลงท้าย <code>-inputEl</code>) / ลบทุกรายการ = ปิดการบังคับกรอก</p>
+        <div class="panel-actions">
+          <button id="add-required-field" class="btn btn-primary">+ เพิ่มฟิลด์</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="table-required-fields">
+          <thead><tr><th>แท็บ</th><th>Input ID</th><th>ป้ายชื่อ (แสดงตอนเตือน)</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-required-fields">ยังไม่มีรายการ — การบังคับกรอกปิดอยู่</div>
+      </div>
+      <div class="modifier-form" style="margin-top:16px">
+        <label>
+          <span>ปุ่มบันทึกที่ดักตรวจ (id คั่นด้วย , )</span>
+          <input type="text" id="fld-save-buttons" style="min-width:280px" placeholder="tab1_save" />
+        </label>
+        <button id="save-save-buttons" class="btn btn-primary">บันทึกรายการปุ่ม</button>
       </div>
     </section>
   </main>

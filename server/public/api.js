@@ -85,6 +85,10 @@ const api = {
     get: () => req("GET", "/api/modifiers"),
     set: (m) => req("PUT", "/api/modifiers", m),
   },
+  requiredFields: {
+    get: () => req("GET", "/api/required-fields"),
+    set: (cfg) => req("PUT", "/api/required-fields", cfg), // { fields, saveButtonIds }
+  },
   captures: {
     list:   ({ limit = 100, offset = 0, provinceId, status } = {}) => {
       const q = new URLSearchParams();
