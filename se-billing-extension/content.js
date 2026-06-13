@@ -1090,11 +1090,13 @@
   //   - อ่านค่าผ่าน Ext cmp ก่อน → ตรวจได้แม้ฟิลด์อยู่แท็บที่ยังไม่เคยเปิด (ยังไม่ render)
   // ─────────────────────────────────────────────────────────
 
-  // ★ Kill-switch ระดับโค้ด (v2.7.17): ปิดการตรวจ/บล็อก/ไฮไลต์ทั้งหมดชั่วคราว
-  //   เหตุ: พบเคสกรอกครบ 19 ฟิลด์แล้วยังโดนบล็อก (root cause อยู่ระหว่างหา —
-  //   สงสัยฟิลด์ในรายการไม่มีอยู่จริงในฟอร์มบางแบบ ซึ่ง "หาไม่เจอ = ขาด" จะบล็อกถาวร)
-  //   เปิดกลับ: เปลี่ยนเป็น true + bump version (server-side list ต้องเติมกลับด้วย)
-  const REQUIRED_FIELDS_ENFORCEMENT = false;
+  // ★ Kill-switch ระดับโค้ด: true = เปิดตรวจ/บล็อก/ไฮไลต์, false = ปิดสนิท
+  //   v2.7.17 เคยปิดเพราะบั๊ก "กรอกครบแต่บล็อก" — root cause: ฟอร์ม isurvey โหลด
+  //   เนื้อหาแต่ละแท็บผ่าน AJAX ตอน activate ครั้งแรก ฟิลด์ของแท็บที่ยังไม่เปิดจึง
+  //   ยังไม่ถูกสร้าง (Ext.getCmp คืน null) → เดิมตีว่า "ขาด" → บล็อกถาวร
+  //   v2.7.18 แก้: ตอนกดบันทึก force โหลดทุกแท็บก่อนตรวจ + "หาไม่เจอ = ข้าม" (ไม่บล็อก)
+  //   master on/off จริงยังอยู่ที่ server: requiredFields = [] → ไม่ตรวจอะไร แม้ flag true
+  const REQUIRED_FIELDS_ENFORCEMENT = true;
 
   const getRequiredFields = () => getCFG().requiredFields || [];
 
@@ -1120,6 +1122,136 @@
     const el = document.getElementById(inputId);
     if (el) return { found: true, value: el.value };
     return { found: false, value: null };
+  }
+
+  // ── Cache-on-visit (root-cause fix v2.7.18) ───────────────────────────────
+  // host ทำลาย component ของแท็บที่ไม่ได้ active ทิ้ง (ยืนยันแล้ว) → ตอนอยู่หน้า
+  // Summary (ที่ปุ่มบันทึกอยู่) อ่านฟิลด์ของแท็บอื่นไม่ได้เลย. วิธีแก้: "จำค่าตอน
+  // ผู้ใช้เปิดแต่ละแท็บ" (อ่านขณะแท็บ active ผ่าน poll/listener) เก็บใน _reqCache
+  // แล้วใช้ cache ตัดสินตอนกดบันทึก — ไม่สลับแท็บอัตโนมัติ (ปลอดภัย ไม่ลบค่าที่ inject)
+  //   cache[id] = { seen: เคยเห็นฟิลด์ (เปิดแท็บแล้ว), filled: มีค่า, label }
+  //   reset เมื่อเปลี่ยนเคลม (claim_no/survey_no เปลี่ยน)
+  let _reqCache = Object.create(null);
+  let _reqCacheClaim = null;
+
+  function requiredCacheKey() {
+    return String(readClaimNo() || readSurveyNo() || "");
+  }
+
+  /**
+   * อ่านฟิลด์บังคับที่ "กำลัง available" (แท็บเปิดอยู่) → อัปเดต cache + ไฮไลต์ตัวว่าง
+   * ฟิลด์ของแท็บที่ยังไม่เปิด (หาไม่เจอ) → คง cache เดิมไว้ (ไม่ลบ)
+   * เรียกจาก poll (ทุก 500ms) + input/change listener → cache อัปเดตสดขณะผู้ใช้อยู่บนแท็บ
+   */
+  function refreshRequiredCache() {
+    // reset เฉพาะตอนเจอ "เลขเคลมใหม่" (key ไม่ว่าง + ต่างจากเดิม) — สำคัญมาก:
+    // claim_no/survey_no อยู่บนแท็บ Summary ซึ่ง host ทำลายทิ้งตอนสลับไปแท็บอื่น
+    // → key จะกลายเป็น "" ชั่วคราว ห้าม reset ตอนนั้น ไม่งั้น cache ของแท็บ 2/3 หาย
+    const key = requiredCacheKey();
+    if (key && key !== _reqCacheClaim) { _reqCacheClaim = key; _reqCache = Object.create(null); }
+
+    const fields = getRequiredFields();
+    if (!fields.length || readCaseStatus() === "cancel") { updateRequiredHighlights([]); return; }
+
+    const liveEmpty = [];
+    for (const f of fields) {
+      if (!f || !f.id) continue;
+      const r = readRequiredFieldValue(f.id);
+      if (!r.found) continue; // แท็บยังไม่เปิด → คง cache เดิม
+      const filled = isValueFilled(r.value);
+      _reqCache[f.id] = { seen: true, filled, label: f.label || f.id };
+      if (!filled) liveEmpty.push({ id: f.id, label: f.label || f.id });
+    }
+    updateRequiredHighlights(liveEmpty); // ไฮไลต์เฉพาะฟิลด์ว่างที่เห็นบนแท็บปัจจุบัน
+  }
+
+  /**
+   * ประเมินจาก cache สำหรับ save gate → { ok, empty, unvisited }
+   *   empty     = เปิดแท็บแล้วแต่ค่าว่าง → ต้องกรอก
+   *   unvisited = ยังไม่เคยเปิดแท็บที่มีฟิลด์นี้ (หรือ id ผิด/ไม่มีในฟอร์ม) → ต้องเปิดตรวจ
+   */
+  function evaluateRequired() {
+    const fields = getRequiredFields();
+    if (!fields.length || readCaseStatus() === "cancel") return { ok: true, empty: [], unvisited: [] };
+    refreshRequiredCache(); // sync ค่าล่าสุดของแท็บที่เปิดอยู่ก่อนตัดสิน
+    const empty = [], unvisited = [];
+    for (const f of fields) {
+      if (!f || !f.id) continue;
+      const c = _reqCache[f.id];
+      if (!c || !c.seen) { unvisited.push({ id: f.id, label: f.label || f.id }); continue; }
+      if (!c.filled) empty.push({ id: f.id, label: f.label || f.id });
+    }
+    return { ok: empty.length === 0 && unvisited.length === 0, empty, unvisited };
+  }
+
+  // ── Tab status coloring ───────────────────────────────────────────────────
+  // ระบายสีแท็บตามสถานะฟิลด์บังคับ (เห็นทันทีว่าต้องเปิดแท็บไหน):
+  //   เขียว = เปิดแท็บแล้ว + ฟิลด์บังคับของแท็บนั้นครบ
+  //   แดง   = ยังไม่เปิดแท็บ หรือมีฟิลด์ว่าง
+  // map: id-prefix ของฟิลด์ → tab component (host supervisor-tab) — stable mechanic
+  //   tab1_*→Summary, tab2_*→Accident Info, tab3_*→Insurance Info (ยืนยันจากฟอร์มจริง)
+  const REQUIRED_TAB_MAP = [
+    { tabCmpId: "tab-1_clone", prefix: "tab1_" },
+    { tabCmpId: "tab-2_clone", prefix: "tab2_" },
+    { tabCmpId: "tab-3_clone", prefix: "tab3_" },
+  ];
+  const TAB_COLOR_GREEN = "#16a34a";
+  const TAB_COLOR_RED   = "#dc2626";
+
+  function getTabButtonEl(tabCmpId) {
+    try {
+      if (typeof Ext === "undefined" || !Ext.getCmp) return null;
+      const t = Ext.getCmp(tabCmpId);
+      if (t && t.tab && t.tab.el && t.tab.el.dom) return t.tab.el.dom;
+    } catch (_) {}
+    return null;
+  }
+
+  // ข้อความแท็บที่ระบายสี → ขาวเสมอ (รวม active tab ที่ Ext ใส่สีข้อความไว้ที่ element ลูก
+  // ซึ่ง inline color บน <a> ตัวนอกไปไม่ถึง — ต้องใช้ CSS descendant + !important)
+  function ensureTabColorStyle() {
+    if (document.getElementById("isurvey-tabcolor-style")) return;
+    try {
+      const st = document.createElement("style");
+      st.id = "isurvey-tabcolor-style";
+      st.textContent = ".isurvey-tab-status-colored, .isurvey-tab-status-colored * { color:#fff !important; }";
+      (document.head || document.documentElement).appendChild(st);
+    } catch (_) {}
+  }
+
+  function paintTab(el, color) {
+    if (!el) return;
+    if (color === null) {
+      el.style.removeProperty("background-color");
+      el.style.removeProperty("background-image");
+      el.classList.remove("isurvey-tab-status-colored");
+      return;
+    }
+    ensureTabColorStyle();
+    el.style.setProperty("background-color", color, "important");
+    el.style.setProperty("background-image", "none", "important");
+    el.classList.add("isurvey-tab-status-colored"); // → ข้อความขาว (รวม active tab)
+  }
+
+  function clearTabColors() {
+    for (const m of REQUIRED_TAB_MAP) paintTab(getTabButtonEl(m.tabCmpId), null);
+  }
+
+  /** ระบายสี 3 แท็บตาม cache — เรียกจาก poll หลัง refreshRequiredCache */
+  function updateTabColors() {
+    const fields = getRequiredFields();
+    if (!fields.length || readCaseStatus() === "cancel") { clearTabColors(); return; }
+    for (const m of REQUIRED_TAB_MAP) {
+      const el = getTabButtonEl(m.tabCmpId);
+      if (!el) continue;
+      const tabFields = fields.filter((f) => f && f.id && f.id.indexOf(m.prefix) === 0);
+      if (!tabFields.length) { paintTab(el, null); continue; } // ไม่มีฟิลด์บังคับบนแท็บนี้
+      const complete = tabFields.every((f) => {
+        const c = _reqCache[f.id];
+        return !!(c && c.seen && c.filled);
+      });
+      paintTab(el, complete ? TAB_COLOR_GREEN : TAB_COLOR_RED);
+    }
   }
 
   /** ข้อความเตือนที่โชว์ในช่องว่าง (placeholder) + tooltip */
@@ -1172,30 +1304,7 @@
   }
 
   /**
-   * ตรวจฟิลด์บังคับทั้งหมด — คืน { ok, missing: [{id, label}] }
-   * ฟิลด์ที่หาไม่เจอทั้ง Ext cmp และ DOM = ถือว่าขาด (กันพลาดดีกว่าปล่อยผ่าน)
-   */
-  function validateRequiredFields() {
-    const fields = getRequiredFields();
-    if (!fields.length) return { ok: true, missing: [] };
-    if (readCaseStatus() === "cancel") {
-      updateRequiredHighlights([]);
-      return { ok: true, missing: [] };
-    }
-    const missing = [];
-    for (const f of fields) {
-      if (!f || !f.id) continue;
-      const r = readRequiredFieldValue(f.id);
-      if (!r.found || !isValueFilled(r.value)) {
-        missing.push({ id: f.id, label: f.label || f.id });
-      }
-    }
-    updateRequiredHighlights(missing);
-    return { ok: missing.length === 0, missing };
-  }
-
-  /**
-   * Delegated listener: พิมพ์/ลบ/เปลี่ยนค่าในฟิลด์บังคับ → refresh กรอบแดงทันที
+   * Delegated listener: พิมพ์/ลบ/เปลี่ยนค่าในฟิลด์บังคับ → refresh cache + กรอบแดงทันที
    * (ลบจนว่าง = แดงขึ้นทันที, พิมพ์ตัวแรก = แดงหายทันที — ไม่ต้องรอ poll 500ms)
    * setTimeout 0 ให้ Ext sync ค่าภายในก่อนค่อยอ่าน
    */
@@ -1207,26 +1316,31 @@
       const id = ev.target && ev.target.id;
       if (!id) return;
       if (!getRequiredFields().some((f) => f && f.id === id)) return;
-      setTimeout(validateRequiredFields, 0);
+      setTimeout(refreshRequiredCache, 0);
     };
     document.addEventListener("input", handler, true);
     document.addEventListener("change", handler, true);
     log("Required-field live listener attached (input/change delegated)");
   }
 
-  /** แจ้งรายการฟิลด์ที่ขาด จัดกลุ่มตามแท็บ — Ext.Msg ถ้ามี, fallback alert */
-  function showRequiredFieldsAlert(missing) {
-    const byTab = {};
-    for (const m of missing) {
-      const tab = (/^tab\d+/.exec(m.id) || ["อื่นๆ"])[0];
-      (byTab[tab] = byTab[tab] || []).push(m.label);
+  /**
+   * แจ้งเตือนตอนกดบันทึกแล้วข้อมูลไม่ครบ — แยก "ยังไม่ได้เปิดตรวจ" กับ "ยังว่าง"
+   * Ext.Msg ถ้ามี, fallback alert
+   */
+  function showRequiredFieldsAlert(empty, unvisited) {
+    const lines = [];
+    if (unvisited && unvisited.length) {
+      lines.push("⚠ ยังไม่ได้เปิดตรวจแท็บที่มีข้อมูลเหล่านี้ (กรุณาเปิดแท็บแล้วตรวจ):");
+      lines.push(...unvisited.map((u) => "  • " + u.label));
     }
-    const lines = Object.keys(byTab).sort().map((t) => {
-      const name = /^tab\d+$/.test(t) ? "แท็บ " + t.replace("tab", "") : t;
-      return "• " + name + ": " + byTab[t].join(", ");
-    });
+    if (empty && empty.length) {
+      if (lines.length) lines.push("");
+      lines.push("⚠ ฟิลด์ที่ยังว่าง (กรุณากรอก):");
+      lines.push(...empty.map((e) => "  • " + e.label));
+    }
+    const total = (empty ? empty.length : 0) + (unvisited ? unvisited.length : 0);
     const title = "ข้อมูลไม่ครบ — ยังบันทึกไม่ได้";
-    const body = "กรุณากรอกข้อมูลให้ครบ " + missing.length + " ช่อง:\n\n" + lines.join("\n");
+    const body = "ต้องตรวจ/กรอกให้ครบอีก " + total + " รายการ:\n\n" + lines.join("\n");
     try {
       if (typeof Ext !== "undefined" && Ext.Msg && typeof Ext.Msg.alert === "function") {
         Ext.Msg.alert(title, body.replace(/\n/g, "<br>"));
@@ -1454,9 +1568,10 @@
       enableAllTypeAhead();
       filterProvinceCombobox();
       syncFeeFromLocation();
-      // ไฮไลต์ฟิลด์บังคับแบบ live ทุกรอบ — ว่าง = กรอบแดง, มีค่า = กรอบหาย
-      // (ครอบเคสที่ delegated listener ไม่จับ เช่น Ext set ค่าเอง / combo เลือกจาก dropdown)
-      if (REQUIRED_FIELDS_ENFORCEMENT) validateRequiredFields();
+      // อัปเดต cache + ไฮไลต์ฟิลด์บังคับของแท็บที่เปิดอยู่ทุกรอบ (ว่าง = กรอบแดง)
+      // → เก็บค่าไว้ตอนผู้ใช้เปิดแต่ละแท็บ ใช้ตอนกดบันทึก (cache-on-visit)
+      // + ระบายสีแท็บตามสถานะ (เขียว=ครบ / แดง=ยังไม่เปิด หรือว่าง)
+      if (REQUIRED_FIELDS_ENFORCEMENT) { refreshRequiredCache(); updateTabColors(); }
     }, CFG.pollIntervalMs);
   }
 
@@ -1464,8 +1579,8 @@
    * Listener ปุ่มบันทึก (default #tab1_save "ยืนยันการตรวจสอบ" — เพิ่ม id ได้จาก /admin)
    * — delegated click ที่ document แบบ capture phase → ทำงานก่อน handler ของ Ext เสมอ
    *   และทนต่อการที่ปุ่มถูก re-render
-   * — ฟิลด์บังคับยังว่าง → preventDefault + stopImmediatePropagation = I Survey ไม่บันทึก
-   * — ครบ → ปล่อยผ่านปกติ; เฉพาะ #tab1_save ส่ง capture (delay 100ms ให้ Ext sync ก่อน)
+   * — ตรวจจาก cache (cache-on-visit) แบบ sync: ครบ → ปล่อยผ่าน, ไม่ครบ → block + แจ้งเตือน
+   * — ยกเลิกเคลม / ปิดฟีเจอร์ / ไม่มีฟิลด์บังคับ → ปล่อยผ่านปกติ
    */
   function attachSaveButtonListener() {
     if (window.__iSurveyHelperSaveListenerAttached) return;
@@ -1476,27 +1591,32 @@
       const esc = (id) => (window.CSS && CSS.escape) ? CSS.escape(id) : id;
       const selector = getSaveButtonIds().map((id) => "#" + esc(id)).join(", ");
       let btn = null;
-      try { btn = ev.target.closest(selector); } catch (_) { return; } // id แปลกใน config → selector พัง: ไม่ block อะไร
+      try { btn = ev.target.closest(selector); } catch (_) { return; } // id แปลกใน config → selector พัง: ไม่ block
       if (!btn) return;
 
-      if (REQUIRED_FIELDS_ENFORCEMENT) {
-        const { ok, missing } = validateRequiredFields();
-        if (!ok) {
-          ev.preventDefault();
-          ev.stopImmediatePropagation();
-          showRequiredFieldsAlert(missing);
-          log(`Save blocked (#${btn.id}): ขาด ${missing.length} ฟิลด์ —`,
-            missing.map((m) => m.label).join(", "));
-          return;
-        }
+      // ปิดฟีเจอร์ / ไม่มีฟิลด์บังคับ / ยกเลิกเคลม → ปล่อยผ่านปกติ (+capture)
+      if (!REQUIRED_FIELDS_ENFORCEMENT || !getRequiredFields().length || readCaseStatus() === "cancel") {
+        if (btn.id === "tab1_save") setTimeout(captureNow, 100);
+        return;
       }
 
+      const { ok, empty, unvisited } = evaluateRequired();
+      if (!ok) {
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        showRequiredFieldsAlert(empty, unvisited);
+        log(`Save blocked (#${btn.id}): ว่าง=[${empty.map((e) => e.id).join(",")}] ` +
+          `ยังไม่เปิดแท็บ=[${unvisited.map((u) => u.id).join(",")}]`);
+        return;
+      }
+
+      // ครบ → ปล่อยผ่านปกติ (host บันทึกเอง) + capture
       if (btn.id === "tab1_save") {
-        log("ยืนยันการตรวจสอบ clicked → capture in 100ms");
+        log("Required ครบ → บันทึกต่อ");
         setTimeout(captureNow, 100);
       }
     }, true);
-    log("Save-button listener attached (required-field gate + capture)");
+    log("Save-button listener attached (cache-on-visit gate + capture)");
   }
 
   // ─────────────────────────────────────────────────────────
