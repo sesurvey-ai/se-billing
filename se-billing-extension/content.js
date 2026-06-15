@@ -1138,6 +1138,31 @@
     return String(readClaimNo() || readSurveyNo() || "");
   }
 
+  // MtypeID ล่าสุดที่อ่านได้ — cache เพราะ tab1_claim_MtypeID อยู่บน Summary ซึ่งถูก
+  // ทำลายตอนสลับแท็บ → ตอนอยู่แท็บอื่น readMtypeId() จะคืน "" ใช้ตัดสินไม่ได้
+  let _reqMtype = "";
+
+  /** MtypeID ที่ "ต้องตรวจ 19 ฟิลด์" — config จาก server, default 1(เคลมสด)/2(เคลมแห้ง) */
+  function getRequiredMtypes() {
+    const m = getCFG().requiredFieldsMtypes;
+    return Array.isArray(m) ? m.map(String) : ["1", "2"];
+  }
+
+  /**
+   * ต้องบังคับ/ระบายสีตอนนี้ไหม — รวมเงื่อนไขทั้งหมดไว้ที่เดียว:
+   *   เปิด enforcement + มีรายการฟิลด์ + ไม่ใช่ "ยกเลิกเคลม" + MtypeID อยู่ในชุดที่ต้องตรวจ
+   * MtypeID 3(ติดตาม)/4(เจรจาสินไหม) ไม่อยู่ใน default → ข้ามทั้งตรวจและสี
+   * (mtypes ว่าง = ไม่กรองตาม MtypeID = ใช้ทุกประเภท)
+   */
+  function requiredFieldsApply() {
+    if (!REQUIRED_FIELDS_ENFORCEMENT) return false;
+    if (!getRequiredFields().length) return false;
+    if (readCaseStatus() === "cancel") return false;
+    const mtypes = getRequiredMtypes();
+    if (mtypes.length && !mtypes.includes(_reqMtype)) return false;
+    return true;
+  }
+
   /**
    * อ่านฟิลด์บังคับที่ "กำลัง available" (แท็บเปิดอยู่) → อัปเดต cache + ไฮไลต์ตัวว่าง
    * ฟิลด์ของแท็บที่ยังไม่เปิด (หาไม่เจอ) → คง cache เดิมไว้ (ไม่ลบ)
@@ -1148,11 +1173,15 @@
     // claim_no/survey_no อยู่บนแท็บ Summary ซึ่ง host ทำลายทิ้งตอนสลับไปแท็บอื่น
     // → key จะกลายเป็น "" ชั่วคราว ห้าม reset ตอนนั้น ไม่งั้น cache ของแท็บ 2/3 หาย
     const key = requiredCacheKey();
-    if (key && key !== _reqCacheClaim) { _reqCacheClaim = key; _reqCache = Object.create(null); }
+    if (key && key !== _reqCacheClaim) { _reqCacheClaim = key; _reqCache = Object.create(null); _reqMtype = ""; }
+
+    // cache MtypeID เมื่ออ่านได้ (อยู่บน Summary) → ใช้ตัดสินได้แม้ตอนอยู่แท็บอื่น
+    const mt = readMtypeId();
+    if (mt) _reqMtype = mt;
+
+    if (!requiredFieldsApply()) { updateRequiredHighlights([]); return; }
 
     const fields = getRequiredFields();
-    if (!fields.length || readCaseStatus() === "cancel") { updateRequiredHighlights([]); return; }
-
     const liveEmpty = [];
     for (const f of fields) {
       if (!f || !f.id) continue;
@@ -1171,9 +1200,9 @@
    *   unvisited = ยังไม่เคยเปิดแท็บที่มีฟิลด์นี้ (หรือ id ผิด/ไม่มีในฟอร์ม) → ต้องเปิดตรวจ
    */
   function evaluateRequired() {
+    refreshRequiredCache(); // sync ค่าล่าสุด (รวม MtypeID) ของแท็บที่เปิดอยู่ก่อนตัดสิน
+    if (!requiredFieldsApply()) return { ok: true, empty: [], unvisited: [] };
     const fields = getRequiredFields();
-    if (!fields.length || readCaseStatus() === "cancel") return { ok: true, empty: [], unvisited: [] };
-    refreshRequiredCache(); // sync ค่าล่าสุดของแท็บที่เปิดอยู่ก่อนตัดสิน
     const empty = [], unvisited = [];
     for (const f of fields) {
       if (!f || !f.id) continue;
@@ -1239,8 +1268,8 @@
 
   /** ระบายสี 3 แท็บตาม cache — เรียกจาก poll หลัง refreshRequiredCache */
   function updateTabColors() {
+    if (!requiredFieldsApply()) { clearTabColors(); return; } // รวม MtypeID 3/4 → ไม่ระบายสี
     const fields = getRequiredFields();
-    if (!fields.length || readCaseStatus() === "cancel") { clearTabColors(); return; }
     for (const m of REQUIRED_TAB_MAP) {
       const el = getTabButtonEl(m.tabCmpId);
       if (!el) continue;
@@ -1594,12 +1623,8 @@
       try { btn = ev.target.closest(selector); } catch (_) { return; } // id แปลกใน config → selector พัง: ไม่ block
       if (!btn) return;
 
-      // ปิดฟีเจอร์ / ไม่มีฟิลด์บังคับ / ยกเลิกเคลม → ปล่อยผ่านปกติ (+capture)
-      if (!REQUIRED_FIELDS_ENFORCEMENT || !getRequiredFields().length || readCaseStatus() === "cancel") {
-        if (btn.id === "tab1_save") setTimeout(captureNow, 100);
-        return;
-      }
-
+      // evaluateRequired คืน ok:true เองเมื่อไม่ต้องตรวจ (ปิดฟีเจอร์ / ไม่มีฟิลด์ /
+      // ยกเลิกเคลม / MtypeID 3-4) → ตกไปทาง "ปล่อยผ่าน + capture" ด้านล่าง
       const { ok, empty, unvisited } = evaluateRequired();
       if (!ok) {
         ev.preventDefault();

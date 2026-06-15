@@ -232,7 +232,10 @@ app.put("/api/required-fields", (req, res) => {
   if (b.saveButtonIds !== undefined && !Array.isArray(b.saveButtonIds)) {
     return res.status(400).json({ error: "saveButtonIds must be an array of strings" });
   }
-  RequiredFields.set({ fields: b.fields, saveButtonIds: b.saveButtonIds });
+  if (b.mtypes !== undefined && !Array.isArray(b.mtypes)) {
+    return res.status(400).json({ error: "mtypes must be an array of strings (e.g. [\"1\",\"2\"])" });
+  }
+  RequiredFields.set({ fields: b.fields, saveButtonIds: b.saveButtonIds, mtypes: b.mtypes });
   res.json({ ok: true, ...RequiredFields.get() });
 });
 

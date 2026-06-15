@@ -248,6 +248,7 @@ export function seedFrom(payload) {
     // (เป็น operational config ของ extension ไม่ใช่ข้อมูลเรท)
     if (Array.isArray(payload.requiredFields)) setSetting("requiredFields", payload.requiredFields);
     if (Array.isArray(payload.saveButtonIds))  setSetting("saveButtonIds",  payload.saveButtonIds);
+    if (Array.isArray(payload.requiredFieldsMtypes)) setSetting("requiredFieldsMtypes", payload.requiredFieldsMtypes);
   });
   return { seeded: true };
 }
@@ -278,6 +279,9 @@ const DEFAULT_REQUIRED_FIELDS = [
   { id: "tab3_lic_no-inputEl",           label: "เลขที่ใบขับขี่" },
 ];
 const DEFAULT_SAVE_BUTTON_IDS = ["tab1_save"];
+// MtypeID ที่ต้องตรวจ 19 ฟิลด์ — "1"=เคลมสด, "2"=เคลมแห้ง (3=ติดตาม/4=เจรจา ไม่ตรวจ)
+// ว่าง = ไม่กรองตาม MtypeID (ตรวจทุกประเภท)
+const DEFAULT_REQUIRED_MTYPES = ["1", "2"];
 
 /** ── Read whole config — ใช้ทั้ง extension fetch + admin/viewer ─────────── */
 export function readConfig() {
@@ -334,11 +338,12 @@ export function readConfig() {
   const modifierFees = getSetting("modifierFees", { outOfArea: 0, outOfHours: 0 });
   const requiredFields = getSetting("requiredFields", DEFAULT_REQUIRED_FIELDS);
   const saveButtonIds  = getSetting("saveButtonIds",  DEFAULT_SAVE_BUTTON_IDS);
+  const requiredFieldsMtypes = getSetting("requiredFieldsMtypes", DEFAULT_REQUIRED_MTYPES);
   return {
     PROVINCE_FEE_MAP, AMPHUR_FEE_MAP, TUMBON_FEE_MAP, AMPHUR_FEE_TABLE,
     TUMBON_FEE_OVERRIDE, SURVEYOR_TEAMS,
     enabledProvinces, modifierFees,
-    requiredFields, saveButtonIds,
+    requiredFields, saveButtonIds, requiredFieldsMtypes,
   };
 }
 
@@ -463,9 +468,10 @@ export const RequiredFields = {
   get: () => ({
     fields:        getSetting("requiredFields", DEFAULT_REQUIRED_FIELDS),
     saveButtonIds: getSetting("saveButtonIds",  DEFAULT_SAVE_BUTTON_IDS),
+    mtypes:        getSetting("requiredFieldsMtypes", DEFAULT_REQUIRED_MTYPES),
   }),
-  // set เฉพาะ key ที่ส่งมา (fields / saveButtonIds) — อีกตัวคงเดิม
-  set: ({ fields, saveButtonIds } = {}) => {
+  // set เฉพาะ key ที่ส่งมา (fields / saveButtonIds / mtypes) — อีกตัวคงเดิม
+  set: ({ fields, saveButtonIds, mtypes } = {}) => {
     if (Array.isArray(fields)) {
       const clean = fields
         .map(f => ({ id: String(f?.id || "").trim(), label: String(f?.label || "").trim() }))
@@ -475,6 +481,11 @@ export const RequiredFields = {
     if (Array.isArray(saveButtonIds)) {
       const ids = saveButtonIds.map(s => String(s || "").trim()).filter(Boolean);
       setSetting("saveButtonIds", ids.length ? ids : DEFAULT_SAVE_BUTTON_IDS);
+    }
+    if (Array.isArray(mtypes)) {
+      // normalize → "1".."4" (ตัด leading zero), เก็บเฉพาะตัวที่ไม่ว่าง
+      const ms = mtypes.map(s => String(s || "").trim().replace(/^0+(?=\d)/, "")).filter(Boolean);
+      setSetting("requiredFieldsMtypes", ms);
     }
   },
 };

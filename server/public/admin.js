@@ -258,6 +258,8 @@ function renderRequiredFields() {
   empty.classList.toggle("hidden", fields.length > 0);
   const sb = document.getElementById("fld-save-buttons");
   if (sb) sb.value = (state.config.saveButtonIds || ["tab1_save"]).join(", ");
+  const mt = document.getElementById("fld-required-mtypes");
+  if (mt) mt.value = (state.config.requiredFieldsMtypes || ["1", "2"]).join(", ");
 }
 
 function renderAll() {
@@ -815,6 +817,7 @@ async function saveRequiredFields() {
   await api.requiredFields.set({
     fields:        state.config.requiredFields || [],
     saveButtonIds: state.config.saveButtonIds  || ["tab1_save"],
+    mtypes:        state.config.requiredFieldsMtypes || ["1", "2"],
   });
 }
 
@@ -935,6 +938,7 @@ function exportJson() {
     modifierFees:        c.modifierFees,
     requiredFields:      c.requiredFields      || [],
     saveButtonIds:       c.saveButtonIds       || ["tab1_save"],
+    requiredFieldsMtypes: c.requiredFieldsMtypes || ["1", "2"],
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -997,10 +1001,10 @@ async function importJson(file) {
     // enabled + modifiers
     calls.push(api.enabledProvinces.set(data.enabledProvinces));
     calls.push(api.modifiers.set(data.modifierFees));
-    // requiredFields/saveButtonIds: optional (ไฟล์ export เก่าไม่มี key นี้ — ข้ามได้)
-    if (Array.isArray(data.requiredFields) || Array.isArray(data.saveButtonIds)) {
+    // requiredFields/saveButtonIds/mtypes: optional (ไฟล์ export เก่าไม่มี key นี้ — ข้ามได้)
+    if (Array.isArray(data.requiredFields) || Array.isArray(data.saveButtonIds) || Array.isArray(data.requiredFieldsMtypes)) {
       calls.push(api.requiredFields.set({
-        fields: data.requiredFields, saveButtonIds: data.saveButtonIds,
+        fields: data.requiredFields, saveButtonIds: data.saveButtonIds, mtypes: data.requiredFieldsMtypes,
       }));
     }
     await Promise.all(calls);
@@ -1044,6 +1048,17 @@ async function main() {
       await saveRequiredFields();
       renderRequiredFields();
       showStatus("บันทึกรายการปุ่มบันทึก");
+    } catch (e) { showStatus(e.message, true); }
+  };
+
+  document.getElementById("save-required-mtypes").onclick = async () => {
+    const raw = document.getElementById("fld-required-mtypes").value || "";
+    const ms = raw.split(",").map(s => s.trim()).filter(Boolean);
+    state.config.requiredFieldsMtypes = ms; // ว่าง = ตรวจทุก MtypeID
+    try {
+      await saveRequiredFields();
+      renderRequiredFields();
+      showStatus("บันทึก MtypeID ที่ต้องตรวจ");
     } catch (e) { showStatus(e.message, true); }
   };
 
