@@ -37,7 +37,7 @@ function render() {
   for (const r of state.rows) {
     if (search) {
       const hay = [r.province_name, r.amphur_name, r.tumbon_name, r.surveyor_name, r.oss_company,
-                   r.claim_no, r.survey_no, r.province_id, r.amphur_id, r.tumbon_id]
+                   r.claim_no, r.survey_no, r.province_id, r.amphur_id, r.tumbon_id, r.dispatch_date]
         .filter(Boolean).join(" ").toLowerCase();
       if (!hay.includes(search)) continue;
     }
@@ -63,6 +63,7 @@ function render() {
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
+      <td class="timestamp">${r.dispatch_date || ""}</td>
       <td class="timestamp">${fmtTs(r.ts)}</td>
       <td>${r.claim_no  || ""}</td>
       <td>${r.survey_no || ""}</td>

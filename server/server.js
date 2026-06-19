@@ -287,6 +287,7 @@ app.post("/api/captures", (req, res) => {
 
   const r = Captures.insert({
     ts: b.ts,
+    dispatch_date: b.dispatch_date || null,   // "วันจ่ายงาน" (date + time string จาก tab Summary)
     province_id:   b.province_id   || null,
     province_name: b.province_name || ref.byProvinceId[String(b.province_id || "")] || null,
     amphur_id:     b.amphur_id     || null,
@@ -347,6 +348,7 @@ app.get("/api/captures.xlsx", async (req, res) => {
   // Layout match หน้า /captures: ลบ Mode + SE column, รวม "นอกพื้นที่/ยอด" เป็นช่องเดียว,
   // เพิ่ม "รวมบริษัท" / "รวมพนักงาน", "พนักงาน" = base derive (ไม่ใช่ sur_invest ใน DB)
   ws.columns = [
+    { header: "วันจ่ายงาน",        key: "dispatch_date",   width: 18 },
     { header: "วัน-เวลา",          key: "ts",              width: 22 },
     { header: "เลขเคลม",          key: "claim_no",        width: 18 },
     { header: "เลขเซอร์เวย์",      key: "survey_no",       width: 22 },
@@ -387,6 +389,7 @@ app.get("/api/captures.xlsx", async (req, res) => {
       : (r.surveyor_name || "") + (r.is_se ? " (SE)" : "");
 
     ws.addRow({
+      dispatch_date:    r.dispatch_date || "",
       ts:               r.ts ? new Date(r.ts).toLocaleString("th-TH", { hour12: false }) : "",
       claim_no:         r.claim_no  || "",
       survey_no:        r.survey_no || "",

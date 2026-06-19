@@ -75,6 +75,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS captures (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     ts              TEXT NOT NULL,
+    dispatch_date   TEXT,
     province_id     TEXT,
     province_name   TEXT,
     amphur_id       TEXT,
@@ -123,6 +124,8 @@ ensureColumn("captures", "oss_company",     "TEXT");
 //   → แยกหน้าแสดง /captures (close + legacy null) vs /cancelled (cancel)
 ensureColumn("captures", "case_status",     "TEXT");
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_captures_status ON captures(case_status);"); } catch {}
+// v2.7.20: เก็บ "วันจ่ายงาน" (จ่ายงานเวลา จาก tab Summary) — date + time เป็น string เดียว
+ensureColumn("captures", "dispatch_date",   "TEXT");
 // v2.8: Chonburi team-based rates
 ensureColumn("amphur_table", "sur_invest_by_team", "TEXT");
 // v2.9: Kanchanaburi per-team INS_TRANS override (+ flat fallback)
@@ -494,15 +497,16 @@ export const RequiredFields = {
 export const Captures = {
   insert: (rec) => db.prepare(`
     INSERT INTO captures(
-      ts, province_id, province_name, amphur_id, amphur_name, tumbon_id, tumbon_name,
+      ts, dispatch_date, province_id, province_name, amphur_id, amphur_name, tumbon_id, tumbon_name,
       mtype_id, claim_no, survey_no, case_status, surveyor_name, oss_company, is_se, inspector_name,
       sur_invest, ins_invest, ins_trans, ins_photo,
       out_of_area, out_of_area_amt, out_of_hours, out_of_hours_amt, deduct_amt,
       late_submit, incomplete_docs,
       mode, raw
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     rec.ts || new Date().toISOString(),
+    rec.dispatch_date ?? null,
     rec.province_id ?? null, rec.province_name ?? null,
     rec.amphur_id ?? null, rec.amphur_name ?? null,
     rec.tumbon_id ?? null, rec.tumbon_name ?? null,

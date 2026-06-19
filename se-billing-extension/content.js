@@ -102,6 +102,8 @@
       serviceTypeInputId:  'tab1_service_type-inputEl',
       subAreaCmpId:        'tab1_chk_sub_area',            // checkbox sub-area (inject ได้ — feature-sub-area-checkbox.js)
       subAreaInputId:      'tab1_chk_sub_area-inputEl',
+      dispatchDateInputId: 'tab1_dispatch_date-inputEl',  // วันจ่ายงาน (datefield, เช่น "14/06/2026") — tab Summary
+      dispatchTimeInputId: 'tab1_dispatch_time-inputEl',  // เวลาจ่ายงาน (timefield, เช่น "13:31")
     },
     CFG.selectors || {}
   );
@@ -307,6 +309,21 @@
     const el = document.getElementById(SEL.surveyNoInputId);
     const v = el && el.value ? String(el.value).trim() : "";
     return v || null;
+  }
+
+  /**
+   * อ่าน "วันจ่ายงาน" (จ่ายงานเวลา) จาก tab Summary — รวมวันที่ + เวลาเป็น string เดียว
+   *   date จาก tab1_dispatch_date-inputEl (เช่น "14/06/2026")
+   *   time จาก tab1_dispatch_time-inputEl (เช่น "13:31")
+   * คืน "14/06/2026 13:31" / "14/06/2026" (ถ้าไม่มีเวลา) / null (ถ้าว่างทั้งคู่)
+   */
+  function readDispatchDateTime() {
+    const dateEl = document.getElementById(SEL.dispatchDateInputId);
+    const timeEl = document.getElementById(SEL.dispatchTimeInputId);
+    const date = dateEl && dateEl.value ? String(dateEl.value).trim() : "";
+    const time = timeEl && timeEl.value ? String(timeEl.value).trim() : "";
+    if (!date && !time) return null;
+    return [date, time].filter(Boolean).join(" ");
   }
 
   /**
@@ -1021,6 +1038,7 @@
 
     return {
       ts: new Date().toISOString(),
+      dispatch_date: readDispatchDateTime(),
       province_id: provinceId || null,
       province_name: lookupName("province", provinceId) || null,
       amphur_id: amphurId || null,
