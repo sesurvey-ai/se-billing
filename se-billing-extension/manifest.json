@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "SE-Billing",
   "version": "2.8.0",
-  "description": "Auto-fill ค่าบริการในระบบ I Survey (cloud.isurvey.mobi) ตามจังหวัด/อำเภอ/ประเภทเคลม + บันทึก log การกรอกฟอร์ม + dashboard งานค้างต่อหัวหน้า (extenBoard)",
+  "description": "Auto-fill ค่าบริการ I Survey ตามจังหวัด/อำเภอ/ประเภทเคลม + บันทึก log + dashboard งานค้างต่อหัวหน้า",
   "icons": {
     "16": "icon-16.png",
     "48": "icon-48.png",
