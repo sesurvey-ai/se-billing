@@ -7,3 +7,13 @@ Thumbs.db
 
 # secret — API token note (must never be committed)
 New เอกสารข้อความ.txt
+
+# scraper (moved from extenBoard) — secrets + employee PII, keep local only
+/scraper/config.json
+/scraper/claim_index.sqlite
+/scraper/last_payload.json
+/scraper/run.log
+/scraper/.venv/
+/scraper/__pycache__/
+/mapping_supervisor_staff_.json
+/scraper/mapping_unmatched_TODO.md

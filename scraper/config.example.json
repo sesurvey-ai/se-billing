@@ -1,0 +1,24 @@
+{
+  "isurvey": {
+    "login_url": "https://cloud.isurvey.mobi/main.php",
+    "username": "",
+    "password": ""
+  },
+  "emcs": {
+    "login_url": "https://eclaim3.blueventuregroup.co.th/esurvey/frmMainPage.aspx",
+    "username": "",
+    "password": ""
+  },
+  "vps": {
+    "upload_url": "https://YOUR-VPS-HOST/upload",
+    "token": "CHANGE_ME_SHARED_SECRET"
+  },
+  "settings": {
+    "backfill_years": 2,
+    "isurvey_daily_days": 30,
+    "emcs_max_age_years": 2,
+    "isurvey_chunk_days": 31,
+    "headless": true,
+    "request_pause_ms": 150
+  }
+}
