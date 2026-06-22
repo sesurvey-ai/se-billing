@@ -7,21 +7,41 @@
 </head>
 <body>
   <header>
-    <div class="title">เลือกจังหวัดที่ใช้งานประจำ</div>
-    <div class="counter"><span id="count">0</span> / <span id="total">77</span></div>
+    <div class="title" id="hdr-title">งานค้าง</div>
+    <div class="counter" id="hdr-counter" style="display:none"><span id="count">0</span> / <span id="total">77</span></div>
   </header>
 
-  <div class="toolbar">
-    <input type="search" id="search" placeholder="ค้นหาจังหวัด..." autocomplete="off" />
-    <button id="select-all" class="btn">เลือกทั้งหมด</button>
-    <button id="clear-all" class="btn btn-secondary">ล้างทั้งหมด</button>
-  </div>
+  <nav class="tabs">
+    <button class="tab" data-tab="prov">เลือกจังหวัด</button>
+    <button class="tab active" data-tab="dash">งานค้าง</button>
+  </nav>
 
-  <div id="list" class="list"></div>
+  <!-- ── แท็บ: เลือกจังหวัด (ของเดิม) ─────────────────────────────── -->
+  <section id="tab-prov" class="tabpane">
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="ค้นหาจังหวัด..." autocomplete="off" />
+      <button id="select-all" class="btn">เลือกทั้งหมด</button>
+      <button id="clear-all" class="btn btn-secondary">ล้างทั้งหมด</button>
+    </div>
 
-  <footer>
-    <span id="status" class="hint">เปลี่ยนแปลงมีผลทันที — เลือก 0 = แสดงทั้ง 77 จังหวัด</span>
-  </footer>
+    <div id="list" class="list"></div>
+
+    <footer>
+      <span id="status" class="hint">เปลี่ยนแปลงมีผลทันที — เลือก 0 = แสดงทั้ง 77 จังหวัด</span>
+    </footer>
+  </section>
+
+  <!-- ── แท็บ: งานค้าง (extenBoard dashboard) ───────────────────── -->
+  <section id="tab-dash" class="tabpane active">
+    <div class="dash-bar">
+      <div id="dash-supbar" class="dash-supbar"></div>
+      <button id="dash-refresh" class="btn" title="ดึงข้อมูลล่าสุด">↻</button>
+    </div>
+    <div id="dash-content" class="dash-content"><div class="hint">กำลังโหลด…</div></div>
+    <footer>
+      <span id="dash-meta" class="hint"></span>
+    </footer>
+  </section>
 
   <script src="popup.js"></script>
 </body>

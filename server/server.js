@@ -36,7 +36,7 @@ import {
   seedFromDefaults, seedFrom, readConfig,
   ProvinceRate, AmphurOverride, TumbonOverride, AmphurTable,
   TumbonOverrideTable, SurveyorTeams,
-  EnabledProvinces, Modifiers, RequiredFields, Captures,
+  EnabledProvinces, Modifiers, RequiredFields, Captures, Dashboard,
 } from "./db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -422,6 +422,23 @@ app.get("/api/captures.xlsx", async (req, res) => {
   res.setHeader("Content-Disposition", `attachment; filename="${fname}"`);
   await wb.xlsx.write(res);
   res.end();
+});
+
+// ── Dashboard (extenBoard "งานค้าง" per-supervisor snapshot) ────────────────
+// scraper (เครื่อง admin) อัป snapshot รายวัน → extension อ่านมาแสดง dashboard
+// ใช้ Bearer API_TOKEN เดียวกับ /api/* อื่น (กั้นโดย middleware ด้านบนแล้ว)
+app.post("/api/dashboard", (req, res) => {
+  const p = req.body;
+  if (!p || typeof p !== "object" || !Array.isArray(p.supervisors)) {
+    return res.status(400).json({ error: "payload missing 'supervisors' array" });
+  }
+  Dashboard.set(p);
+  res.json({ ok: true, stored: p.date || null, supervisors: p.supervisors.length });
+});
+app.get("/api/dashboard", (_req, res) => {
+  const d = Dashboard.get();
+  if (!d) return res.status(404).json({ error: "no dashboard data uploaded yet" });
+  res.json(d);
 });
 
 // ── Static (viewer + admin pages) ──────────────────────────────────────────

@@ -493,6 +493,13 @@ export const RequiredFields = {
   },
 };
 
+/** ── Dashboard snapshot (extenBoard: per-supervisor backlog counts) ────────── */
+// เก็บ snapshot ล่าสุดที่ scraper อัปมา (JSON ก้อนเดียวใน settings) — มีแต่ตัวเลขสรุป ไม่มี PII
+export const Dashboard = {
+  get: () => getSetting("dashboard_latest", null),
+  set: (payload) => setSetting("dashboard_latest", payload),
+};
+
 /** ── Captures ───────────────────────────────────────────────────────────── */
 export const Captures = {
   insert: (rec) => db.prepare(`

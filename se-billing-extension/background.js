@@ -13,6 +13,7 @@
  *   { type: "fetch-config" }                  → { ok, config }   หรือ { ok:false, error }
  *   { type: "fetch-reference" }               → { ok, reference }
  *   { type: "send-capture", data }            → { ok, id }       หรือ { ok:false, error }
+ *   { type: "dashboard-data" }                → { ok, data }     (งานค้างต่อหัวหน้า; ok:false ถ้ายังไม่มี)
  *   { type: "ping-server" }                   → { ok, healthz }
  *
  * Default server URL: https://billing.sesurvey.cloud (override ได้ผ่าน options.html)
@@ -117,6 +118,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
             body: JSON.stringify(msg.data || {}),
           });
           sendResponse({ ok: true, id: r.id });
+          break;
+        }
+        case "dashboard-data": {
+          // GET /api/dashboard — snapshot งานค้างต่อหัวหน้า (extenBoard)
+          // 404 = ยังไม่มีข้อมูล (scraper ยังไม่อัป) → คืน ok:false ให้ผู้เรียกจัดการเงียบ ๆ
+          const data = await fetchJson("/api/dashboard");
+          sendResponse({ ok: true, data });
           break;
         }
         case "ping-server": {

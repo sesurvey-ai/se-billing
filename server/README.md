@@ -48,6 +48,7 @@ node server.js
 | GET / PUT | `/api/required-fields` | `{ fields: [{id, label}], saveButtonIds: [...] }` | ฟิลด์บังคับกรอก — extension block ปุ่มบันทึกถ้ายังว่าง (v2.7.16) |
 | POST / GET / DELETE / DELETE (`:id`) | `/api/captures` | rec | เก็บ/อ่าน/ลบ capture log |
 | GET    | `/api/captures.xlsx?provinceId=…` | — | ดาวน์โหลด Excel ของ captures (ExcelJS) |
+| POST / GET | `/api/dashboard` | snapshot งานค้างต่อหัวหน้า | extenBoard: scraper อัป (POST), extension อ่าน (GET) — เก็บใน setting `dashboard_latest` |
 
 ### Capture validation
 - ถ้า `deduct_amt > 0` ต้องมี `late_submit: true` หรือ `incomplete_docs: true`

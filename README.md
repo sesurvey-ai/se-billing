@@ -23,6 +23,9 @@ se-billing/
   - `/captures`      → **รายละเอียด** ข้อมูลที่จับจากฟอร์ม (public)
   - `/admin/captures`→ **รายละเอียด** + ปุ่มลบรายตัว/Clear all (admin)
   - Export Excel (.xlsx) จากหน้า captures
+- **Dashboard "งานค้าง" (รวมจาก extenBoard, v2.8.0)** — extension แสดงงานค้างต่อหัวหน้า
+  (badge บนหน้า isurvey + แท็บใน popup, คลิกหัวคอลัมน์เรียงได้) อ่านจาก `GET /api/dashboard` ;
+  สคริปต์ Python (extenBoard `scraper/`) ดึง isurvey+emcs มารวมต่อหัวหน้าแล้ว `POST /api/dashboard` รายวัน
 
 ## เริ่มใช้งานเร็วที่สุด
 
