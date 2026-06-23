@@ -16,4 +16,7 @@ New เอกสารข้อความ.txt
 /scraper/.venv/
 /scraper/__pycache__/
 /mapping_supervisor_staff_.json
+/mapping_supervisor_staff_.bak.json
 /scraper/mapping_unmatched_TODO.md
+# temp roster-analysis scripts
+/_*.py
