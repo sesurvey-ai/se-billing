@@ -36,7 +36,7 @@ import {
   seedFromDefaults, seedFrom, readConfig,
   ProvinceRate, AmphurOverride, TumbonOverride, AmphurTable,
   TumbonOverrideTable, SurveyorTeams,
-  EnabledProvinces, Modifiers, RequiredFields, Captures, Dashboard,
+  EnabledProvinces, Modifiers, RequiredFields, Captures, Dashboard, DashboardConfig,
 } from "./db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -438,7 +438,23 @@ app.post("/api/dashboard", (req, res) => {
 app.get("/api/dashboard", (_req, res) => {
   const d = Dashboard.get();
   if (!d) return res.status(404).json({ error: "no dashboard data uploaded yet" });
-  res.json(d);
+  // merge admins + aliases (config-driven) → badge/popup ใช้ตัดสินใจ admin/alias โดยไม่ hardcode
+  const cfg = DashboardConfig.get();
+  res.json({ ...d, admins: cfg.admins, aliases: cfg.aliases });
+});
+
+// ── Dashboard config (admins + name aliases) — แก้ผ่าน /admin (config-driven) ──
+app.get("/api/dashboard-config", (_req, res) => res.json(DashboardConfig.get()));
+app.put("/api/dashboard-config", (req, res) => {
+  const b = req.body || {};
+  if (b.admins !== undefined && !Array.isArray(b.admins)) {
+    return res.status(400).json({ error: "admins must be an array of names" });
+  }
+  if (b.aliases !== undefined && (typeof b.aliases !== "object" || Array.isArray(b.aliases))) {
+    return res.status(400).json({ error: "aliases must be an object { loginName: snapshotName }" });
+  }
+  DashboardConfig.set({ admins: b.admins, aliases: b.aliases });
+  res.json({ ok: true, ...DashboardConfig.get() });
 });
 
 // ── Static (viewer + admin pages) ──────────────────────────────────────────

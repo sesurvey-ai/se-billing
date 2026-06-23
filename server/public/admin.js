@@ -15,6 +15,8 @@ const TABLE_FIELDS = [
 let state = {
   config: null,            // PROVINCE_FEE_MAP / AMPHUR_FEE_MAP / TUMBON_FEE_MAP / AMPHUR_FEE_TABLE / enabledProvinces / modifierFees
   ref: null,               // provinces/amphurs/tumbons (lists + maps)
+  dashboardConfig: null,   // { admins:[], aliases:{} } — badge/popup งานค้าง
+  dashboard: null,         // snapshot งานค้าง (best-effort — ใช้ทำ datalist ชื่อ snapshot)
 };
 
 const statusEl = () => document.getElementById("status");
@@ -30,6 +32,11 @@ const amphurIdFromTumbonId   = (id) => String(id).substring(0, 4);
 
 async function loadAll() {
   [state.config, state.ref] = await Promise.all([api.config(), api.reference()]);
+  // dashboard config (admins+aliases) + snapshot (best-effort: snapshot อาจ 404 ถ้า scraper ยังไม่อัป)
+  try { state.dashboardConfig = await api.dashboardConfig.get(); }
+  catch { state.dashboardConfig = { admins: [], aliases: {} }; }
+  try { state.dashboard = await api.dashboard.get(); }
+  catch { state.dashboard = null; }
 }
 
 async function reloadConfig() {
@@ -272,6 +279,7 @@ function renderAll() {
   renderEnabled();
   renderModifiers();
   renderRequiredFields();
+  renderDashboardConfig();
 }
 
 // ─── Modal helpers ───
@@ -917,11 +925,123 @@ async function handleAction(action, id) {
       renderRequiredFields();
       showStatus(`ลบ ${f.label || f.id}`);
     },
+    "delete-dash-admin": async () => {
+      if (!confirm(`ลบ admin "${id}"?`)) return;
+      const admins = (state.dashboardConfig?.admins || []).filter(a => a !== id);
+      await api.dashboardConfig.set({ admins });
+      state.dashboardConfig.admins = admins;
+      renderDashboardConfig();
+      showStatus(`ลบ admin: ${id}`);
+    },
+    "edit-dash-alias":   () => openDashAliasModal(id),
+    "delete-dash-alias": async () => {
+      if (!confirm(`ลบชื่อแทน "${id}"?`)) return;
+      const next = { ...(state.dashboardConfig?.aliases || {}) };
+      delete next[id];
+      await api.dashboardConfig.set({ aliases: next });
+      state.dashboardConfig.aliases = next;
+      renderDashboardConfig();
+      showStatus(`ลบชื่อแทน: ${id}`);
+    },
   };
   if (map[action]) {
     try { await map[action](); }
     catch (e) { showStatus(e.message, true); }
   }
+}
+
+// ─── Dashboard config (admins + aliases) ───
+function renderDashboardConfig() {
+  const cfg = state.dashboardConfig || { admins: [], aliases: {} };
+
+  // admins
+  const at = document.querySelector("#table-dash-admins tbody");
+  const ae = document.getElementById("empty-dash-admins");
+  at.innerHTML = "";
+  const admins = (cfg.admins || []).slice().sort((a, b) => String(a).localeCompare(String(b), "th"));
+  for (const name of admins) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${name}</td>
+      <td class="actions">
+        <button class="btn btn-icon btn-danger" data-action="delete-dash-admin" data-id="${name}">ลบ</button>
+      </td>`;
+    at.appendChild(tr);
+  }
+  ae.classList.toggle("hidden", admins.length > 0);
+
+  // aliases
+  const lt = document.querySelector("#table-dash-aliases tbody");
+  const le = document.getElementById("empty-dash-aliases");
+  lt.innerHTML = "";
+  const entries = Object.entries(cfg.aliases || {}).sort((a, b) => String(a[0]).localeCompare(String(b[0]), "th"));
+  for (const [login, snap] of entries) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${login}</td>
+      <td>${snap}</td>
+      <td class="actions">
+        <button class="btn btn-icon" data-action="edit-dash-alias" data-id="${login}">แก้</button>
+        <button class="btn btn-icon btn-danger" data-action="delete-dash-alias" data-id="${login}">ลบ</button>
+      </td>`;
+    lt.appendChild(tr);
+  }
+  le.classList.toggle("hidden", entries.length > 0);
+}
+
+function openDashAdminModal() {
+  const body = `
+    <div class="form-row">
+      <label>ชื่อ admin (ตามที่ขึ้นในแถบ "Hi, …") *</label>
+      <input type="text" id="fld-admin-name" placeholder="เช่น นพดล สมบูรณ์กุล" />
+      <span class="error-msg" id="err-admin"></span>
+    </div>`;
+  openModal("เพิ่ม admin", body, async () => {
+    const name = (document.getElementById("fld-admin-name").value || "").trim();
+    if (!name) { document.getElementById("err-admin").textContent = "กรอกชื่อ"; return false; }
+    const admins = (state.dashboardConfig?.admins || []).slice();
+    if (admins.includes(name)) { document.getElementById("err-admin").textContent = "มีชื่อนี้แล้ว"; return false; }
+    admins.push(name);
+    await api.dashboardConfig.set({ admins });
+    state.dashboardConfig = state.dashboardConfig || {};
+    state.dashboardConfig.admins = admins;
+    renderDashboardConfig();
+    showStatus(`เพิ่ม admin: ${name}`);
+    return true;
+  });
+}
+
+function openDashAliasModal(loginKey = null) {
+  const isEdit = loginKey !== null;
+  const aliases = state.dashboardConfig?.aliases || {};
+  const curSnap = isEdit ? (aliases[loginKey] || "") : "";
+  // datalist = รายชื่อจริงใน snapshot → เลือกให้ตรงตัวสะกด ไม่ต้องพิมพ์เอง
+  const snapNames = ((state.dashboard && state.dashboard.supervisors) || []).map(s => s.name);
+  const dl = snapNames.map(n => `<option value="${n}">`).join("");
+  const body = `
+    <div class="form-row">
+      <label>ชื่อตอน login (header isurvey) *</label>
+      <input type="text" id="fld-alias-login" value="${loginKey || ""}" ${isEdit ? "disabled" : ""} placeholder="เช่น ธนัช หรินทรสุทธิ" />
+      <span class="error-msg" id="err-alias"></span>
+    </div>
+    <div class="form-row">
+      <label>→ ชื่อในข้อมูล snapshot (เลือกจากรายชื่อจริง) *</label>
+      <input type="text" id="fld-alias-snap" value="${curSnap}" list="snap-suggestions" placeholder="เช่น นาย สันติ หรินทรสุทธิ" />
+      <datalist id="snap-suggestions">${dl}</datalist>
+    </div>`;
+  openModal(isEdit ? `แก้ชื่อแทน ${loginKey}` : "เพิ่มชื่อแทน", body, async () => {
+    const login = isEdit ? loginKey : (document.getElementById("fld-alias-login").value || "").trim();
+    const snap = (document.getElementById("fld-alias-snap").value || "").trim();
+    if (!login || !snap) { document.getElementById("err-alias").textContent = "กรอกครบ"; return false; }
+    const next = { ...(state.dashboardConfig?.aliases || {}) };
+    next[login] = snap;
+    await api.dashboardConfig.set({ aliases: next });
+    state.dashboardConfig = state.dashboardConfig || {};
+    state.dashboardConfig.aliases = next;
+    renderDashboardConfig();
+    showStatus(`บันทึกชื่อแทน: ${login} → ${snap}`);
+    return true;
+  });
 }
 
 // ─── Import/Export/Reset ───
@@ -1039,6 +1159,8 @@ async function main() {
   document.getElementById("add-tumbon-override").onclick  = () => openTumbonOverrideModal();
   document.getElementById("add-surveyor-team").onclick    = () => openSurveyorTeamModal();
   document.getElementById("add-required-field").onclick   = () => openRequiredFieldModal();
+  document.getElementById("add-dash-admin").onclick       = () => openDashAdminModal();
+  document.getElementById("add-dash-alias").onclick       = () => openDashAliasModal();
 
   document.getElementById("save-save-buttons").onclick = async () => {
     const raw = document.getElementById("fld-save-buttons").value || "";

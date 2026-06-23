@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SE-Billing",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "Auto-fill ค่าบริการ I Survey ตามจังหวัด/อำเภอ/ประเภทเคลม + บันทึก log + dashboard งานค้างต่อหัวหน้า",
   "icons": {
     "16": "icon-16.png",

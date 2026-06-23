@@ -89,6 +89,13 @@ const api = {
     get: () => req("GET", "/api/required-fields"),
     set: (cfg) => req("PUT", "/api/required-fields", cfg), // { fields, saveButtonIds }
   },
+  dashboard: {
+    get: () => req("GET", "/api/dashboard"), // snapshot งานค้าง (อาจ 404 ถ้า scraper ยังไม่อัป)
+  },
+  dashboardConfig: {
+    get: () => req("GET", "/api/dashboard-config"),
+    set: (cfg) => req("PUT", "/api/dashboard-config", cfg), // { admins, aliases }
+  },
   captures: {
     list:   ({ limit = 100, offset = 0, provinceId, status } = {}) => {
       const q = new URLSearchParams();

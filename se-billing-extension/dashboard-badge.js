@@ -16,8 +16,21 @@
       .replace(/^(นางสาว|นาง|นาย|น\.ส\.|คุณ)\s*/, "")
       .replace(/\s+/g, "");
   }
-  const ADMIN_NORM = norm("นพดล สมบูรณ์กุล");
   const TITLE_ID = "main-tab_header-title-textEl";
+
+  // admins[] + aliases{} มาจาก payload /api/dashboard (config-driven ที่ /admin)
+  //   admins  = ชื่อหัวหน้าที่เห็นยอดรวมทั้งบริษัท ; fallback = [นพดล] (คงพฤติกรรมเดิม)
+  //   aliases = { ชื่อตอน login : ชื่อใน snapshot } — map ชื่อ login → bucket ที่ถูกต้อง
+  const DEFAULT_ADMINS = ["นพดล สมบูรณ์กุล"];
+  function adminNormSet(data) {
+    const arr = (data && Array.isArray(data.admins)) ? data.admins : DEFAULT_ADMINS;
+    return new Set(arr.map(norm));
+  }
+  function resolveAlias(data, n) {
+    const al = (data && data.aliases) || null;
+    if (al) for (const k in al) { if (norm(k) === n) return norm(al[k]); }
+    return n;
+  }
 
   let lastNorm = null;     // กันเขียน storage ซ้ำ
   let curNorm = null;      // ชื่อ (normalized) ที่กำลังแสดงบน header ตอนนี้
@@ -28,11 +41,12 @@
   function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
   function pickCounts(data) {
     const sups = (data && data.supervisors) || [];
-    const s = sups.find((x) => norm(x.name) === curNorm);
+    const eff = resolveAlias(data, curNorm);   // ชื่อ login → ชื่อ snapshot (ถ้ามี alias)
+    const s = sups.find((x) => norm(x.name) === eff);
     if (s) {
       return { backlog: num(s.isurvey_backlog), edit: num(s.emcs_edit), cont: num(s.emcs_continuous), tag: null };
     }
-    if (curNorm === ADMIN_NORM) {
+    if (adminNormSet(data).has(curNorm)) {
       const t = (data && data.totals) || {};
       return { backlog: num(t.isurvey_backlog), edit: num(t.emcs_edit), cont: num(t.emcs_continuous), tag: "ทั้งบริษัท" };
     }
@@ -78,8 +92,9 @@
 
   function collectItems(key) {
     const sups = (cache && cache.supervisors) || [];
-    const own = sups.find((x) => norm(x.name) === curNorm);
-    const list = own ? [own] : (curNorm === ADMIN_NORM ? sups : []); // admin -> รวมทุกหัวหน้า
+    const eff = resolveAlias(cache, curNorm);
+    const own = sups.find((x) => norm(x.name) === eff);
+    const list = own ? [own] : (adminNormSet(cache).has(curNorm) ? sups : []); // admin -> รวมทุกหัวหน้า
     const rows = [];
     list.forEach((s) => (s[key] || []).forEach((it) => rows.push(it)));
     return rows;

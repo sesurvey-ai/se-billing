@@ -33,6 +33,7 @@
     <button class="tab" data-tab="enabled">Whitelist จังหวัด</button>
     <button class="tab" data-tab="modifiers">Modifier defaults</button>
     <button class="tab" data-tab="required-fields">ฟิลด์บังคับ</button>
+    <button class="tab" data-tab="dashboard-config">Dashboard งานค้าง</button>
   </nav>
 
   <main>
@@ -210,6 +211,39 @@
         </label>
         <span class="unit">1=เคลมสด 2=เคลมแห้ง 3=ติดตาม 4=เจรจาสินไหม</span>
         <button id="save-required-mtypes" class="btn btn-primary">บันทึก MtypeID</button>
+      </div>
+    </section>
+
+    <section class="panel hidden" data-panel="dashboard-config">
+      <div class="panel-header">
+        <h2>Dashboard "งานค้าง" — admin + ชื่อแทน</h2>
+        <p class="hint">ตั้งค่า badge งานค้าง (หน้า isurvey) + แท็บงานค้างใน popup โดยไม่ต้องแก้โค้ด extension<br>
+          <b>Admin</b> = หัวหน้าที่เห็นยอดรวมทั้งบริษัท (ตามชื่อที่ขึ้นในแถบ "Hi, …") ·
+          <b>ชื่อแทน (alias)</b> = map ชื่อตอน login → ชื่อในข้อมูล snapshot (ใช้เมื่อเปลี่ยนชื่อ/สะกดต่าง เช่น ธนัช → นาย สันติ หรินทรสุทธิ)</p>
+      </div>
+
+      <h3 style="margin:16px 0 6px">Admin (เห็นยอดรวมทุกหัวหน้า)</h3>
+      <div class="panel-actions">
+        <button id="add-dash-admin" class="btn btn-primary">+ เพิ่ม admin</button>
+      </div>
+      <div class="table-wrap">
+        <table id="table-dash-admins">
+          <thead><tr><th>ชื่อ (ตามที่ขึ้นในแถบ "Hi, …")</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-dash-admins">ยังไม่มี admin — ไม่มีใครเห็นยอดรวมทั้งบริษัท</div>
+      </div>
+
+      <h3 style="margin:20px 0 6px">ชื่อแทน (alias: ชื่อ login → ชื่อใน snapshot)</h3>
+      <div class="panel-actions">
+        <button id="add-dash-alias" class="btn btn-primary">+ เพิ่มชื่อแทน</button>
+      </div>
+      <div class="table-wrap">
+        <table id="table-dash-aliases">
+          <thead><tr><th>ชื่อตอน login (header isurvey)</th><th>→ ชื่อในข้อมูล snapshot</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-state hidden" id="empty-dash-aliases">ยังไม่มีชื่อแทน</div>
       </div>
     </section>
   </main>

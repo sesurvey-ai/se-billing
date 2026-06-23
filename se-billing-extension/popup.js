@@ -153,7 +153,18 @@
       .replace(/^(นางสาว|นาง|นาย|น\.ส\.|คุณ)\s*/, "")
       .replace(/\s+/g, "");
   }
-  const ADMIN_NORM = norm("นพดล สมบูรณ์กุล");
+  // admins[] + aliases{} มาจาก payload /api/dashboard (config-driven ที่ /admin)
+  //   admins = หัวหน้าที่เห็นยอดรวมทั้งบริษัท (fallback = [นพดล]) ; aliases = { ชื่อ login : ชื่อ snapshot }
+  const DEFAULT_ADMINS = ["นพดล สมบูรณ์กุล"];
+  function adminNormSet(data) {
+    const arr = (data && Array.isArray(data.admins)) ? data.admins : DEFAULT_ADMINS;
+    return new Set(arr.map(norm));
+  }
+  function resolveAlias(data, n) {
+    const al = (data && data.aliases) || null;
+    if (al) for (const k in al) { if (norm(k) === n) return norm(al[k]); }
+    return n;
+  }
   function esc(s) { const d = document.createElement("div"); d.textContent = (s == null ? "" : String(s)); return d.innerHTML; }
   function fmtWhen(iso) { if (!iso) return "-"; try { return new Date(iso).toLocaleString("th-TH"); } catch (e) { return iso; } }
   function sendBg(type) {
@@ -291,13 +302,14 @@
     const st = await getStore(["supervisor", "override"]);
     const detNorm = st.supervisor && st.supervisor.norm;
     const detDisplay = (st.supervisor && st.supervisor.display) || "";
-    const isAdmin = detNorm === ADMIN_NORM;
-    const showAll = isAdmin || !detNorm;   // admin (นพดล) หรือยังตรวจชื่อไม่ได้ -> เลือกได้ทุกคน; ไม่งั้นล็อกของตัวเอง
+    const isAdmin = adminNormSet(data).has(detNorm);
+    const showAll = isAdmin || !detNorm;   // admin หรือยังตรวจชื่อไม่ได้ -> เลือกได้ทุกคน; ไม่งั้นล็อกของตัวเอง
     if (showAll) {
       const selected = (st.override && sups.some((s) => s.name === st.override)) ? st.override : (sups[0] && sups[0].name);
       render(data, selected, true, null);
     } else {
-      const m = sups.find((s) => norm(s.name) === detNorm);
+      const eff = resolveAlias(data, detNorm);   // ชื่อ login → ชื่อ snapshot (ถ้ามี alias)
+      const m = sups.find((s) => norm(s.name) === eff);
       render(data, m ? m.name : null, false, detDisplay);
     }
   }

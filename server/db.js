@@ -500,6 +500,36 @@ export const Dashboard = {
   set: (payload) => setSetting("dashboard_latest", payload),
 };
 
+/** ── Dashboard config (admins + name aliases) — แก้ผ่าน /admin ไม่ต้องแก้โค้ด ext ──
+ * admins:  ชื่อหัวหน้า (ตามที่ขึ้นใน header isurvey) ที่ให้เห็นยอดรวมทั้งบริษัท
+ * aliases: { "ชื่อตอน login" : "ชื่อใน snapshot" } — ใช้ตอนชื่อ login ≠ ชื่อใน mapping
+ *          (เปลี่ยนชื่อ / สะกดต่าง) badge+popup จะ map ชื่อ login → bucket ที่ถูกต้อง
+ * default admins = [นพดล] เพื่อคงพฤติกรรมเดิมแม้ยังไม่เคยตั้งค่า
+ */
+const DEFAULT_DASHBOARD_ADMINS = ["นพดล สมบูรณ์กุล"];
+export const DashboardConfig = {
+  get: () => ({
+    admins:  getSetting("dashboard_admins",  DEFAULT_DASHBOARD_ADMINS),
+    aliases: getSetting("dashboard_aliases", {}),
+  }),
+  // set เฉพาะ key ที่ส่งมา (admins / aliases) — อีกตัวคงเดิม
+  set: ({ admins, aliases } = {}) => {
+    if (Array.isArray(admins)) {
+      const clean = admins.map(s => String(s || "").trim()).filter(Boolean);
+      setSetting("dashboard_admins", clean);
+    }
+    if (aliases && typeof aliases === "object" && !Array.isArray(aliases)) {
+      const clean = {};
+      for (const [k, v] of Object.entries(aliases)) {
+        const kk = String(k || "").trim();
+        const vv = String(v || "").trim();
+        if (kk && vv) clean[kk] = vv;
+      }
+      setSetting("dashboard_aliases", clean);
+    }
+  },
+};
+
 /** ── Captures ───────────────────────────────────────────────────────────── */
 export const Captures = {
   insert: (rec) => db.prepare(`
