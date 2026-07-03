@@ -500,38 +500,6 @@ def upload(cfg_vps, payload):
         print(f"[upload] saved payload locally -> {out}")
 
 
-def carry_over_prev_emcs(payload, cfg_vps):
-    """emcs login ล่ม (rows ว่าง) -> อย่าทับ dashboard ด้วย emcs=0. ดึง snapshot เดิมจาก server
-    แล้วคง emcs (counts + items + unmatched) ของหัวหน้าแต่ละคนไว้ ส่วน isurvey ใช้ค่าใหม่ (fresh).
-    ถ้าดึง snapshot เดิมไม่ได้ -> ปล่อย emcs=0 ตามเดิม (best-effort)."""
-    import requests
-    try:
-        r = requests.get(cfg_vps["upload_url"],
-                         headers={"Authorization": f"Bearer {cfg_vps['token']}"}, timeout=60)
-        r.raise_for_status()
-        prev = r.json()
-    except Exception as e:
-        print(f"[emcs] carry-over: ดึง snapshot เดิมไม่ได้ ({e}) — emcs จะเป็น 0 (ยอมรับ)")
-        return payload
-    prev_by_name = {s.get("name"): s for s in (prev.get("supervisors") or [])}
-    carried = 0
-    for s in payload.get("supervisors", []):
-        p = prev_by_name.get(s.get("name"))
-        if not p:
-            continue
-        for k in ("emcs_edit", "emcs_continuous", "emcs_edit_items", "emcs_continuous_items"):
-            if k in p:
-                s[k] = p[k]
-        carried += 1
-    t = payload.setdefault("totals", {})
-    t["emcs_edit"] = sum(int(s.get("emcs_edit") or 0) for s in payload.get("supervisors", []))
-    t["emcs_continuous"] = sum(int(s.get("emcs_continuous") or 0) for s in payload.get("supervisors", []))
-    if isinstance(prev.get("unmatched"), dict) and "emcs" in prev["unmatched"]:
-        payload.setdefault("unmatched", {})["emcs"] = prev["unmatched"]["emcs"]
-    print(f"[emcs] carry-over: คง emcs เดิมของ {carried} หัวหน้า (isurvey อัปเดตปกติ)")
-    return payload
-
-
 # --------------------------------------------------------------------------- #
 # Modes
 # --------------------------------------------------------------------------- #
@@ -604,13 +572,13 @@ def run_daily(cfg, headless, emcs_only=False):
                 print(f"[emcs] {name}: {len(rows)} rows")
                 emcs_lists[name] = rows
         else:
-            print("[emcs] login FAILED after 3 tries — ไม่ทับข้อมูล emcs เดิม (carry over จาก snapshot)")
+            # ตั้งใจปล่อยให้ emcs=0 ขึ้น dashboard = สัญญาณเตือนว่ามีปัญหา (เช่น รหัส emcs หมดอายุ)
+            # — ดีกว่าคง "ตัวเลขล่าสุด" ที่จะซ่อนปัญหาไว้ (จอดูปกติทั้งที่ค้าง)
+            print("[emcs] login FAILED after 3 tries — จะแสดง emcs=0 เป็นสัญญาณเตือน (ตรวจ emcs.password ใน config.json; emcs บังคับเปลี่ยนรหัสทุก 3 เดือน)")
 
         browser.close()
 
     payload = aggregate_daily(con, isurvey_rows, emcs_lists, mapping, s["emcs_max_age_years"])
-    if not emcs_ok:                                    # guard: อย่าทับ emcs ด้วย 0 เมื่อ login ล่ม
-        payload = carry_over_prev_emcs(payload, cfg["vps"])
     print(f"[daily] totals: {payload['totals']}  unmatched: {payload['unmatched']}")
     upload(cfg["vps"], payload)
 
