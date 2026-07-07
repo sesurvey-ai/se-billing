@@ -234,6 +234,23 @@ def _dump_login_form(page, tag):
         print(f"[{tag}] could not read form structure: {e}")
 
 
+def _dismiss_emcs_popup(page):
+    """ปิด popup ประกาศ/maintenance (PR modal: #divPR / #prImage / .modalPR) ที่บังปุ่ม LOGIN ของ emcs."""
+    try:
+        page.evaluate(
+            """() => {
+                ['#divPR', '.modalPR', '.ImgPR', '#prImage'].forEach(s =>
+                  document.querySelectorAll(s).forEach(el => {
+                    try { el.style.setProperty('display', 'none', 'important'); } catch (e) {}
+                    try { el.style.pointerEvents = 'none'; } catch (e) {}
+                    try { el.remove(); } catch (e) {}
+                  }));
+            }"""
+        )
+    except Exception:
+        pass
+
+
 def login_emcs(page, cfg):
     if not cfg.get("username") or not cfg.get("password"):
         sys.exit("[!] emcs.username / emcs.password are empty in config.json — fill the EMCS section.")
@@ -245,10 +262,16 @@ def login_emcs(page, cfg):
         if email.count():
             email.fill(cfg["username"])
         page.locator("input[type=password]").first.fill(cfg["password"])
+        _dismiss_emcs_popup(page)   # ปิด popup ประกาศ/maintenance ที่บังปุ่ม LOGIN
         btn = page.locator("button:has-text('LOGIN'), input[type=submit], button[type=submit]").first
-        if btn.count():
-            btn.click()
-        else:
+        try:
+            if btn.count():
+                btn.click(timeout=15000)
+            else:
+                page.locator("input[type=password]").first.press("Enter")
+        except Exception:
+            # popup กลับมาบัง / คลิกไม่ได้ -> ปิดอีกรอบ แล้วส่งฟอร์มด้วย Enter (keyboard ไม่ผ่าน overlay)
+            _dismiss_emcs_popup(page)
             page.locator("input[type=password]").first.press("Enter")
         page.wait_for_load_state("networkidle", timeout=60000)
     # The SE inbox ($sname links) lives on frmMainPage WITH its P1..P30 context. emcs often lands on
@@ -422,29 +445,54 @@ def new_sup_bucket():
             "emcs_edit": 0, "isurvey_items": [], "emcs_continuous_items": [], "emcs_edit_items": []}
 
 
-def aggregate_daily(con, isurvey_rows, emcs_lists, mapping, max_age_years):
+def aggregate_daily(con, isurvey_rows, emcs_lists, mapping, max_age_years, survey_prefix_owners=None,
+                    fallback_label="sesurvey"):
     code_to_sup, company_to_sups, norm_sup_to_display, supervisors = mapping
-    buckets = {s: new_sup_bucket() for s in supervisors}
-    unmatched = {"isurvey_backlog": 0, "emcs": 0}
+    # survey_no prefix rule: งานที่ "เลขเซอร์เวย์" ขึ้นต้นด้วย prefix ที่กำหนด = ของหัวหน้าคนนั้นทันที
+    # (เช่น SETP/SEMS -> นายสราวุธ) โดยไม่ต้อง map ผู้สำรวจ — เพราะผู้สำรวจใช้ร่วมกับทีมอื่น (กทม./ปริมณฑล)
+    # ออกสำรวจให้บริษัทอื่น ; prefix ชนะการ map ตามผู้สำรวจ (exclusive)
+    prefix_items = [(p.upper(), sup) for p, sup in (survey_prefix_owners or {}).items()]
+    # buckets = หัวหน้าใน mapping + เจ้าของ prefix (เผื่อเจ้าของ prefix ยังไม่อยู่ใน mapping staff)
+    ordered_sups = list(supervisors)
+    for _, sup in prefix_items:
+        if sup not in ordered_sups:
+            ordered_sups.append(sup)
+    buckets = {s: new_sup_bucket() for s in ordered_sups}
+
+    def bucket_for(name):
+        """คืน bucket ของ name — สร้าง + ต่อท้าย ordered ถ้ายังไม่มี
+        (ใช้กับ fallback 'sesurvey' และผู้ปิดงาน emcs ที่ไม่อยู่ใน mapping — ให้ทุกงานมีที่แสดง admin เห็นครบ)"""
+        if name not in buckets:
+            buckets[name] = new_sup_bucket()
+            ordered_sups.append(name)
+        return buckets[name]
+
+    unmatched = {"isurvey_backlog": 0, "emcs": 0}   # คงไว้เพื่อ diagnostic (ปกติ 0 เพราะ route ลง bucket หมด)
     today = date.today()
     cutoff = today - timedelta(days=int(round(max_age_years * 365.25)))
 
-    # --- isurvey backlog (status != จบงาน & != ยกเลิกเคลม) attributed by surveyor ---
+    # --- isurvey backlog (status != จบงาน & != ยกเลิกเคลม) ---
     for r in isurvey_rows:
         status = (r.get("stt_desc") or "").strip()
         if status in BACKLOG_EXCLUDE:
             continue
-        owners = surveyor_supervisors(r.get("empcode"), code_to_sup, company_to_sups)
+        survey_no = (r.get("survey_no") or "").strip()
+        # 1) survey_no prefix rule (exclusive) มาก่อน ; 2) ไม่เข้าเงื่อนไข -> map ตามผู้สำรวจตามปกติ
+        prefix_owner = next((sup for p, sup in prefix_items if survey_no.upper().startswith(p)), None)
+        if prefix_owner:
+            owners = {prefix_owner}
+        else:
+            owners = surveyor_supervisors(r.get("empcode"), code_to_sup, company_to_sups)
         disp = parse_isurvey_dt(r.get("dispatch_dt"))
         aging = (today - disp.date()).days if disp else None
         item = {"claim_no": (r.get("claim_no") or "").strip(),
+                "survey_no": survey_no or None,
                 "surveyor": r.get("empcode"), "status": status,
                 "dispatch_dt": r.get("dispatch_dt"), "aging_days": aging}
-        if not owners:
-            unmatched["isurvey_backlog"] += 1
-            continue
+        if not owners:                       # ไม่เข้า mapping + ไม่เข้า SETP/SEMS -> catch-all "sesurvey"
+            owners = {fallback_label}
         for sup in owners:
-            b = buckets[sup]
+            b = bucket_for(sup)
             b["isurvey_backlog"] += 1
             b["isurvey_by_status"][status] = b["isurvey_by_status"].get(status, 0) + 1
             b["isurvey_items"].append(item)
@@ -461,12 +509,14 @@ def aggregate_daily(con, isurvey_rows, emcs_lists, mapping, max_age_years):
             closer = index_lookup_closer(con, claim_no)
             sup = closer_supervisor(closer, norm_sup_to_display) if closer else None
             if not sup:
-                unmatched["emcs"] += 1
-                continue
+                # ผู้ปิดงานไม่อยู่ใน mapping -> แสดงตามชื่อจริง (admin เห็นทุกคน เช่น เจษ/วิชชา) ;
+                # หา closer ไม่ได้ (เคลมไม่อยู่ใน index) -> catch-all "sesurvey"
+                sup = closer if closer else fallback_label
             key = "emcs_edit" if category == "edit" else "emcs_continuous"
-            buckets[sup][key] += 1
+            b = bucket_for(sup)
+            b[key] += 1
             aging = (today - d).days if d else None
-            buckets[sup][key + "_items"].append({"claim_no": claim_no, "date": date_str, "aging_days": aging})
+            b[key + "_items"].append({"claim_no": claim_no, "date": date_str, "aging_days": aging})
 
     totals = {
         "isurvey_backlog": sum(b["isurvey_backlog"] for b in buckets.values()),
@@ -476,7 +526,7 @@ def aggregate_daily(con, isurvey_rows, emcs_lists, mapping, max_age_years):
     return {
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "date": today.isoformat(),
-        "supervisors": [dict(name=s, **buckets[s]) for s in supervisors],
+        "supervisors": [dict(name=s, **buckets[s]) for s in ordered_sups],
         "unmatched": unmatched,
         "totals": totals,
     }
@@ -559,11 +609,16 @@ def run_daily(cfg, headless, emcs_only=False):
         # 2) emcs: claim lists for the two backlog categories
         emcs_page = ctx.new_page()
         emcs_ok = False
-        for attempt in range(1, 4):                    # retry emcs login (session flake -> 0 emcs)
-            if login_emcs(emcs_page, cfg["emcs"]):
-                emcs_ok = True
-                break
-            print(f"[emcs] login attempt {attempt}/3 failed (SE inbox not present) — retry")
+        for attempt in range(1, 4):                    # retry emcs login (session flake / maintenance popup -> 0 emcs)
+            try:
+                if login_emcs(emcs_page, cfg["emcs"]):
+                    emcs_ok = True
+                    break
+                print(f"[emcs] login attempt {attempt}/3 failed (SE inbox not present) — retry")
+            except Exception as e:
+                # emcs อาจมี popup maintenance บังปุ่ม LOGIN / timeout — อย่าให้ทั้ง run crash
+                # (isurvey ต้อง upload ได้ ; emcs ล้ม -> ตกไปทาง emcs=0 = โชว์ปัญหา)
+                print(f"[emcs] login attempt {attempt}/3 error: {type(e).__name__}: {str(e)[:120]} — retry")
             emcs_page.wait_for_timeout(3000)
         emcs_lists = {}
         if emcs_ok:
@@ -578,7 +633,10 @@ def run_daily(cfg, headless, emcs_only=False):
 
         browser.close()
 
-    payload = aggregate_daily(con, isurvey_rows, emcs_lists, mapping, s["emcs_max_age_years"])
+    prefix_owners = cfg.get("survey_prefix_owners", {})
+    fallback_label = cfg.get("fallback_label", "sesurvey")
+    payload = aggregate_daily(con, isurvey_rows, emcs_lists, mapping, s["emcs_max_age_years"],
+                              prefix_owners, fallback_label)
     print(f"[daily] totals: {payload['totals']}  unmatched: {payload['unmatched']}")
     upload(cfg["vps"], payload)
 

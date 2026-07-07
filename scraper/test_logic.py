@@ -3,8 +3,15 @@
 Run:  python test_logic.py
 Uses the REAL mapping_supervisor_staff_.json + realistic sample rows."""
 import sqlite3
+import sys
 from datetime import date, datetime, timedelta
 import pull_data as P
+
+# ให้ print ภาษาไทย/emoji ไม่ crash บน Windows console (cp874) — เขียน UTF-8 เสมอ
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
 
 FAILS = []
 def check(name, cond):
@@ -34,24 +41,27 @@ check("isurvey datetime", P.parse_isurvey_dt("2026-06-18 16:17") == datetime(202
 # ---- mapping resolution (real file) ----
 mapping = P.load_mapping()
 code_to_sup, company_to_sups, norm_sup_to_display, supervisors = mapping
-check("map: 7 supervisors", len(supervisors) == 7)
+check("map: 9 supervisors incl. สราวุธ", len(supervisors) == 9 and "นายสราวุธ บุญคุ้ม" in supervisors)
 check("map: ศุภชัย is a key", "นาย ศุภชัย เศรษฐชัยชาญ" in supervisors)
 check("map: SEC125 -> ศุภชัย", code_to_sup.get("SEC125") == "นาย ศุภชัย เศรษฐชัยชาญ")
-check("map: SE445 -> ภูรี ชูลาภโชคทวี", code_to_sup.get("SE445") == "นายภูรี ชูลาภโชคทวี")
-check("surveyor SE445 -> {ภูรี ชูลาภโชคทวี}",
-      P.surveyor_supervisors("SE445 นายวีระพงษ์ แก้วเขียว", code_to_sup, company_to_sups) == {"นายภูรี ชูลาภโชคทวี"})
+check("map: SE445 -> ภูริ ภัทรภิรัก", code_to_sup.get("SE445") == "นายภูริ ภัทรภิรัก")
+check("surveyor SE445 -> {ภูริ ภัทรภิรัก}",
+      P.surveyor_supervisors("SE445 นายวีระพงษ์ แก้วเขียว", code_to_sup, company_to_sups) == {"นายภูริ ภัทรภิรัก"})
 shared = P.surveyor_supervisors("หจก ศรีราชาเคลม เซอร์วิส", code_to_sup, company_to_sups)
 check("shared outsource under >=2 supervisors", len(shared) >= 2)
 check("closer 'นายภูริ ภัทรภิรัก' -> key", P.closer_supervisor("นายภูริ ภัทรภิรัก", norm_sup_to_display) == "นายภูริ ภัทรภิรัก")
 check("closer 'นายวรภพ หัตถิยา' (spacing) -> 'นาย วรภพ หัตถิยา'",
       P.closer_supervisor("นายวรภพ หัตถิยา", norm_sup_to_display) == "นาย วรภพ หัตถิยา")
+check("closer 'ธนัช หรินทรสุทธิ' -> 'นาย ธนัช หรินทรสุทธิ' (สันติ เปลี่ยนชื่อเป็น ธนัช)",
+      P.closer_supervisor("ธนัช หรินทรสุทธิ", norm_sup_to_display) == "นาย ธนัช หรินทรสุทธิ")
 
 # ---- end-to-end aggregate_daily (in-memory index) ----
 con = sqlite3.connect(":memory:")
 con.execute("""CREATE TABLE claim_closer(claim_no TEXT PRIMARY KEY, closer TEXT, surveyor TEXT,
                status TEXT, dispatch_dt TEXT, checker_dt TEXT, updated TEXT)""")
 con.executemany("INSERT INTO claim_closer(claim_no,closer) VALUES(?,?)",
-                [("C1", "นาย ศุภชัย เศรษฐชัยชาญ"), ("C2", "นายภูริ ภัทรภิรัก")])
+                [("C1", "นาย ศุภชัย เศรษฐชัยชาญ"), ("C2", "นายภูริ ภัทรภิรัก"),
+                 ("C9", "นาย เจษ ผินกลับ")])   # ผู้ปิดงานที่ไม่อยู่ใน mapping
 con.commit()
 
 today = date.today()
@@ -63,6 +73,8 @@ isurvey_rows = [
     {"claim_no": "B4", "empcode": "SEC125 นาย สมภพ ปั้นเปรื่อง", "stt_desc": "ยกเลิกเคลม",      "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
     {"claim_no": "B5", "empcode": "หจก ศรีราชาเคลม เซอร์วิส",    "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
     {"claim_no": "B6", "empcode": "SE999 ไม่รู้จัก",            "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
+    {"claim_no": "B7", "survey_no": "SETP-6907-000123", "empcode": "SE445 นายวีระพงษ์ แก้วเขียว", "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
+    {"claim_no": "B8", "survey_no": "SEMS6907000124",   "empcode": "SEC125 นาย สมภพ ปั้นเปรื่อง", "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
 ]
 INV = {v: k for k, v in P.THAI_MONTHS.items()}
 def thai(d):
@@ -70,26 +82,38 @@ def thai(d):
 recent = today - timedelta(days=20)
 oldd = today - timedelta(days=900)  # > 2 years
 emcs_lists = {
-    "continuous": [(thai(recent), "C1"), (thai(oldd), "C2"), (thai(recent), "C2"), (thai(recent), "UNKNOWN")],
+    "continuous": [(thai(recent), "C1"), (thai(oldd), "C2"), (thai(recent), "C2"),
+                   (thai(recent), "UNKNOWN"), (thai(recent), "C9")],
     "edit": [(thai(recent), "C1")],
 }
-out = P.aggregate_daily(con, isurvey_rows, emcs_lists, mapping, 2)
+PREFIX_OWNERS = {"SETP": "นายสราวุธ บุญคุ้ม", "SEMS": "นายสราวุธ บุญคุ้ม"}
+out = P.aggregate_daily(con, isurvey_rows, emcs_lists, mapping, 2, PREFIX_OWNERS)
 sup = {s["name"]: s for s in out["supervisors"]}
 S = sup["นาย ศุภชัย เศรษฐชัยชาญ"]
 B = sup["นายภูริ ภัทรภิรัก"]
 PR = sup["นายภูรี ชูลาภโชคทวี"]
-SN = sup["นาย สันติ หรินทรสุทธิ"]
+SN = sup["นาย ธนัช หรินทรสุทธิ"]   # เดิม "นาย สันติ หรินทรสุทธิ" — เปลี่ยนชื่อเป็น ธนัช (rename)
+SAR = sup["นายสราวุธ บุญคุ้ม"]
 
 check("agg: ศุภชัย backlog = 2 (B1 + shared B5)", S["isurvey_backlog"] == 2)
-check("agg: สันติ backlog = 1 (shared B5)", SN["isurvey_backlog"] == 1)
-check("agg: ภูรี ชูลาภ backlog = 1 (B2)", PR["isurvey_backlog"] == 1)
+check("agg: ธนัช (เดิม สันติ) backlog = 1 (shared B5)", SN["isurvey_backlog"] == 1)
+check("agg: ภูริ ภัทรภิรัก backlog = 1 (B2, SE445)", B["isurvey_backlog"] == 1)
+check("agg: ภูรี ชูลาภโชคทวี (คนละคน, ไม่มีงานใน fixture) backlog = 0", PR["isurvey_backlog"] == 0)
 check("agg: จบงาน & ยกเลิก excluded from backlog", "จบงาน" not in S["isurvey_by_status"] and "ยกเลิกเคลม" not in S["isurvey_by_status"])
-check("agg: unmatched isurvey backlog = 1 (B6)", out["unmatched"]["isurvey_backlog"] == 1)
+check("agg: B6 (ผู้สำรวจนอก mapping) -> bucket 'sesurvey'", sup["sesurvey"]["isurvey_backlog"] == 1)
+check("agg: ไม่มี isurvey unmatched แล้ว (ไป sesurvey หมด)", out["unmatched"]["isurvey_backlog"] == 0)
 check("agg: ศุภชัย emcs continuous=1, edit=1 (C1)", S["emcs_continuous"] == 1 and S["emcs_edit"] == 1)
 check("agg: ภูริ ภัทรภิรัก emcs continuous=1 (C2 recent; old filtered)", B["emcs_continuous"] == 1)
-check("agg: unmatched emcs = 1 (UNKNOWN claim)", out["unmatched"]["emcs"] == 1)
+check("agg: เจษ (ผู้ปิดงานนอก mapping) emcs continuous=1 -> bucket ตามชื่อจริง", sup["นาย เจษ ผินกลับ"]["emcs_continuous"] == 1)
+check("agg: UNKNOWN (หา closer ไม่ได้) -> sesurvey emcs continuous=1", sup["sesurvey"]["emcs_continuous"] == 1)
+check("agg: ไม่มี emcs unmatched แล้ว", out["unmatched"]["emcs"] == 0)
 check("agg: aging_days computed (int)", isinstance(S["isurvey_items"][0]["aging_days"], int))
 
+# ---- survey_no prefix rule (SETP/SEMS -> นายสราวุธ, exclusive: ชนะการ map ตามผู้สำรวจ) ----
+check("agg: สราวุธ backlog = 2 (SETP B7 + SEMS B8 by survey_no)", SAR["isurvey_backlog"] == 2)
+check("agg: SETP job NOT double-counted to surveyor's sup (ภูริ ภัทรภิรัก stays 1)", B["isurvey_backlog"] == 1)
+check("agg: SEMS job NOT double-counted to surveyor's sup (ศุภชัย stays 2)", S["isurvey_backlog"] == 2)
+check("agg: survey_no kept on isurvey item", any((it.get("survey_no") or "").startswith("SETP") for it in SAR["isurvey_items"]))
+
 print("\n" + ("ALL PASS ✅" if not FAILS else f"FAILED {len(FAILS)}: " + "; ".join(FAILS)))
-import sys
 sys.exit(1 if FAILS else 0)

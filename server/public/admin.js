@@ -1021,12 +1021,12 @@ function openDashAliasModal(loginKey = null) {
   const body = `
     <div class="form-row">
       <label>ชื่อตอน login (header isurvey) *</label>
-      <input type="text" id="fld-alias-login" value="${loginKey || ""}" ${isEdit ? "disabled" : ""} placeholder="เช่น ธนัช หรินทรสุทธิ" />
+      <input type="text" id="fld-alias-login" value="${loginKey || ""}" ${isEdit ? "disabled" : ""} placeholder="ชื่อที่ขึ้นตอน login (ในแถบ Hi, …)" />
       <span class="error-msg" id="err-alias"></span>
     </div>
     <div class="form-row">
       <label>→ ชื่อในข้อมูล snapshot (เลือกจากรายชื่อจริง) *</label>
-      <input type="text" id="fld-alias-snap" value="${curSnap}" list="snap-suggestions" placeholder="เช่น นาย สันติ หรินทรสุทธิ" />
+      <input type="text" id="fld-alias-snap" value="${curSnap}" list="snap-suggestions" placeholder="ชื่อหัวหน้าในข้อมูล snapshot" />
       <datalist id="snap-suggestions">${dl}</datalist>
     </div>`;
   openModal(isEdit ? `แก้ชื่อแทน ${loginKey}` : "เพิ่มชื่อแทน", body, async () => {

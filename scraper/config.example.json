@@ -20,5 +20,10 @@
     "isurvey_chunk_days": 31,
     "headless": true,
     "request_pause_ms": 150
-  }
+  },
+  "survey_prefix_owners": {
+    "SETP": "ชื่อหัวหน้า (survey_no ขึ้นต้น SETP = งานค้างของคนนี้ทันที ไม่ต้อง map ผู้สำรวจ)",
+    "SEMS": "ชื่อหัวหน้า"
+  },
+  "fallback_label": "sesurvey"
 }
