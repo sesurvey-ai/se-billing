@@ -72,7 +72,7 @@ isurvey_rows = [
     {"claim_no": "B3", "empcode": "SEC125 นาย สมภพ ปั้นเปรื่อง", "stt_desc": "จบงาน",          "dispatch_dt": disp, "checkByName": "นาย ศุภชัย เศรษฐชัยชาญ", "checker_dt": disp},
     {"claim_no": "B4", "empcode": "SEC125 นาย สมภพ ปั้นเปรื่อง", "stt_desc": "ยกเลิกเคลม",      "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
     {"claim_no": "B5", "empcode": "หจก ศรีราชาเคลม เซอร์วิส",    "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
-    {"claim_no": "B6", "empcode": "SE999 ไม่รู้จัก",            "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
+    {"survey_no": "SEABI-000006", "empcode": "SE999 ไม่รู้จัก",  "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},   # ไม่มี claim_no -> fallback survey_no
     {"claim_no": "B7", "survey_no": "SETP-6907-000123", "empcode": "SE445 นายวีระพงษ์ แก้วเขียว", "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
     {"claim_no": "B8", "survey_no": "SEMS6907000124",   "empcode": "SEC125 นาย สมภพ ปั้นเปรื่อง", "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
 ]
@@ -101,6 +101,7 @@ check("agg: ภูริ ภัทรภิรัก backlog = 1 (B2, SE445)", B
 check("agg: ภูรี ชูลาภโชคทวี (คนละคน, ไม่มีงานใน fixture) backlog = 0", PR["isurvey_backlog"] == 0)
 check("agg: จบงาน & ยกเลิก excluded from backlog", "จบงาน" not in S["isurvey_by_status"] and "ยกเลิกเคลม" not in S["isurvey_by_status"])
 check("agg: B6 (ผู้สำรวจนอก mapping) -> bucket 'sesurvey'", sup["sesurvey"]["isurvey_backlog"] == 1)
+check("agg: claim_no ว่าง -> item.claim_no fallback เป็น survey_no", sup["sesurvey"]["isurvey_items"][0]["claim_no"] == "SEABI-000006")
 check("agg: ไม่มี isurvey unmatched แล้ว (ไป sesurvey หมด)", out["unmatched"]["isurvey_backlog"] == 0)
 check("agg: ศุภชัย emcs continuous=1, edit=1 (C1)", S["emcs_continuous"] == 1 and S["emcs_edit"] == 1)
 check("agg: ภูริ ภัทรภิรัก emcs continuous=1 (C2 recent; old filtered)", B["emcs_continuous"] == 1)

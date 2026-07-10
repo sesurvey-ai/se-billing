@@ -485,7 +485,8 @@ def aggregate_daily(con, isurvey_rows, emcs_lists, mapping, max_age_years, surve
             owners = surveyor_supervisors(r.get("empcode"), code_to_sup, company_to_sups)
         disp = parse_isurvey_dt(r.get("dispatch_dt"))
         aging = (today - disp.date()).days if disp else None
-        item = {"claim_no": (r.get("claim_no") or "").strip(),
+        claim_no = (r.get("claim_no") or "").strip()
+        item = {"claim_no": claim_no or survey_no,   # ยังไม่มีเลขเคลม (งานเพิ่งจ่าย) -> fallback เป็นเลขเซอร์เวย์
                 "survey_no": survey_no or None,
                 "surveyor": r.get("empcode"), "status": status,
                 "dispatch_dt": r.get("dispatch_dt"), "aging_days": aging}
