@@ -795,7 +795,7 @@
    * ถ้า ≤ 0 หรือว่าง → clear ทั้งสอง
    * ทำงานทุก mode (ไม่ขึ้นกับ AMPHUR_FEE_TABLE หรือ enabledProvinces)
    */
-  function syncClaimPercentages() {
+  function syncClaimPercentages(surPctOverride) {
     const recvCmp = getExtCmp(SEL.recvClaimCmpId);
     let raw = null;
     if (recvCmp && typeof recvCmp.getValue === "function") {
@@ -814,11 +814,12 @@
       return;
     }
 
+    // surPctOverride (เช่น บริษัท 2 = 0.05 เสมอ) ชนะ SE/non-SE detection
     const isSE   = isSurveyorSE();
-    const surPct = isSE ? 0.05 : 0.10;
+    const surPct = (surPctOverride != null) ? surPctOverride : (isSE ? 0.05 : 0.10);
     const surVal = Math.round(num * surPct * 100) / 100;
     const insVal = Math.round(num * 0.10  * 100) / 100;
-    const tag    = isSE ? "SE" : "non-SE";
+    const tag    = (surPctOverride != null) ? `override ${surPct * 100}%` : (isSE ? "SE" : "non-SE");
     setOneField(SEL.surClaimCmpId, SEL.surClaimInput, surVal,
       `SUR_CLAIM (${surPct * 100}% ของ ${num}, ${tag})`);
     setOneField(SEL.insClaimCmpId, SEL.insClaimInput, insVal,
@@ -923,13 +924,84 @@
     return true;
   }
 
+  // ─────────────────────────────────────────────────────────
+  // บริษัท 2 (SETP/SEMS) — auto-fill ตาม prefix เลขเซอร์เวย์
+  //   ระบุงานด้วย survey_no ขึ้นต้น SETP หรือ SEMS (ไม่ใช้ province/amphur)
+  //   v1: เลขราคาเก็บใน COMPANY2_RULES ในโค้ด (แก้แล้ว reload extension)
+  //       — โครงสร้างแยกเลขไว้ก้อนเดียว ต่อยอดเป็น config /admin ภายหลังได้
+  //
+  //   INS_INVEST (ค่าบริการ ฝั่งอนุมัติ/ประกัน):
+  //     service_type = "ต่อเนื่อง"          → continuous
+  //     ≠ ต่อเนื่อง + MtypeID 1/2 (สด/แห้ง) → mtype12
+  //     ≠ ต่อเนื่อง + MtypeID 3 (ติดตาม)    → mtypeFollow
+  //     MtypeID 4 (เจรจาสินไหม) / ว่าง       → ไม่เซ็ต (ปล่อยกรอกเอง)
+  //   claim: SUR_CLAIM 5% / INS_CLAIM 10% ของ RECV_CLAIM (เสมอ ไม่สน SE/OSS)
+  //   SUR_INVEST / INS_TRANS / INS_OTHER: ไม่แตะ (กรอกเอง)
+  //   ค่าคัดประจำวัน (radio ถูก/ผิด): จัดการใน feature-daily-check-amount.js
+  //     (SETP = ค่าเริ่มต้นคูณตามข้อ ; SEMS = ปิด "ผิด" + ถูก→50/100 คงที่)
+  // ─────────────────────────────────────────────────────────
+  const COMPANY2_RULES = {
+    SETP: { continuous: 300, mtype12: 650, mtypeFollow: 400 },
+    SEMS: { continuous: 300, mtype12: 600, mtypeFollow: 500 },
+  };
+  const COMPANY2_CLAIM_SUR_PCT = 0.05; // SUR_CLAIM = 5% ของ RECV_CLAIM (INS_CLAIM = 10% เสมอ)
+
+  /** อ่าน prefix เลขเซอร์เวย์ → "SETP" | "SEMS" | null */
+  function readSurveyPrefix() {
+    const sv = String(readSurveyNo() || "").trim().toUpperCase();
+    if (sv.indexOf("SETP") === 0) return "SETP";
+    if (sv.indexOf("SEMS") === 0) return "SEMS";
+    return null;
+  }
+
+  /**
+   * บริษัท 2 override — เติมค่าตาม prefix (SETP/SEMS) แทนตรรกะ province เดิม
+   * caller (syncFeeFromLocation) เรียกเมื่อ readSurveyPrefix() != null แล้ว return ทันที
+   */
+  function applyCompany2Pricing(prefix) {
+    const rule = COMPANY2_RULES[prefix];
+    if (!rule) return;
+
+    // claim % — 5% / 10% เสมอ (ไม่สน SE/OSS)
+    syncClaimPercentages(COMPANY2_CLAIM_SUR_PCT);
+
+    // INS_INVEST ตาม service_type / MtypeID
+    const st = readServiceType();
+    const mt = readMtypeId();
+    let insInvest = null;
+    let why = "";
+    if (st === "ต่อเนื่อง") {
+      insInvest = rule.continuous; why = "ต่อเนื่อง";
+    } else if (mt === "1" || mt === "2") {
+      insInvest = rule.mtype12; why = "สด/แห้ง";
+    } else if (mt === "3") {
+      insInvest = rule.mtypeFollow; why = "ติดตาม";
+    }
+    // MtypeID 4 (เจรจาสินไหม) / ว่าง → insInvest = null → ไม่แตะ (กรอกเอง)
+
+    if (insInvest !== null) {
+      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, insInvest,
+        `INS_INVEST [${prefix} ${why}]`);
+    }
+    // SUR_INVEST / INS_TRANS / INS_OTHER: ไม่แตะ (ปล่อยกรอกเอง)
+  }
+
   /**
    * Entry point: เลือก mode ตามว่า amphurId อยู่ใน AMPHUR_FEE_TABLE หรือไม่
    *   - อยู่ → multi-field (ระยอง)
    *   - ไม่อยู่ → simple SUR_INVEST (กทม. ฯลฯ)
-   * "ต่อเนื่อง" / "ไม่พบ" override ทำงานก่อน — ถ้า apply แล้วจะ short-circuit
+   * บริษัท 2 (SETP/SEMS) / "ต่อเนื่อง" / "ไม่พบ" override ทำงานก่อน — ถ้า apply แล้ว short-circuit
    */
   function syncFeeFromLocation() {
+    // บริษัท 2 (SETP/SEMS) — ระบุด้วย prefix เลขเซอร์เวย์ ไม่ขึ้นกับ province/amphur
+    // เช็คก่อนทุกอย่าง (รวม claim %) แล้ว return — ไม่แตะตรรกะบริษัท 1
+    const company2Prefix = readSurveyPrefix();
+    if (company2Prefix) {
+      applyCompany2Pricing(company2Prefix);
+      updateDeductWarning();
+      return;
+    }
+
     const provinceId = readHiddenValue(SEL.provinceHidden);
     const amphurId   = readHiddenValue(SEL.amphurHidden);
     const tumbonId   = readHiddenValue(SEL.tumbonHidden);

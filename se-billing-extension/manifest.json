@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SE-Billing",
-  "version": "2.9.0",
+  "version": "2.10.0",
   "description": "Auto-fill ค่าบริการ I Survey ตามจังหวัด/อำเภอ/ประเภทเคลม + บันทึก log + dashboard งานค้างต่อหัวหน้า",
   "icons": {
     "16": "icon-16.png",
@@ -39,7 +39,7 @@
     },
     {
       "matches": ["https://cloud.isurvey.mobi/*"],
-      "js": ["config-bridge.js", "content.js", "feature-out-of-area-amount.js", "feature-out-of-hours-amount.js", "feature-deduct-amount.js", "feature-sub-area-checkbox.js"],
+      "js": ["config-bridge.js", "content.js", "feature-out-of-area-amount.js", "feature-out-of-hours-amount.js", "feature-deduct-amount.js", "feature-sub-area-checkbox.js", "feature-daily-check-amount.js"],
       "run_at": "document_idle",
       "world": "MAIN",
       "all_frames": false
