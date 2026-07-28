@@ -1,0 +1,125 @@
+{
+  "_comment": "Baseline จาก isurvey v2 ตัวจริง (React+MUI) — probe รอบที่ 3, 2026-07-28T10:35Z",
+  "schemaVersion": 1,
+  "site": "v2",
+  "url": {
+    "origin": "https://se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com",
+    "pathname": "/supervisor/948950/approval",
+    "note": "URL ทดลอง — production จริงยังไม่ทราบ ต้องถามก่อนแก้ manifest"
+  },
+  "framework": { "kind": "dom", "stack": "React + MUI (emotion)", "extjs": false },
+  "frames": { "count": 0 },
+
+  "keyFinding": {
+    "_comment": "ข้อสรุปหลักหลัง probe 3 รอบ",
+    "1": "ฟิลด์ฟอร์มส่วนใหญ่มี id คงที่ = ข้อความไทยของ label เอง (เช่น input#เลขเซอเวย์)",
+    "2": "id ผันผวน (React useId :rXX:) มีแค่ 2 กลุ่ม — MUI Autocomplete และช่องเงินในตาราง",
+    "3": "ช่องเงินหาได้ 10/10 ด้วยหัวตาราง × แถว (ไม่ต้องพึ่ง id)",
+    "4": "ไม่มี data-testid ทั้งหน้า"
+  },
+
+  "stableIds": {
+    "_comment": "id คงที่ — ใช้เป็น candidate อันดับต้นได้เลย (สะกดตามหน้าเว็บเป๊ะ)",
+    "surveyNoInputId":    { "id": "เลขเซอเวย์",       "label": "เลขเซอเวย์", "note": "สะกดไม่มี ร์ — ใช้แยก SETP/SEMS" },
+    "surveyorNameCmpId":  { "id": "ชื่อผู้ปฏิบัติงาน", "label": "ชื่อผู้ปฏิบัติงาน" },
+    "surveyorCodeInputId":{ "id": "รหัส",             "label": "รหัส", "note": "รหัส SECxxx → หาทีม" },
+    "dispatchDateInputId":{ "id": "จ่ายงานเวลา",       "label": "จ่ายงานเวลา", "note": "รวมวันกับเวลาไว้ช่องเดียว" },
+    "claimNoInputId":     { "id": "เลขเคลมประกัน",     "label": "เลขเคลมประกัน" },
+    "notifyNoInputId":    { "id": "เลขที่รับแจ้ง",     "label": "เลขที่รับแจ้ง", "note": "ไม่มีในเว็บเก่า" },
+    "policyNoInputId":    { "id": "เลขที่กรมธรรม์",    "label": "เลขที่กรมธรรม์" },
+    "insurerInputId":     { "id": "บริษัทประกัน",      "label": "บริษัทประกัน", "note": "เว็บเก่าใช้ tab1_OSS_company คนละความหมาย ระวังอย่าจับคู่มั่ว" }
+  },
+
+  "volatileIds": {
+    "_comment": "id เปลี่ยนทุก render — ห้ามใช้ ต้องหาด้วยวิธีอื่น",
+    "mtypeIdCmpId": { "sampleId": ":r28:", "resolveBy": "placeholder = 'ประเภทเคลม'", "widget": "MuiAutocomplete" },
+    "dispatchTypeCmpId": { "sampleId": ":r2a:", "resolveBy": "placeholder = 'ประเภทการจ่ายงาน'", "widget": "MuiAutocomplete", "note": "ฟิลด์ใหม่ ค่าเช่น 'สั่งพนักงาน' — ยังไม่รู้ว่าเทียบกับอะไรในเว็บเก่า" },
+    "provinceCmpId": { "sampleId": ":r33:", "resolveBy": "placeholder = 'จังหวัดที่ตรวจสอบ'" },
+    "amphurCmpId":   { "sampleId": ":r35:", "resolveBy": "placeholder = 'เขต/อำเภอที่ตรวจสอบ'" },
+    "accidentProvince": { "sampleId": ":r2e:", "resolveBy": "placeholder = 'จังหวัดที่เกิดเหตุ'" },
+    "accidentAmphur":   { "sampleId": ":r2g:", "resolveBy": "placeholder = 'เขต/อำเภอที่เกิดเหตุ'" }
+  },
+
+  "expenseTable": {
+    "_comment": "ช่องเงินทุกช่อง id ผันผวน → หาด้วยหัวตาราง × ข้อความหัวแถว เท่านั้น",
+    "headerCells": ["ลำดับ", "รายละเอียด", "จำนวน", "จำนวนเงินเสนอ", "จำนวนเงินอนุมัติ"],
+    "structure": "table.MuiTable-root > tbody > tr.MuiTableRow-root > td.MuiTableCell-root > input",
+    "rowCount": 10,
+    "rows": ["1.ค่าบริการ", "2.ค่าเดินทาง/ค่าพาหนะ", "3.ค่าใช้จ่ายอื่นๆ", "4.ค่ารูปถ่าย(รูป)",
+             "5.ค่าคัดประจำวัน(ข้อ)", "6.ค่าเรียกร้อง(บาท)", "เซอร์เวย์/ประกัน",
+             "รวมเป็นเงิน", "ภาษีมูลค่าเพิ่ม", "จำนวนเงินรวม"],
+    "columnLefts": { "seq": 0, "desc": 112, "unit": 358, "proposed": 558, "approved": 951 },
+    "columnWidths": { "seq": 112, "desc": 246, "unit": 200, "proposed": 393, "approved": 393 },
+    "rowHeight": 51,
+    "tableWidth": 1344,
+    "mapping": {
+      "feeCmpId": "ค่าบริการ | proposed",
+      "insInvestCmpId": "ค่าบริการ | approved",
+      "insTransCmpId": "ค่าเดินทาง | approved",
+      "insPhotoCmpId": "ค่ารูปถ่าย | approved",
+      "recvClaimCmpId": "ค่าเรียกร้อง | amount",
+      "surClaimCmpId": "ค่าเรียกร้อง | proposed",
+      "insClaimCmpId": "ค่าเรียกร้อง | approved",
+      "dailyNumCmpId": "ค่าคัดประจำวัน | amount",
+      "surDailyCmpId": "ค่าคัดประจำวัน | proposed",
+      "insDailyCmpId": "ค่าคัดประจำวัน | approved"
+    },
+    "note": "แถว ค่ารูปถ่าย/ค่าคัดประจำวัน/ค่าเรียกร้อง มี 3 ช่อง (จำนวน+เสนอ+อนุมัติ) ส่วน ค่าบริการ/ค่าเดินทาง มี 2 ช่อง"
+  },
+
+  "otherResolved": {
+    "inOutRadioName": { "by": "radio value ใน/นอก", "name": "radio-buttons-group" },
+    "saveButton": { "candidate": "บันทึกความเห็น", "note": "ปุ่มบันทึกความเห็นของหัวหน้า — ยังไม่ยืนยันว่าใช่ปุ่มเดียวกับ 'ยืนยันการตรวจสอบ' เดิม" }
+  },
+
+  "stillMissing": {
+    "_comment": "ยังหาไม่เจอบนหน้านี้ — ต้องยืนยันว่าไม่มีจริง หรืออยู่ส่วนอื่นของหน้า",
+    "serviceTypeCmpId": "ประเภทบริการ (บริการ/ต่อเนื่อง/หน้าร้าน/พื้นที่เดียวกัน) — จำเป็นกับ override 'ต่อเนื่อง' และ 'ไม่พบ'",
+    "tumbon": "ตำบล — จำเป็นกับ TUMBON_FEE_OVERRIDE (บ่อวิน/พลูตาหลวง)",
+    "outOfAreaCmpId": "checkbox นอกพื้นที่",
+    "closeCase/cancelCase": "radio ปิดการตรวจสอบ / ยกเลิกเคลม",
+    "headerTitleId": "ชื่อผู้ล็อกอินบนหัวเว็บ — ใช้กับ dashboard badge",
+    "tabs": "ไม่มีระบบแท็บ 1/2/3 → ฟีเจอร์ระบายสีแท็บ + required-fields cache-on-visit ต้องออกแบบใหม่",
+    "dailyCheckBoxes": "checkbox ถูก/ผิด/รอผล — เว็บใหม่มีแต่ช่อง 'ข้อ' (extension ต้องแทรกเอง เหมือนที่ทำในเว็บเก่า)"
+  },
+
+  "companyTwoDetection": {
+    "_comment": "ยืนยันกับผู้ใช้แล้ว 2026-07-28",
+    "rule": "เลขเซอร์เวย์ยังขึ้นต้น SETP / SEMS เหมือนเดิม",
+    "readFrom": "input#เลขเซอเวย์ (เว็บใหม่) / tab1_survey_no-inputEl (เว็บเก่า)",
+    "sampleOtherFormat": "SEABI-112260700428 = งานบริษัท 1 (prefix เป็นรหัสบริษัทประกัน ไม่ใช่ SETP/SEMS)",
+    "implication": "readSurveyPrefix() ใช้ตรรกะเดิมได้ ไม่ต้องแก้ — แค่เปลี่ยนทางที่ไปอ่านค่า"
+  },
+
+  "verifiedOnLivePage": {
+    "_comment": "ทดสอบบนหน้าจริงผ่าน Chrome MCP 2026-07-28 (คืนค่าทุกอย่างแล้ว ไม่ได้กดบันทึก)",
+    "writeMoneyField": {
+      "naive_el_value": "❌ ช่องเปลี่ยนแต่ยอดรวมไม่ขยับ — React ไม่รับรู้",
+      "nativeSetter_plus_input": "✅ ยอดรวมคำนวณตามทันที (ใส่ 222 → รวมเป็นเงิน 222.00)",
+      "howTo": "Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el, v); el.dispatchEvent(new Event('input',{bubbles:true}))"
+    },
+    "checkbox": "✅ .click() ติ๊ก/ปลดได้ (นอกพื้นที่)",
+    "radio": "✅ .click() เลือกได้ — ใน FormControl ของ 'ในเวลางาน' มี radio 2 ตัว value='ใน'/'นอก'",
+    "injection": "✅ แทรก element เข้า <td> ได้ อยู่รอด checkbox ที่แทรกทำงานได้",
+    "rerenderRate": "ตาราง mutate 0 ครั้งใน 5 วินาที — React ไม่วาดใหม่เอง ไม่ต้องแทรกซ้ำถี่",
+    "accordionSections": ["ข้อมูลเคลม", "ข้อมูลพนักงานตรวจสอบ", "รายงานผลเบื้องต้น", "บันทึกความเห็นผู้ตรวจสอบ",
+                          "ข้อมูลความรับผิดชอบ", "ค่าสำรวจ", "รายการตรวจสอบ", "ตรวจสอบเคลม"],
+    "cellIndex": "ทุกแถวมี 5 cell เท่ากัน — cell[2]=จำนวน, cell[3]=เสนอ, cell[4]=อนุมัติ (แม่นกว่าใช้ลำดับ input)",
+    "existsAfterAll": {
+      "outOfAreaCheckbox": "✅ มีจริง (ไม่มี id — หาจาก label 'นอกพื้นที่')",
+      "inOutRadio": "✅ มีจริง value='ใน'/'นอก' เหมือนเว็บเก่าเป๊ะ",
+      "separateCheckbox": "✅ 'แยกย้าย' (เว็บเก่าอยู่ใต้ ประเภทบริการอื่นๆ)"
+    },
+    "reallyMissing": {
+      "tumbon": "ไม่มีตำบล — มีแค่ จังหวัด + เขต/อำเภอ",
+      "serviceType": "ไม่มี ประเภทบริการ (บริการ/ต่อเนื่อง/หน้าร้าน) — มีแต่ ประเภทการจ่ายงาน"
+    },
+    "radioNameCollision": "radio ทั้งหน้า 17 ตัวใช้ name='radio-buttons-group' เหมือนกันหมด → ห้ามหาด้วย name อย่างเดียว ต้องเจาะจงด้วย FormControl ที่มี label ตรงกัน"
+  },
+
+  "risks": {
+    "controlledInput": "แก้แล้ว — ใช้ native value setter + dispatch input (พิสูจน์บนหน้าจริงแล้ว)",
+    "movingTarget": "เจอ id 'demo-row-radio-buttons-group-label' (โค้ดตัวอย่าง MUI ที่ยังไม่แก้ชื่อ) → หน้ายังพัฒนาไม่เสร็จ",
+    "thaiIdEncoding": "id เป็นภาษาไทย — ต้องใช้ CSS.escape() เมื่อประกอบเป็น selector"
+  }
+}

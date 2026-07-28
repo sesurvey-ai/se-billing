@@ -55,7 +55,10 @@
     // ── เก็บ width เดิมครั้งเดียวต่อ instance ของ component ──
     // (กันกรณี init รันซ้ำหลัง checkbox ถูกย่อแล้ว — จะไม่ overwrite ค่าเดิม)
     if (cb.__outOfAreaOrigWidth === undefined) {
-      cb.__outOfAreaOrigWidth = cb.getWidth() || 400;
+      // getWidth() โยน error ถ้า component ยัง render ไม่เสร็จ (cb.el ยังไม่มี)
+      let w = 0;
+      try { w = cb.getWidth() || 0; } catch (e) { w = 0; }
+      cb.__outOfAreaOrigWidth = w || 400;
     }
     const ORIG_WIDTH = cb.__outOfAreaOrigWidth;
 
@@ -142,17 +145,29 @@
   }
 
   let lastCb = null;
+  let lastErr = "";
 
   function pollOnce() {
     const cb = tryFindCheckbox();
     if (!cb) return;
 
+    // component มีอยู่แต่ยัง render ไม่เสร็จ / ถูกทำลายไปแล้ว → รอรอบหน้า
+    // (ไม่งั้น getWidth()/insert() จะโยน error ซ้ำทุก 500ms)
+    if (cb.destroyed || cb.rendered === false) return;
+
     // ถ้าเป็น instance เดิมและผูกแล้ว → ข้าม
     if (cb === lastCb && cb.__outOfAreaHandler) return;
 
     // instance ใหม่ (หรือ instance เดิมแต่ยังไม่ผูก) → init
-    lastCb = cb;
-    init(cb);
+    // ห้ามให้ error หลุดออกจาก poll — จะพ่นซ้ำทุกรอบจนอ่าน console ไม่ได้
+    try {
+      init(cb);
+      lastCb = cb;
+      lastErr = "";
+    } catch (e) {
+      const msg = String(e && e.message || e);
+      if (msg !== lastErr) { lastErr = msg; warn("init ล้มเหลว (จะลองใหม่รอบหน้า):", e); }
+    }
   }
 
   // ลอง sync ทันที (เผื่อฟอร์มพร้อมแล้ว)

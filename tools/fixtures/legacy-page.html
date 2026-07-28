@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>fixture — isurvey legacy skeleton</title>
+<style>
+  body { font-family: sans-serif; font-size: 13px; }
+  .row { position: relative; height: 35px; width: 850px; border-bottom: 1px solid #eee; }
+  .row > * { position: absolute; top: 3px; }
+  .x-form-item { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<div id="main-tab_header-title-textEl">Hi, นายสราวุธ บุญคุ้ม</div>
+
+<div id="tabbar">
+  <div id="tab-1_clone">Summary</div>
+  <div id="tab-2_clone">Accident Info</div>
+  <div id="tab-3_clone">Insurance Info</div>
+</div>
+
+<!-- hidden location anchors -->
+<input type="hidden" name="tab1_survey_provinceID" value="20">
+<input type="hidden" name="tab1_survey_amphurID" value="2005">
+<input type="hidden" name="tab1_survey_tumbonID" value="200502">
+
+<div class="x-form-item"><label for="tab1_survey_provinceID-inputEl">จังหวัดที่ตรวจสอบ</label>
+  <input id="tab1_survey_provinceID-inputEl" type="text" value="ชลบุรี"></div>
+<div class="x-form-item"><label for="tab1_survey_amphurID-inputEl">อำเภอที่ตรวจสอบ</label>
+  <input id="tab1_survey_amphurID-inputEl" type="text" value="บางละมุง"></div>
+<div class="x-form-item"><label for="tab1_survey_tumbonID-inputEl">ตำบลที่ตรวจสอบ</label>
+  <input id="tab1_survey_tumbonID-inputEl" type="text" value="บ่อวิน"></div>
+
+<div class="x-form-item"><label for="tab1_claim_no-inputEl">เลขที่เคลม</label>
+  <input id="tab1_claim_no-inputEl" type="text" value="C-123456"></div>
+<div class="x-form-item"><label for="tab1_survey_no-inputEl">เลขที่เซอร์เวย์</label>
+  <input id="tab1_survey_no-inputEl" type="text" readonly value="SETP68000123"></div>
+<div class="x-form-item"><label for="tab1_claim_MtypeID-inputEl">ประเภทเคลม</label>
+  <input id="tab1_claim_MtypeID-inputEl" type="text" value="เคลมสด"></div>
+<div class="x-form-item"><label for="tab1_service_type-inputEl">ประเภทบริการ</label>
+  <input id="tab1_service_type-inputEl" type="text" value="บริการ"></div>
+<div class="x-form-item"><label for="tab1_surveyor_name-inputEl">ผู้สำรวจ</label>
+  <input id="tab1_surveyor_name-inputEl" type="text" value="SEC148 ทดสอบ"></div>
+<div class="x-form-item"><label for="tab1_OSS_company-inputEl">บริษัท</label>
+  <input id="tab1_OSS_company-inputEl" type="text" value=""></div>
+<div class="x-form-item"><label for="tab1_dispatch_date-inputEl">วันจ่ายงาน</label>
+  <input id="tab1_dispatch_date-inputEl" type="text" value="14/06/2026"></div>
+<div class="x-form-item"><label for="tab1_dispatch_time-inputEl">เวลาจ่ายงาน</label>
+  <input id="tab1_dispatch_time-inputEl" type="text" value="13:31"></div>
+
+<div class="x-form-item x-form-type-checkbox">
+  <input id="tab1_chk_co_area-inputEl" type="checkbox">
+  <span class="x-form-cb-label">นอกพื้นที่</span>
+</div>
+
+<div class="x-form-item x-form-type-radio">
+  <label>ใน/นอกเวลางาน</label>
+  <input type="radio" name="tab1_rd-in_out" value="ใน" checked><span class="x-form-cb-label">ใน</span>
+  <input type="radio" name="tab1_rd-in_out" value="นอก"><span class="x-form-cb-label">นอก</span>
+</div>
+
+<div class="x-form-item x-form-type-radio">
+  <input id="close_case-inputEl" type="radio" name="case_status"><span class="x-form-cb-label">ปิดการตรวจสอบ</span>
+  <input id="cancel_case-inputEl" type="radio" name="case_status"><span class="x-form-cb-label">ยกเลิกเคลม</span>
+</div>
+
+<!-- ตารางรายการค่าใช้จ่าย (absolute layout เหมือนของจริง) -->
+<div id="expense_table" class="x-panel">
+  <div id="row_1" class="row">
+    <span style="left:10px">1.</span><span style="left:55px">ค่าบริการ</span>
+    <input id="tab1_SUR_INVEST-inputEl" style="left:510px;width:80px" value="500.00">
+    <input id="tab1_INS_INVEST-inputEl" style="left:630px;width:80px" value="500.00">
+  </div>
+  <div id="row_2" class="row">
+    <span style="left:10px">2.</span><span style="left:55px">ค่าเดินทาง</span>
+    <input id="tab1_INS_TRANS-inputEl" style="left:630px;width:80px" value="300.00">
+  </div>
+  <div id="row_3" class="row">
+    <span style="left:10px">3.</span><span style="left:55px">ค่ารูปถ่าย</span>
+    <input id="tab1_INS_PHOTO-inputEl" style="left:630px;width:80px" value="50.00">
+  </div>
+  <div id="row_5" class="row">
+    <span style="left:10px">5.</span><span style="left:55px">ค่าคัดประจำวัน</span>
+    <input id="tab1_DAILY_NUM-inputEl" style="left:215px;width:60px" value="">
+    <input id="tab1_SUR_DAILY-inputEl" style="left:510px;width:80px" value="">
+    <input id="tab1_INS_DAILY-inputEl" style="left:630px;width:80px" value="">
+  </div>
+  <div id="row_6" class="row">
+    <span style="left:10px">6.</span><span style="left:55px">ค่าเรียกร้อง</span>
+    <input id="tab1_RECV_CLAIM-inputEl" style="left:215px;width:80px" value="10000">
+    <input id="tab1_SUR_CLAIM-inputEl" style="left:510px;width:80px" value="500.00">
+    <input id="tab1_INS_CLAIM-inputEl" style="left:630px;width:80px" value="1000.00">
+  </div>
+</div>
+
+<button id="tab1_save">ยืนยันการตรวจสอบ</button>
+
+<script>
+// ── ExtJS 6.2 stub — พอให้ probe เดินโครงสร้างได้เหมือนของจริง ─────────
+(function () {
+  var registry = {};
+
+  function Cmp(cfg) {
+    Object.assign(this, cfg);
+    registry[cfg.id] = this;
+  }
+  Cmp.prototype.getValue = function () {
+    var el = document.getElementById(this.id + "-inputEl");
+    if (el) return el.type === "checkbox" ? el.checked : el.value;
+    return this._value === undefined ? null : this._value;
+  };
+  Cmp.prototype.getWidth = function () { return this._w || 100; };
+  Cmp.prototype.getHeight = function () { return this._h || 22; };
+
+  function mkItems(arr) {
+    return {
+      getRange: function () { return arr; },
+      getCount: function () { return arr.length; },
+      indexOf: function (c) { return arr.indexOf(c); },
+      each: function (fn) { for (var i = 0; i < arr.length; i++) if (fn(arr[i]) === false) break; },
+    };
+  }
+
+  function domCmp(id, extra) {
+    var c = new Cmp(Object.assign({ id: id, xtype: "textfield" }, extra || {}));
+    var dom = document.getElementById(id + "-inputEl") || document.getElementById(id);
+    c.el = { dom: dom || document.createElement("div") };
+    c.inputEl = { dom: dom };
+    c.rendered = true;
+    c.hidden = false;
+    return c;
+  }
+
+  // ฟิลด์ในตารางค่าใช้จ่าย + แถว + ตาราง
+  var rowDefs = [
+    { rowId: "row_1", fields: [["tab1_SUR_INVEST", 510], ["tab1_INS_INVEST", 630]] },
+    { rowId: "row_2", fields: [["tab1_INS_TRANS", 630]] },
+    { rowId: "row_3", fields: [["tab1_INS_PHOTO", 630]] },
+    { rowId: "row_5", fields: [["tab1_DAILY_NUM", 215], ["tab1_SUR_DAILY", 510], ["tab1_INS_DAILY", 630]] },
+    { rowId: "row_6", fields: [["tab1_RECV_CLAIM", 215], ["tab1_SUR_CLAIM", 510], ["tab1_INS_CLAIM", 630]] },
+  ];
+  var rowCmps = [];
+  rowDefs.forEach(function (rd) {
+    var fields = rd.fields.map(function (f) {
+      var c = domCmp(f[0], { xtype: "numberfield", x: f[1], _w: 80 });
+      return c;
+    });
+    var row = new Cmp({ id: rd.rowId, xtype: "panel", layout: { type: "absolute" }, _w: 850, _h: 35 });
+    row.el = { dom: document.getElementById(rd.rowId) };
+    row.items = mkItems(fields);
+    fields.forEach(function (f) { f.ownerCt = row; });
+    rowCmps.push(row);
+  });
+  var table = new Cmp({ id: "expense_table", xtype: "panel", layout: { type: "vbox" }, _w: 850 });
+  table.el = { dom: document.getElementById("expense_table") };
+  table.items = mkItems(rowCmps);
+  rowCmps.forEach(function (r) { r.ownerCt = table; });
+
+  // ฟิลด์อื่นๆ
+  [["tab1_survey_provinceID", "combobox", "จังหวัดที่ตรวจสอบ"],
+   ["tab1_survey_amphurID", "combobox", "อำเภอที่ตรวจสอบ"],
+   ["tab1_survey_tumbonID", "combobox", "ตำบลที่ตรวจสอบ"],
+   ["tab1_claim_no", "textfield", "เลขที่เคลม"],
+   ["tab1_survey_no", "textfield", "เลขที่เซอร์เวย์"],
+   ["tab1_claim_MtypeID", "combobox", "ประเภทเคลม"],
+   ["tab1_service_type", "combobox", "ประเภทบริการ"],
+   ["tab1_surveyor_name", "textfield", "ผู้สำรวจ"],
+   ["tab1_OSS_company", "textfield", "บริษัท"],
+   ["tab1_dispatch_date", "datefield", "วันจ่ายงาน"],
+   ["tab1_dispatch_time", "timefield", "เวลาจ่ายงาน"]
+  ].forEach(function (d) { domCmp(d[0], { xtype: d[1], fieldLabel: d[2] }); });
+
+  var chk = domCmp("tab1_chk_co_area", { xtype: "checkbox", boxLabel: "นอกพื้นที่", _w: 400 });
+  var chkRow = new Cmp({ id: "chk_row", xtype: "container", layout: { type: "hbox" } });
+  chkRow.el = { dom: document.querySelector(".x-form-type-checkbox") };
+  chkRow.items = mkItems([chk]);
+  chk.ownerCt = chkRow;
+
+  var grp = new Cmp({ id: "tab1_grd-in_out", xtype: "radiogroup", fieldLabel: "ใน/นอกเวลางาน" });
+  grp.el = { dom: document.querySelector(".x-form-type-radio") };
+  grp.items = mkItems([]);
+  grp.getValue = function () { return { "tab1_rd-in_out": "ใน" }; };
+  var grpRow = new Cmp({ id: "inout_row", xtype: "container", layout: { type: "hbox" } });
+  grpRow.el = { dom: grp.el.dom };
+  grpRow.items = mkItems([grp]);
+  grp.ownerCt = grpRow;
+
+  ["tab-1_clone", "tab-2_clone", "tab-3_clone"].forEach(function (id) {
+    var c = new Cmp({ id: id, xtype: "panel" });
+    c.el = { dom: document.getElementById(id) };
+    c.tab = { el: { dom: document.getElementById(id) } };
+  });
+
+  window.Ext = {
+    getVersion: function () { return { version: "6.2.0.981" }; },
+    getCmp: function (id) { return registry[id] || null; },
+    ComponentManager: { getAll: function () { return Object.keys(registry).map(function (k) { return registry[k]; }); } },
+    ComponentQuery: { query: function () { return []; } },
+  };
+  console.log("[fixture] Ext stub ready —", Object.keys(registry).length, "components");
+})();
+</script>
+<script src="../probe-isurvey.js?v=5"></script>
+</body>
+</html>

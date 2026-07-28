@@ -193,17 +193,45 @@
       return "ext";
     }
     if (domEl) {
-      domEl.value = value;
-      domEl.dispatchEvent(new Event("input", { bubbles: true }));
-      domEl.dispatchEvent(new Event("change", { bubbles: true }));
+      // ต้องเขียนผ่าน native setter ไม่ใช่ domEl.value = x ตรงๆ
+      // ไม่งั้นหน้าที่เป็น React (isurvey เว็บใหม่) จะไม่รับรู้ ยอดรวมไม่คำนวณ
+      if (window.SEResolve && window.SEResolve.setNativeValue) {
+        window.SEResolve.setNativeValue(domEl, value);
+      } else {
+        domEl.value = value;
+        domEl.dispatchEvent(new Event("input", { bubbles: true }));
+        domEl.dispatchEvent(new Event("change", { bubbles: true }));
+      }
       return "dom";
     }
     return null;
   }
 
-  function readHiddenValue(selector) {
-    const el = document.querySelector(selector);
-    return el ? (el.value || "") : "";
+  /**
+   * อ่านค่าฟิลด์ผ่าน resolver (รับ "ชื่อ logical key")
+   * เว็บเก่า → hidden input ตาม name เดิม · เว็บใหม่ → combobox ที่หาจาก placeholder
+   * ถ้า resolver ไม่โหลด → ใช้ selector เดิมจาก SEL เหมือน v2.10.0
+   */
+  const HIDDEN_LEVEL = {
+    provinceHidden: "province",
+    amphurHidden:   "amphur",
+    tumbonHidden:   "tumbon",
+  };
+  function readHiddenValue(key) {
+    const R = window.SEResolve;
+    if (!R) {
+      const el = document.querySelector(SEL[key]);
+      return el ? (el.value || "") : "";
+    }
+    const raw = String(R.read(key) || "").trim();
+    if (!raw) return "";
+    if (/^\d+$/.test(raw)) return raw;          // เว็บเก่าคืน id มาอยู่แล้ว
+
+    // เว็บใหม่คืน "ชื่อ" → แปลงกลับเป็น id ก่อนส่งให้ตรรกะค้นหาเรต
+    const level = HIDDEN_LEVEL[key];
+    if (!level) return raw;
+    const parentId = (level === "province") ? "" : readHiddenValue("provinceHidden");
+    return lookupId(level, raw, parentId);
   }
 
   /**
@@ -218,18 +246,22 @@
     "เจรจาสินไหม": "4",
   };
   function readMtypeId() {
-    const cmp = getExtCmp(SEL.mtypeIdCmpId);
-    if (cmp && typeof cmp.getValue === "function") {
-      const v = cmp.getValue();
-      if (v !== null && v !== undefined && v !== "") {
-        // Ext combobox store ใช้ valueField "clMTID" ที่เก็บเป็น "01"-"04" (2-digit)
-        // normalize → "1"-"4" เพื่อเทียบกับ mt12/mt34 ใน syncMultiFields
-        return String(v).replace(/^0+(?=\d)/, "");
-      }
-    }
-    const el = document.querySelector(SEL.mtypeIdInput);
-    const txt = el ? (el.value || "").trim() : "";
-    return MTYPE_LABEL_TO_ID[txt] || "";
+    const R = window.SEResolve;
+    const raw = R ? String(R.read("mtypeIdCmpId") || "").trim()
+                  : (() => {
+                      const cmp = getExtCmp(SEL.mtypeIdCmpId);
+                      if (cmp && typeof cmp.getValue === "function") {
+                        const v = cmp.getValue();
+                        if (v !== null && v !== undefined && v !== "") return String(v);
+                      }
+                      const el = document.querySelector(SEL.mtypeIdInput);
+                      return el ? (el.value || "").trim() : "";
+                    })();
+    if (!raw) return "";
+    // เว็บเก่า combobox คืน id "01"-"04" → normalize เป็น "1"-"4"
+    if (/^\d+$/.test(raw)) return raw.replace(/^0+(?=\d)/, "");
+    // ถ้าอ่านได้เป็นข้อความ (เว็บใหม่แสดง "เคลมสด") → map กลับเป็นเลข
+    return MTYPE_LABEL_TO_ID[raw] || "";
   }
 
   /**
@@ -238,6 +270,8 @@
    * (valueField + displayField = "item" → getValue() คืน label ตรงๆ)
    */
   function readServiceType() {
+    const R = window.SEResolve;
+    if (R) return String(R.read("serviceTypeCmpId") || "").trim();
     const cmp = getExtCmp(SEL.serviceTypeCmpId);
     if (cmp && typeof cmp.getValue === "function") {
       const v = cmp.getValue();
@@ -272,6 +306,8 @@
    * ไม่ใช้ Ext.getValue() เพราะอาจคืนค่าภายใน (ID/code) ไม่ใช่ชื่อที่แสดง
    */
   function readSurveyorName() {
+    const R = window.SEResolve;
+    if (R) return String(R.read("surveyorNameCmpId") || "").trim();
     const el = document.getElementById(SEL.surveyorNameInputId);
     return (el && el.value ? String(el.value) : "").trim();
   }
@@ -285,29 +321,34 @@
    * ดังนั้น: `tab1_OSS_company` มีค่าใดๆ = OSS (non-SE) เสมอ — เช็คก่อน regex
    */
   function isSurveyorSE() {
-    const ossEl = document.getElementById(SEL.ossCompanyInputId);
-    if (ossEl && ossEl.value && ossEl.value.trim()) return false;
+    if (readOssCompany()) return false;
     return /^se/i.test(readSurveyorName());
   }
 
   /** อ่านชื่อบริษัท OSS (ผู้รับงานจริง) จาก tab1_OSS_company-inputEl — null ถ้าว่าง */
   function readOssCompany() {
-    const el = document.getElementById(SEL.ossCompanyInputId);
-    const v = el && el.value ? String(el.value).trim() : "";
+    const R = window.SEResolve;
+    const v = R ? String(R.read("ossCompanyInputId") || "").trim()
+               : (() => { const el = document.getElementById(SEL.ossCompanyInputId);
+                          return el && el.value ? String(el.value).trim() : ""; })();
     return v || null;
   }
 
   /** อ่านเลขเคลม จาก tab1_claim_no-inputEl */
   function readClaimNo() {
-    const el = document.getElementById(SEL.claimNoInputId);
-    const v = el && el.value ? String(el.value).trim() : "";
+    const R = window.SEResolve;
+    const v = R ? String(R.read("claimNoInputId") || "").trim()
+               : (() => { const el = document.getElementById(SEL.claimNoInputId);
+                          return el && el.value ? String(el.value).trim() : ""; })();
     return v || null;
   }
 
   /** อ่านเลขเซอร์เวย์ จาก tab1_survey_no-inputEl */
   function readSurveyNo() {
-    const el = document.getElementById(SEL.surveyNoInputId);
-    const v = el && el.value ? String(el.value).trim() : "";
+    const R = window.SEResolve;
+    const v = R ? String(R.read("surveyNoInputId") || "").trim()
+               : (() => { const el = document.getElementById(SEL.surveyNoInputId);
+                          return el && el.value ? String(el.value).trim() : ""; })();
     return v || null;
   }
 
@@ -318,10 +359,17 @@
    * คืน "14/06/2026 13:31" / "14/06/2026" (ถ้าไม่มีเวลา) / null (ถ้าว่างทั้งคู่)
    */
   function readDispatchDateTime() {
-    const dateEl = document.getElementById(SEL.dispatchDateInputId);
-    const timeEl = document.getElementById(SEL.dispatchTimeInputId);
-    const date = dateEl && dateEl.value ? String(dateEl.value).trim() : "";
-    const time = timeEl && timeEl.value ? String(timeEl.value).trim() : "";
+    const R = window.SEResolve;
+    let date, time;
+    if (R) {
+      date = String(R.read("dispatchDateInputId") || "").trim();
+      time = String(R.read("dispatchTimeInputId") || "").trim();
+    } else {
+      const dateEl = document.getElementById(SEL.dispatchDateInputId);
+      const timeEl = document.getElementById(SEL.dispatchTimeInputId);
+      date = dateEl && dateEl.value ? String(dateEl.value).trim() : "";
+      time = timeEl && timeEl.value ? String(timeEl.value).trim() : "";
+    }
     if (!date && !time) return null;
     return [date, time].filter(Boolean).join(" ");
   }
@@ -345,6 +393,15 @@
    * รองรับช่องว่างหรือไม่มีก็ได้ระหว่างรหัสกับชื่อ — match prefix "SEC" + ตัวเลข
    */
   function readSurveyorSecCode() {
+    // เว็บใหม่แยกช่อง "รหัส" ออกมาต่างหาก — ใช้ก่อนถ้ามี แม่นกว่าดึงจากชื่อ
+    const R = window.SEResolve;
+    if (R) {
+      const direct = String(R.read("surveyorCodeInputId") || "").trim();
+      const md = /^(SEC\d+)/i.exec(direct);
+      if (md) return md[1].toUpperCase();
+      // รหัสขึ้นต้น SE เฉยๆ = กรุงเทพ/ปริมณฑล ซึ่งไม่มีระบบทีม → คืน null ตามเดิม
+      if (direct) return null;
+    }
     const m = /^(SEC\d+)/i.exec(readSurveyorName());
     return m ? m[1].toUpperCase() : null;
   }
@@ -391,6 +448,62 @@
     return (dict && dict[String(id)]) || "";
   }
 
+  /**
+   * ดัชนีย้อนกลับ ชื่อ → id
+   * จำเป็นสำหรับเว็บใหม่ ซึ่ง combobox คืน "ชื่อ" ไม่ใช่ id แบบเว็บเก่า
+   * (ตรรกะค้นหาเรตทั้งหมดใช้ id — ต้องแปลงกลับก่อน)
+   *
+   * ชื่ออำเภอ/ตำบลซ้ำกันได้ข้ามจังหวัด (เช่น "เมือง...") จึงต้องกรองด้วย parentId
+   * ตามกฎรหัส: amphurID = provinceID + 2 หลัก, tumbonID = provinceID + 4 หลัก
+   */
+  let _revIndex = null;
+  function buildReverseIndex() {
+    const ref = window.__ISURVEY_REF__;
+    if (!ref) return null;
+    const invert = (dict) => {
+      const out = {};
+      for (const id in (dict || {})) {
+        const nm = String(dict[id] || "").trim();
+        if (!nm) continue;
+        (out[nm] = out[nm] || []).push(String(id));
+      }
+      return out;
+    };
+    return {
+      province: invert(ref.byProvinceId),
+      amphur:   invert(ref.byAmphurId),
+      tumbon:   invert(ref.byTumbonId),
+    };
+  }
+
+  /** ตัดคำนำหน้าที่เว็บใส่มาแต่ไม่มีในฐานข้อมูล (เขต/อำเภอ/ตำบล/แขวง/จ./อ./ต.) */
+  function stripAreaPrefix(name) {
+    return String(name || "")
+      .replace(/^(จังหวัด|เขต\/อำเภอ|เขต|อำเภอ|ตำบล|แขวง|จ\.|อ\.|ต\.)\s*/, "")
+      .trim();
+  }
+
+  function lookupId(level, name, parentId) {
+    const raw = String(name || "").trim();
+    if (!raw) return "";
+    if (!_revIndex) _revIndex = buildReverseIndex();
+    if (!_revIndex) return "";
+    const dict = _revIndex[level] || {};
+
+    let ids = dict[raw] || dict[stripAreaPrefix(raw)] || [];
+    if (!ids.length) return "";
+    if (ids.length === 1) return ids[0];
+
+    // ชื่อซ้ำ → เลือกตัวที่อยู่ใต้ parent ที่รู้แล้ว
+    if (parentId) {
+      const under = ids.filter((id) => id.startsWith(String(parentId)));
+      if (under.length === 1) return under[0];
+      if (under.length > 1) return under[0];
+    }
+    warn(`ชื่อ "${raw}" (${level}) ตรงกับหลาย id:`, ids.join(","), "— ใช้ตัวแรก");
+    return ids[0];
+  }
+
   // ─────────────────────────────────────────────────────────
   // Lookup base fee (province/amphur/tumbon)
   // ─────────────────────────────────────────────────────────
@@ -417,6 +530,8 @@
   // ─────────────────────────────────────────────────────────
 
   function isOutOfAreaChecked() {
+    const R = window.SEResolve;
+    if (R) return R.isChecked("outOfAreaCmpId");
     const cmp = getExtCmp(SEL.outOfAreaCmpId);
     if (cmp && typeof cmp.getValue === "function") {
       return cmp.getValue() === true;
@@ -507,6 +622,13 @@
   }
 
   function isOutOfHoursSelected() {
+    // resolver รู้จักทั้ง Ext radiogroup และ radio ที่เจาะจงด้วย label ของกลุ่ม
+    // (เว็บใหม่ radio ทุกกลุ่มใช้ name เดียวกันหมด หาด้วย name อย่างเดียวไม่ได้)
+    const R = window.SEResolve;
+    if (R) {
+      const v = R.radioValue("inOutGroupCmpId");
+      if (v) return v === SEL.outValueLabel;
+    }
     // Ext path: radiogroup.getValue() = { tab1_rd-in_out: "ใน" | "นอก" }
     const grp = getExtCmp(SEL.inOutGroupCmpId);
     if (grp && typeof grp.getValue === "function") {
@@ -601,32 +723,61 @@
     _lastClearKey[namespace] = key ?? null;
     // non-SE (รวม OSS): SUR_INVEST = user-controlled → ไม่ clear (เพื่อไม่ทับค่าที่พิมพ์)
     if (isSurveyorSE()) {
-      setOneField(SEL.feeCmpId,     SEL.feeInput,       "", `SUR_INVEST [${reason} → clear]`);
+      setOneField("feeCmpId",       "", `SUR_INVEST [${reason} → clear]`);
     }
-    setOneField(SEL.insInvestCmpId, SEL.insInvestInput, "", `INS_INVEST [${reason} → clear]`);
-    setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "", `INS_TRANS [${reason} → clear]`);
-    setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  "", `INS_PHOTO [${reason} → clear]`);
+    setOneField("insInvestCmpId", "", `INS_INVEST [${reason} → clear]`);
+    setOneField("insTransCmpId",  "", `INS_TRANS [${reason} → clear]`);
+    setOneField("insPhotoCmpId",  "", `INS_PHOTO [${reason} → clear]`);
   }
 
   /**
    * ตั้งค่าฟิลด์ตัวเดียว (มี skip-if-same + flash + log) — utility สำหรับ multi-field mode
    * ส่ง value = "" หรือ null → clear ฟิลด์ (ใช้ตอน MtypeID เปลี่ยนแล้วฟิลด์เดิมไม่ valid อีกแล้ว)
    */
-  function setOneField(cmpId, sel, value, label) {
-    const el = document.querySelector(sel);
-    if (!el) return false;
-
+  function setOneField(key, value, label) {
     const isClear = (value === "" || value === null || value === undefined);
-    if (isClear) {
-      // ถ้าฟิลด์ว่างอยู่แล้ว → ไม่ต้องแตะ (กัน flash ทุกรอบ poll)
-      if (!el.value || String(el.value).trim() === "") return false;
-    } else {
-      if (isSameNumeric(el.value, value)) return false;
+    const R = window.SEResolve;
+
+    // ── ทางหลัก: ให้ resolver หาช่องเอง ──
+    //   เว็บเก่า → Ext component ตาม id เดิม
+    //   เว็บใหม่ → แถว×คอลัมน์ในตาราง แล้วเขียนผ่าน native setter (React ถึงจะรับรู้)
+    if (R) {
+      const el  = R.el(key);
+      const cmp = R.cmp(key);
+      // มี Ext component อย่างเดียวก็เขียนได้ ไม่บังคับว่าต้องมี DOM element
+      // (ของเดิมเช็ค el อย่างเดียว → เขียนไม่ได้เลยถ้าแท็บยังไม่ render)
+      if (!el && !cmp) return false;
+
+      const cur = R.read(key);
+      if (isClear) {
+        // "ว่าง" ของแต่ละเว็บไม่เหมือนกัน — เว็บเก่าเป็น "" แต่เว็บใหม่แสดง "0"
+        // ถ้าไม่นับ 0 ว่าว่างด้วย จะสั่งเคลียร์ซ้ำทุกรอบ poll ไม่รู้จบ
+        const curStr = String(cur == null ? "" : cur).trim();
+        if (curStr === "") return false;
+        const curNum = parseFloat(curStr.replace(/,/g, ""));
+        if (Number.isFinite(curNum) && curNum === 0) return false;
+      } else if (isSameNumeric(cur, value)) {
+        return false;                                          // เท่าเดิม กัน flash ทุกรอบ poll
+      }
+
+      if (!R.write(key, isClear ? "" : value)) return false;
+      flashHighlight(el);
+      log(`Set ${label} = ${isClear ? "(cleared)" : value} [${cmp ? "ext" : "dom"}]`);
+      return true;
     }
 
-    const mode = setFieldValue(cmpId, el, isClear ? "" : value);
+    // ── fallback: resolver ไม่โหลด → พฤติกรรมเดิมของ v2.10.0 เป๊ะ ──
+    const sel = SEL[String(key).replace(/CmpId$/, "Input")];
+    const el = sel ? document.querySelector(sel) : null;
+    if (!el) return false;
+    if (isClear) {
+      if (!el.value || String(el.value).trim() === "") return false;
+    } else if (isSameNumeric(el.value, value)) {
+      return false;
+    }
+    const mode = setFieldValue(SEL[key], el, isClear ? "" : value);
     if (!mode) {
-      warn("ไม่พบ component/element สำหรับ", cmpId);
+      warn("ไม่พบ component/element สำหรับ", key);
       return false;
     }
     flashHighlight(el);
@@ -707,16 +858,16 @@
       const modLabel = mods.length
         ? " " + mods.map(m => `${m.amount >= 0 ? "+" : ""}${m.amount} ${m.label}`).join(" ")
         : "";
-      setOneField(SEL.feeCmpId, SEL.feeInput, total,
+      setOneField("feeCmpId", total,
         `SUR_INVEST [${label}${surLabel ? ", " + surLabel : ""}] (base ${surBase}${modLabel})`);
     }
 
     // INS_INVEST: เลือกตาม MtypeID (1-2 vs 3-4)
     if (mt12 && effective.INS_INVEST_12 !== undefined) {
-      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, effective.INS_INVEST_12,
+      setOneField("insInvestCmpId", effective.INS_INVEST_12,
         `INS_INVEST [${label}, MtypeID ${mtype}=เคลม${mtype === "1" ? "สด" : "แห้ง"}]`);
     } else if (mt34 && effective.INS_INVEST_34 !== undefined) {
-      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, effective.INS_INVEST_34,
+      setOneField("insInvestCmpId", effective.INS_INVEST_34,
         `INS_INVEST [${label}, MtypeID ${mtype}=${mtype === "3" ? "ติดตาม" : "เจรจาสินไหม"}]`);
     }
 
@@ -735,18 +886,18 @@
       if (hasTransByTeam) transLabel = `${label}, flat fallback`;
     }
     if (transValue !== null) {
-      setOneField(SEL.insTransCmpId, SEL.insTransInput, transValue, `INS_TRANS [${transLabel}]`);
+      setOneField("insTransCmpId", transValue, `INS_TRANS [${transLabel}]`);
     } else {
-      setOneField(SEL.insTransCmpId, SEL.insTransInput, "", `INS_TRANS [${label} → ไม่ระบุ, clear]`);
+      setOneField("insTransCmpId", "", `INS_TRANS [${label} → ไม่ระบุ, clear]`);
     }
 
     // INS_PHOTO: เฉพาะ MtypeID 1-2 + entry มี INS_PHOTO_12; กรณีอื่น → clear
     if (mt12 && effective.INS_PHOTO_12 !== undefined) {
-      setOneField(SEL.insPhotoCmpId, SEL.insPhotoInput, effective.INS_PHOTO_12,
+      setOneField("insPhotoCmpId", effective.INS_PHOTO_12,
         `INS_PHOTO [${label}, MtypeID ${mtype}]`);
     } else {
       const reason = mt34 ? `MtypeID ${mtype}` : `${label} ไม่ระบุ`;
-      setOneField(SEL.insPhotoCmpId, SEL.insPhotoInput, "",
+      setOneField("insPhotoCmpId", "",
         `INS_PHOTO [${reason} → clear]`);
     }
   }
@@ -760,32 +911,19 @@
   function syncSurInvestSimple(provinceId, amphurId, tumbonId) {
     if (!isSurveyorSE()) return;
 
-    const feeEl = document.querySelector(SEL.feeInput);
-    if (!feeEl) return;
-
     const base = lookupFee(provinceId, amphurId, tumbonId);
     if (!base) return; // ไม่มีในตาราง
 
     const mods = getActiveModifiers();
     const total = mods.reduce((sum, m) => sum + m.amount, base.fee);
 
-    if (isSameNumeric(feeEl.value, total)) return;
-
-    const mode = setFieldValue(SEL.feeCmpId, feeEl, total);
-    if (!mode) {
-      warn("ไม่พบ component/element สำหรับ", SEL.feeCmpId);
-      return;
-    }
-
-    flashHighlight(feeEl);
     const name = lookupName(base.level, base.id);
     const baseLabel = `${base.level}: ${base.id}${name ? " - " + name : ""}`;
     const modLabel = mods.length
       ? " " + mods.map(m => `+${m.amount} ${m.label}`).join(" ")
       : "";
-    log(
-      `Set ค่าบริการ = ${total} (base ${base.fee} [${baseLabel}]${modLabel}) [${mode}]`
-    );
+    // setOneField จัดการ skip-if-same / flash / log ให้เอง และรองรับทั้งสองเว็บ
+    setOneField("feeCmpId", total, `ค่าบริการ (base ${base.fee} [${baseLabel}]${modLabel})`);
   }
 
   /**
@@ -796,21 +934,26 @@
    * ทำงานทุก mode (ไม่ขึ้นกับ AMPHUR_FEE_TABLE หรือ enabledProvinces)
    */
   function syncClaimPercentages(surPctOverride) {
-    const recvCmp = getExtCmp(SEL.recvClaimCmpId);
+    const R = window.SEResolve;
     let raw = null;
-    if (recvCmp && typeof recvCmp.getValue === "function") {
-      raw = recvCmp.getValue();
+    if (R) {
+      raw = R.read("recvClaimCmpId");
     } else {
-      const el = document.getElementById(SEL.recvClaimInputId);
-      if (!el) return;
-      raw = el.value;
+      const recvCmp = getExtCmp(SEL.recvClaimCmpId);
+      if (recvCmp && typeof recvCmp.getValue === "function") {
+        raw = recvCmp.getValue();
+      } else {
+        const el = document.getElementById(SEL.recvClaimInputId);
+        if (!el) return;
+        raw = el.value;
+      }
     }
     const num = parseFloat(String(raw == null ? "" : raw).replace(/,/g, ""));
     const isEmpty = !Number.isFinite(num) || num <= 0;
 
     if (isEmpty) {
-      setOneField(SEL.surClaimCmpId, SEL.surClaimInput, "", "SUR_CLAIM (RECV ว่าง/0 → clear)");
-      setOneField(SEL.insClaimCmpId, SEL.insClaimInput, "", "INS_CLAIM (RECV ว่าง/0 → clear)");
+      setOneField("surClaimCmpId", "", "SUR_CLAIM (RECV ว่าง/0 → clear)");
+      setOneField("insClaimCmpId", "", "INS_CLAIM (RECV ว่าง/0 → clear)");
       return;
     }
 
@@ -820,9 +963,9 @@
     const surVal = Math.round(num * surPct * 100) / 100;
     const insVal = Math.round(num * 0.10  * 100) / 100;
     const tag    = (surPctOverride != null) ? `override ${surPct * 100}%` : (isSE ? "SE" : "non-SE");
-    setOneField(SEL.surClaimCmpId, SEL.surClaimInput, surVal,
+    setOneField("surClaimCmpId", surVal,
       `SUR_CLAIM (${surPct * 100}% ของ ${num}, ${tag})`);
-    setOneField(SEL.insClaimCmpId, SEL.insClaimInput, insVal,
+    setOneField("insClaimCmpId", insVal,
       `INS_CLAIM (10% ของ ${num}, ${tag})`);
   }
 
@@ -863,11 +1006,11 @@
     const tag = `ต่อเนื่อง [${rule.label}]`;
     // non-SE (รวม OSS): ปล่อยให้ user กรอก SUR_INVEST เอง — เติมเฉพาะ INS_*
     if (isSurveyorSE()) {
-      setOneField(SEL.feeCmpId,     SEL.feeInput,       rule.sur,   `SUR_INVEST ${tag}`);
+      setOneField("feeCmpId",       rule.sur,   `SUR_INVEST ${tag}`);
     }
-    setOneField(SEL.insInvestCmpId, SEL.insInvestInput, rule.ins,   `INS_INVEST ${tag}`);
-    setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  rule.photo, `INS_PHOTO ${tag}`);
-    setOneField(SEL.insTransCmpId,  SEL.insTransInput,  "",         `INS_TRANS ${tag} → clear`);
+    setOneField("insInvestCmpId", rule.ins,   `INS_INVEST ${tag}`);
+    setOneField("insPhotoCmpId",  rule.photo, `INS_PHOTO ${tag}`);
+    setOneField("insTransCmpId",  "",         `INS_TRANS ${tag} → clear`);
     return true;
   }
 
@@ -889,10 +1032,10 @@
       // (1) เคลียร์ SUR/INS_INVEST/INS_PHOTO ครั้งเดียว — ปล่อย user กรอกเอง (sticky)
       // non-SE / OSS: SUR_INVEST ปล่อย user คุม → ไม่ต้อง clear (กันทับค่าที่พิมพ์)
       if (isSurveyorSE()) {
-        setOneField(SEL.feeCmpId,     SEL.feeInput,       "", "SUR_INVEST [ไม่พบ → clear]");
+        setOneField("feeCmpId",       "", "SUR_INVEST [ไม่พบ → clear]");
       }
-      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, "", "INS_INVEST [ไม่พบ → clear]");
-      setOneField(SEL.insPhotoCmpId,  SEL.insPhotoInput,  "", "INS_PHOTO [ไม่พบ → clear]");
+      setOneField("insInvestCmpId", "", "INS_INVEST [ไม่พบ → clear]");
+      setOneField("insPhotoCmpId",  "", "INS_PHOTO [ไม่พบ → clear]");
 
       // (2) INS_TRANS: ครั้งเดียวบน enter (sticky) — user เปลี่ยนได้
       //   BMR (10/11/12/13) → fix 300
@@ -914,10 +1057,10 @@
       }
       if (transValue !== null) {
         const tag = isBMR ? `BMR provinceId=${provinceId}` : `amphur ${amphurId}`;
-        setOneField(SEL.insTransCmpId, SEL.insTransInput, transValue,
+        setOneField("insTransCmpId", transValue,
           `INS_TRANS [ไม่พบ, ${tag}]`);
       } else {
-        setOneField(SEL.insTransCmpId, SEL.insTransInput, "",
+        setOneField("insTransCmpId", "",
           `INS_TRANS [ไม่พบ, no rate → clear]`);
       }
     }
@@ -980,7 +1123,7 @@
     // MtypeID 4 (เจรจาสินไหม) / ว่าง → insInvest = null → ไม่แตะ (กรอกเอง)
 
     if (insInvest !== null) {
-      setOneField(SEL.insInvestCmpId, SEL.insInvestInput, insInvest,
+      setOneField("insInvestCmpId", insInvest,
         `INS_INVEST [${prefix} ${why}]`);
     }
     // SUR_INVEST / INS_TRANS / INS_OTHER: ไม่แตะ (ปล่อยกรอกเอง)
@@ -1002,9 +1145,9 @@
       return;
     }
 
-    const provinceId = readHiddenValue(SEL.provinceHidden);
-    const amphurId   = readHiddenValue(SEL.amphurHidden);
-    const tumbonId   = readHiddenValue(SEL.tumbonHidden);
+    const provinceId = readHiddenValue("provinceHidden");
+    const amphurId   = readHiddenValue("amphurHidden");
+    const tumbonId   = readHiddenValue("tumbonHidden");
 
     // ค่าเรียกร้อง % — ทำเสมอ ไม่ขึ้นกับ whitelist
     syncClaimPercentages();
@@ -1083,9 +1226,9 @@
   }
 
   function buildCapture() {
-    const provinceId = readHiddenValue(SEL.provinceHidden);
-    const amphurId   = readHiddenValue(SEL.amphurHidden);
-    const tumbonId   = readHiddenValue(SEL.tumbonHidden);
+    const provinceId = readHiddenValue("provinceHidden");
+    const amphurId   = readHiddenValue("amphurHidden");
+    const tumbonId   = readHiddenValue("tumbonHidden");
     if (!provinceId && !amphurId) return null; // ยังไม่เลือกอะไร — ไม่ capture
     if (!isProvinceEnabled(provinceId)) return null;
 
@@ -1475,10 +1618,12 @@
 
   const observers = new Map();
 
-  function attachObserverFor(selector) {
-    const el = document.querySelector(selector);
+  function attachObserverFor(key) {
+    const R = window.SEResolve;
+    const el = R ? R.el(key) : document.querySelector(SEL[key]);
     if (!el) return false;
 
+    const selector = key;   // ใช้ key เป็นตัวระบุใน map
     const prev = observers.get(selector);
     if (prev && prev.target !== el) {
       prev.observer.disconnect();
@@ -1495,9 +1640,9 @@
   }
 
   function attachAllLocationObservers() {
-    attachObserverFor(SEL.provinceHidden);
-    attachObserverFor(SEL.amphurHidden);
-    attachObserverFor(SEL.tumbonHidden);
+    attachObserverFor("provinceHidden");
+    attachObserverFor("amphurHidden");
+    attachObserverFor("tumbonHidden");
   }
 
   /**
@@ -1726,8 +1871,10 @@
       }
 
       // ครบ → ปล่อยผ่านปกติ (host บันทึกเอง) + capture
-      if (btn.id === "tab1_save") {
-        log("Required ครบ → บันทึกต่อ");
+      // ต้องเทียบกับ saveButtonIds ทั้งชุด ไม่ใช่ hardcode "tab1_save"
+      // ไม่งั้นปุ่มที่เพิ่มใน /admin (เช่น tab1_saveOSS) จะ "บล็อกได้แต่ไม่ capture"
+      if (getSaveButtonIds().indexOf(btn.id) !== -1) {
+        log(`Required ครบ → บันทึกต่อ (#${btn.id})`);
         setTimeout(captureNow, 100);
       }
     }, true);

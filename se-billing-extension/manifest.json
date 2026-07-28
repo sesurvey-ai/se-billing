@@ -1,16 +1,19 @@
 {
   "manifest_version": 3,
   "name": "SE-Billing",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "description": "Auto-fill ค่าบริการ I Survey ตามจังหวัด/อำเภอ/ประเภทเคลม + บันทึก log + dashboard งานค้างต่อหัวหน้า",
   "icons": {
     "16": "icon-16.png",
     "48": "icon-48.png",
     "128": "icon-128.png"
   },
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
     "https://cloud.isurvey.mobi/*",
+    "https://se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com/*",
     "https://billing.sesurvey.cloud/*"
   ],
   "background": {
@@ -31,30 +34,58 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://cloud.isurvey.mobi/*"],
-      "js": ["loader.js"],
+      "matches": [
+        "https://cloud.isurvey.mobi/*",
+        "https://se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com/*"
+      ],
+      "js": [
+        "loader.js"
+      ],
       "run_at": "document_start",
       "world": "ISOLATED",
       "all_frames": false
     },
     {
-      "matches": ["https://cloud.isurvey.mobi/*"],
-      "js": ["config-bridge.js", "content.js", "feature-out-of-area-amount.js", "feature-out-of-hours-amount.js", "feature-deduct-amount.js", "feature-sub-area-checkbox.js", "feature-daily-check-amount.js"],
+      "matches": [
+        "https://cloud.isurvey.mobi/*",
+        "https://se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com/*"
+      ],
+      "js": [
+        "config-bridge.js",
+        "resolver.js",
+        "content.js",
+        "feature-out-of-area-amount.js",
+        "feature-out-of-hours-amount.js",
+        "feature-deduct-amount.js",
+        "feature-sub-area-checkbox.js",
+        "feature-daily-check-amount.js"
+      ],
       "run_at": "document_idle",
       "world": "MAIN",
       "all_frames": false
     },
     {
-      "matches": ["https://cloud.isurvey.mobi/*"],
-      "js": ["dashboard-badge.js"],
+      "matches": [
+        "https://cloud.isurvey.mobi/*"
+      ],
+      "js": [
+        "dashboard-badge.js"
+      ],
       "run_at": "document_idle",
       "all_frames": false
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["data/provinces.json", "data/amphurs.json", "data/tumbons.json"],
-      "matches": ["https://cloud.isurvey.mobi/*"]
+      "resources": [
+        "data/provinces.json",
+        "data/amphurs.json",
+        "data/tumbons.json"
+      ],
+      "matches": [
+        "https://cloud.isurvey.mobi/*",
+        "https://se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com/*"
+      ]
     }
   ]
 }
