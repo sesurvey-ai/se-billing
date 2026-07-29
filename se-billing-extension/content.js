@@ -547,15 +547,26 @@
    * - field ไม่มีอยู่ / ว่าง → ใช้ default จาก config (50)
    * - field มีค่าตัวเลขถูกต้อง (รวม 0) → ใช้ค่านั้น
    */
-  function getOutOfAreaAmount() {
-    const defaultAmt = (getCFG().modifierFees || {}).outOfArea || 0;
-    const cmp = getExtCmp(SEL.outOfAreaAmountCmpId);
+  /** อ่านตัวเลขจากช่องที่ extension แทรกเอง (Ext component หรือ DOM input) */
+  function readInjectedNumber(key, legacyCmpId) {
+    const R = window.SEResolve;
+    if (R) {
+      const raw = String(R.read(key) || "").replace(/,/g, "").trim();
+      if (raw !== "" && !isNaN(raw)) return Number(raw);
+      return null;
+    }
+    const cmp = getExtCmp(legacyCmpId);
     if (cmp && typeof cmp.getValue === "function") {
       const v = cmp.getValue();
-      if (v !== null && v !== undefined && v !== "" && !isNaN(v)) {
-        return { amount: Number(v), source: "custom" };
-      }
+      if (v !== null && v !== undefined && v !== "" && !isNaN(v)) return Number(v);
     }
+    return null;
+  }
+
+  function getOutOfAreaAmount() {
+    const defaultAmt = (getCFG().modifierFees || {}).outOfArea || 0;
+    const n = readInjectedNumber("outOfAreaAmountCmpId", SEL.outOfAreaAmountCmpId);
+    if (n !== null) return { amount: n, source: "custom" };
     return { amount: defaultAmt, source: "default" };
   }
 
@@ -565,13 +576,8 @@
    */
   function getOutOfHoursAmount() {
     const defaultAmt = (getCFG().modifierFees || {}).outOfHours || 0;
-    const cmp = getExtCmp(SEL.outOfHoursAmountCmpId);
-    if (cmp && typeof cmp.getValue === "function") {
-      const v = cmp.getValue();
-      if (v !== null && v !== undefined && v !== "" && !isNaN(v)) {
-        return { amount: Number(v), source: "custom" };
-      }
-    }
+    const n = readInjectedNumber("outOfHoursAmountCmpId", SEL.outOfHoursAmountCmpId);
+    if (n !== null) return { amount: n, source: "custom" };
     return { amount: defaultAmt, source: "default" };
   }
 
@@ -581,25 +587,20 @@
    * (ไม่มี toggle — field value = 0 หมายความว่า "ไม่หัก")
    */
   function getDeductAmount() {
-    const cmp = getExtCmp(SEL.deductAmountCmpId);
-    if (cmp && typeof cmp.getValue === "function") {
-      const v = cmp.getValue();
-      if (v !== null && v !== undefined && v !== "" && !isNaN(v)) {
-        const n = Number(v);
-        if (n > 0) return n;
-      }
-    }
-    return 0;
+    const n = readInjectedNumber("deductAmountCmpId", SEL.deductAmountCmpId);
+    return (n !== null && n > 0) ? n : 0;
   }
 
-  function readDeductFlag(cmpId, fallbackInputId) {
+  function readDeductFlag(key, cmpId, fallbackInputId) {
+    const R = window.SEResolve;
+    if (R) return R.isChecked(key);
     const cmp = getExtCmp(cmpId);
     if (cmp && typeof cmp.getValue === "function") return cmp.getValue() === true;
     const el = document.getElementById(fallbackInputId);
     return !!(el && el.checked);
   }
-  const isLateSubmit     = () => readDeductFlag(SEL.lateSubmitCmpId,     SEL.lateSubmitInputId);
-  const isIncompleteDocs = () => readDeductFlag(SEL.incompleteDocsCmpId, SEL.incompleteDocsInputId);
+  const isLateSubmit     = () => readDeductFlag("lateSubmitCmpId",     SEL.lateSubmitCmpId,     SEL.lateSubmitInputId);
+  const isIncompleteDocs = () => readDeductFlag("incompleteDocsCmpId", SEL.incompleteDocsCmpId, SEL.incompleteDocsInputId);
 
   /**
    * Validate deduct: ถ้ากรอกยอด > 0 ต้องติ๊กอย่างน้อย 1 ใน 2 (ส่งช้า / เอกสารไม่ครบ)

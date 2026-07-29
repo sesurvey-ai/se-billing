@@ -116,9 +116,49 @@
     return Ext.getCmp(GROUP_ID);
   }
 
+  // ─────────────────────────────────────────────────────────
+  // โหมด DOM (เว็บใหม่ React+MUI)
+  //   radio ทั้งหน้าใช้ name เดียวกันหมด → resolver เจาะจงด้วย label ของกลุ่ม
+  //   เลือก "นอก" → แทรกช่องยอดเงินต่อท้ายกลุ่ม ; เลือก "ใน" → ลบทิ้ง
+  // ─────────────────────────────────────────────────────────
+  function domPollOnce() {
+    const R = window.SEResolve, I = window.SEInject;
+    if (!R || !I) return;
+
+    const val = R.radioValue("inOutGroupCmpId");
+    if (!val) return;                       // ยังหากลุ่มไม่เจอ / ยังไม่เลือก
+
+    if (val === OUT_LABEL) {
+      if (!I.get(FIELD_ID)) {
+        // เกาะ FormControl ทั้งก้อน เพื่อให้ช่องไปอยู่ท้ายสุดของแถว ไม่แทรกกลาง radio
+        const anchorRadio = R.el("inOutGroupCmpId");
+        const anchor = (anchorRadio && anchorRadio.closest(".MuiFormControl-root, fieldset")) || anchorRadio;
+        if (!anchor) return;
+        const f = I.numberField({
+          id: FIELD_ID, after: anchor, width: FIELD_WIDTH,
+          placeholder: "ยอดเงิน (บาท)", title: "ยอดเงินนอกเวลางาน — เว้นว่างเพื่อใช้ค่าเริ่มต้น",
+        });
+        if (f) log("แทรกช่องยอดเงิน (โหมด DOM)");
+      }
+    } else if (I.get(FIELD_ID)) {
+      I.remove(FIELD_ID);
+      log("เลือก 'ใน' → ลบช่องยอดเงิน");
+    }
+  }
+
   let lastGrp = null;
+  let lastErr = "";
 
   function pollOnce() {
+    // เว็บใหม่ไม่มี ExtJS → ใช้เส้นทาง DOM
+    if (typeof Ext === "undefined" || typeof Ext.getCmp !== "function") {
+      try { domPollOnce(); } catch (e) {
+        const msg = String(e && e.message || e);
+        if (msg !== lastErr) { lastErr = msg; warn("โหมด DOM ล้มเหลว:", e); }
+      }
+      return;
+    }
+
     const grp = tryFindGroup();
     if (!grp) return;
 
@@ -126,7 +166,10 @@
     if (grp === lastGrp && grp.__outOfHoursHandler) return;
 
     lastGrp = grp;
-    init(grp);
+    try { init(grp); } catch (e) {
+      const msg = String(e && e.message || e);
+      if (msg !== lastErr) { lastErr = msg; warn("init ล้มเหลว:", e); }
+    }
   }
 
   pollOnce();

@@ -125,7 +125,87 @@
     return found;
   }
 
+  // ═════════════════════════════════════════════════════════
+  // โหมด DOM (เว็บใหม่ React+MUI) — คนละแนวคิดกับเว็บเก่าโดยตั้งใจ
+  //
+  //   เว็บเก่า: สร้างแถวที่ 7 "หักเงิน" ขึ้นมาเอง ยอดไม่เข้าระบบ isurvey
+  //            (เห็นแต่ยอดสุทธิที่ถูกหักไปแล้วในค่าบริการ)
+  //   เว็บใหม่: ใช้ช่องเงินจริงของ isurvey แถว "3. ค่าใช้จ่ายอื่นๆ"
+  //            แล้วแทรก checkbox 2 ตัวเป็นตัวกำหนดเครื่องหมาย
+  //              ไม่ติ๊ก = ค่าใช้จ่ายปกติ (บวก)
+  //              ติ๊ก    = หักเงิน (ลบ)
+  //            → ยอดหักเข้ายอดรวมของ isurvey จริง เห็นในรายงาน
+  //
+  //   ผู้ใช้พิมพ์แค่จำนวน ไม่ต้องใส่เครื่องหมายลบ — เราจัดการให้
+  //   ใส่เครื่องหมายตอน "ติ๊ก/ปลดติ๊ก" และตอน "ออกจากช่อง (blur)"
+  //   ไม่ทำระหว่างพิมพ์ เพราะจะไปแย่งแก้ค่าที่ผู้ใช้กำลังพิมพ์อยู่
+  // ═════════════════════════════════════════════════════════
+  const OTHER_ROW_LABEL = "ค่าใช้จ่ายอื่นๆ";
+  const DOM_WRAP_ID     = "tab1_deduct_reason_dom";
+
+  function otherExpenseInputs() {
+    const I = window.SEInject;
+    if (!I) return [];
+    return ["proposed", "approved"]
+      .map((col) => { const c = I.tableCell(OTHER_ROW_LABEL, col); return c && c.querySelector("input"); })
+      .filter(Boolean);
+  }
+
+  function isDeductChecked() {
+    const a = document.getElementById(LATE_CHK_ID);
+    const b = document.getElementById(DOCS_CHK_ID);
+    return !!((a && a.checked) || (b && b.checked));
+  }
+
+  /** บังคับเครื่องหมายของช่องให้ตรงกับสถานะ checkbox */
+  function applySign() {
+    const R = window.SEResolve;
+    if (!R) return;
+    const want = isDeductChecked() ? -1 : 1;
+    otherExpenseInputs().forEach((el) => {
+      const raw = String(el.value || "").replace(/,/g, "").trim();
+      if (raw === "") return;
+      const n = Number(raw);
+      if (!isFinite(n) || n === 0) return;
+      const target = Math.abs(n) * want;
+      if (n === target) return;
+      R.setNativeValue(el, String(target));
+      log(`ปรับเครื่องหมาย "${OTHER_ROW_LABEL}" → ${target}`);
+    });
+  }
+
+  function domPollOnce() {
+    const I = window.SEInject;
+    if (!I) return;
+    if (document.getElementById(DOM_WRAP_ID)) return;   // สร้างแล้ว
+
+    // วาง checkbox ไว้ใน cell "รายละเอียด" ต่อท้ายข้อความ ค่าใช้จ่ายอื่นๆ
+    const row = I.tableRow(OTHER_ROW_LABEL);
+    if (!row) return;
+    const descCell = [...row.children].find((c) => (c.textContent || "").includes(OTHER_ROW_LABEL));
+    if (!descCell) return;
+
+    const wrap = document.createElement("span");
+    wrap.id = DOM_WRAP_ID;
+    wrap.style.cssText = "display:inline-flex;align-items:center;gap:2px;margin-left:6px";
+    descCell.appendChild(wrap);
+
+    I.checkbox({ id: LATE_CHK_ID, label: "หักเงินส่งช้า",      into: wrap, onChange: applySign });
+    I.checkbox({ id: DOCS_CHK_ID, label: "หักเงินเอกสารไม่ครบ", into: wrap, onChange: applySign });
+
+    // ผู้ใช้พิมพ์เสร็จแล้วออกจากช่อง → ค่อยใส่เครื่องหมาย
+    otherExpenseInputs().forEach((el) => el.addEventListener("blur", applySign));
+
+    log(`แทรกตัวเลือกหักเงินในแถว "${OTHER_ROW_LABEL}" (โหมด DOM)`);
+  }
+
   function pollOnce() {
+    // เว็บใหม่ไม่มี ExtJS → ใช้แนวคิดผูกกับช่องเงินจริงแทนการสร้างแถวใหม่
+    if (typeof Ext === "undefined" || typeof Ext.getCmp !== "function") {
+      try { domPollOnce(); } catch (e) { warn("โหมด DOM ล้มเหลว:", e); }
+      return;
+    }
+
     const table = tryFindTablePanel();
     if (!table) return;
 

@@ -144,10 +144,50 @@
     return Ext.getCmp(CHECKBOX_ID);
   }
 
+  // ─────────────────────────────────────────────────────────
+  // โหมด DOM (เว็บใหม่ React+MUI — ไม่มี ExtJS ให้พึ่ง)
+  //   checkbox "นอกพื้นที่" ไม่มี id → หาผ่าน resolver จากข้อความกำกับ
+  //   ติ๊ก → แทรก <input> ต่อท้าย ; ปลด → ลบทิ้ง
+  //   id ของช่องเป็นของเราเอง (tab1_chk_co_area_amount) เหมือนเว็บเก่า
+  //   → content.js อ่านค่าด้วย key เดิมได้ ไม่ต้องแยกโค้ด
+  // ─────────────────────────────────────────────────────────
+  function domPollOnce() {
+    const R = window.SEResolve, I = window.SEInject;
+    if (!R || !I) return;
+
+    const cb = R.el("outOfAreaCmpId");
+    if (!cb) return;
+
+    if (cb.checked) {
+      if (!I.get(FIELD_ID)) {
+        // แทรกต่อท้าย <label> ที่ครอบ checkbox ไม่ใช่ตัว checkbox เปล่าๆ
+        // ไม่งั้นช่องจะไปแทรกกลางระหว่าง checkbox กับข้อความ "นอกพื้นที่"
+        const anchor = cb.closest("label, .MuiFormControlLabel-root") || cb;
+        const f = I.numberField({
+          id: FIELD_ID, after: anchor, width: FIELD_WIDTH,
+          placeholder: "ยอดเงิน (บาท)", title: "ยอดเงินนอกพื้นที่ — เว้นว่างเพื่อใช้ค่าเริ่มต้น",
+        });
+        if (f) log("แทรกช่องยอดเงิน (โหมด DOM)");
+      }
+    } else if (I.get(FIELD_ID)) {
+      I.remove(FIELD_ID);
+      log("ปลดติ๊ก → ลบช่องยอดเงิน");
+    }
+  }
+
   let lastCb = null;
   let lastErr = "";
 
   function pollOnce() {
+    // เว็บใหม่ไม่มี ExtJS → ใช้เส้นทาง DOM แทน
+    if (typeof Ext === "undefined" || typeof Ext.getCmp !== "function") {
+      try { domPollOnce(); } catch (e) {
+        const msg = String(e && e.message || e);
+        if (msg !== lastErr) { lastErr = msg; warn("โหมด DOM ล้มเหลว:", e); }
+      }
+      return;
+    }
+
     const cb = tryFindCheckbox();
     if (!cb) return;
 

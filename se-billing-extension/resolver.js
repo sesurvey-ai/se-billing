@@ -25,7 +25,7 @@
   if (window.SEResolve) return;   // กันโหลดซ้ำ
 
   var TAG = "[SEResolve]";
-  var VERSION = "2.11.0-r4";   // เช็กว่า reload extension แล้วจริงไหม: SEResolve.version
+  var VERSION = "2.11.0-r8";   // เช็กว่า reload extension แล้วจริงไหม: SEResolve.version
   function CFG() { return window.ISURVEY_HELPER_CONFIG || {}; }
   function dbg() {
     if (!CFG().debug) return;
@@ -215,6 +215,24 @@
   K("notifyNoInputId", { shape: "domId", kind: "field", domIds: ["เลขที่รับแจ้ง"], labels: ["เลขที่รับแจ้ง"], optional: true });
   K("policyNoInputId", { shape: "domId", kind: "field", cmpIds: ["tab1_policy_no"], domIds: ["tab1_policy_no-inputEl", "เลขที่กรมธรรม์"], labels: ["เลขที่กรมธรรม์"], optional: true });
   K("insurerInputId",  { shape: "domId", kind: "field", domIds: ["บริษัทประกัน"], labels: ["บริษัทประกัน"], optional: true });
+
+  // ── ช่องที่ extension สร้างเอง ─────────────────────────────
+  //   id เป็นของเรา คงที่ทั้งสองเว็บ — เว็บเก่าเป็น Ext component (id ตรง)
+  //   เว็บใหม่เป็น DOM element ธรรมดา (id ตรงเหมือนกัน)
+  function own(key, id, kind) {
+    K(key, {
+      shape: kind === "checkbox" ? "cmpId" : "cmpId", kind: kind || "field",
+      cmpIds: [id], domIds: [id + "-inputEl", id], optional: true,
+    });
+  }
+  own("outOfAreaAmountCmpId",   "tab1_chk_co_area_amount");
+  own("outOfHoursAmountCmpId",  "tab1_rd_out_amount");
+  own("deductAmountCmpId",      "tab1_deduct_amount");
+  own("lateSubmitCmpId",        "tab1_deduct_late_submit",      "checkbox");
+  own("incompleteDocsCmpId",    "tab1_deduct_incomplete_docs",  "checkbox");
+  own("dailyChkRightCmpId",     "tab1_daily_chk_right",         "checkbox");
+  own("dailyChkWrongCmpId",     "tab1_daily_chk_wrong",         "checkbox");
+  own("dailyChkWaitCmpId",      "tab1_daily_chk_wait",          "checkbox");
 
   // ค่าคงที่ (ไม่ใช่ selector)
   K("inOutRadioName",  { shape: "literal", literal: "tab1_rd-in_out" });
@@ -706,6 +724,134 @@
   window.addEventListener("pageshow", function () { bumpEpoch("pageshow"); });
 
   // ═════════════════════════════════════════════════════════
+  // SEInject — แทรกฟิลด์ของเราเองลงหน้าเว็บ (เฉพาะโหมด DOM)
+  //   เว็บเก่ายังใช้ ExtJS container.insert() ในไฟล์ feature เหมือนเดิม
+  //   ตัวนี้ใช้เฉพาะเว็บใหม่ที่ไม่มี Ext ให้พึ่ง
+  //   หลักการ: element ที่สร้างมี id ของเราเอง → idempotent (มีอยู่แล้วไม่สร้างซ้ำ)
+  // ═════════════════════════════════════════════════════════
+  var INJ_CLASS = "se-billing-injected";
+
+  function styleLike(src, el) {
+    // ลอกหน้าตาจากช่องข้างๆ ให้กลมกลืน (ขนาดตัวอักษร/ขอบ/ความสูง)
+    safe(function () {
+      var cs = getComputedStyle(src);
+      el.style.font = cs.font;
+      el.style.height = cs.height;
+      el.style.padding = "4px 8px";
+      el.style.border = "1px solid rgba(0,0,0,0.23)";
+      el.style.borderRadius = "4px";
+      el.style.boxSizing = "border-box";
+    }, null);
+  }
+
+  var SEInject = {
+    /** โหมด DOM เท่านั้น — เว็บเก่าให้ feature file จัดการเองด้วย Ext */
+    domMode: function () { return !hasExt(); },
+
+    get: function (id) { return document.getElementById(id); },
+
+    remove: function (id) {
+      var el = document.getElementById(id);
+      var host = el && el.closest("." + INJ_CLASS);
+      if (host) host.remove();
+      else if (el) el.remove();
+      return !!el;
+    },
+
+    /**
+     * แทรกช่องกรอกตัวเลขต่อท้าย element ที่กำหนด (idempotent)
+     * คืน element ของช่อง หรือ null ถ้าแทรกไม่ได้
+     */
+    numberField: function (opts) {
+      var existing = document.getElementById(opts.id);
+      if (existing) return existing;
+      var after = opts.after;
+      if (!after || !after.parentNode) return null;
+
+      var wrap = document.createElement("span");
+      wrap.className = INJ_CLASS;
+      wrap.style.cssText = "display:inline-flex;align-items:center;gap:4px;margin-left:8px;vertical-align:middle";
+
+      var input = document.createElement("input");
+      input.type = "text";
+      input.inputMode = "decimal";
+      input.id = opts.id;
+      input.placeholder = opts.placeholder || "ยอดเงิน (บาท)";
+      input.style.width = (opts.width || 110) + "px";
+      styleLike(after.tagName === "INPUT" ? after : (after.querySelector("input") || after), input);
+      if (opts.title) input.title = opts.title;
+
+      wrap.appendChild(input);
+      if (opts.suffix) {
+        var s = document.createElement("span");
+        s.textContent = opts.suffix;
+        s.style.cssText = "font-size:12px;opacity:.7";
+        wrap.appendChild(s);
+      }
+
+      var anchor = opts.wrapAnchor ? (after.closest(opts.wrapAnchor) || after) : after;
+      anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
+      if (typeof opts.onInput === "function") input.addEventListener("input", opts.onInput);
+      return input;
+    },
+
+    /** แทรก checkbox พร้อมข้อความกำกับ (idempotent) */
+    checkbox: function (opts) {
+      var existing = document.getElementById(opts.id);
+      if (existing) return existing;
+      var into = opts.into;
+      if (!into) return null;
+
+      var label = document.createElement("label");
+      label.className = INJ_CLASS;
+      label.style.cssText = "display:inline-flex;align-items:center;gap:3px;margin-left:8px;font-size:13px;white-space:nowrap;cursor:pointer";
+
+      var box = document.createElement("input");
+      box.type = "checkbox";
+      box.id = opts.id;
+      box.style.cssText = "margin:0;cursor:pointer";
+
+      var txtEl = document.createElement("span");
+      txtEl.textContent = opts.label || "";
+
+      label.appendChild(box);
+      label.appendChild(txtEl);
+      into.appendChild(label);
+      if (typeof opts.onChange === "function") box.addEventListener("change", opts.onChange);
+      return box;
+    },
+
+    /** cell ในตารางค่าใช้จ่าย: หาแถวจากข้อความ แล้วคืน <td> ตามคอลัมน์ */
+    tableCell: function (rowLabel, col) {
+      var table = findExpenseTable();
+      if (!table) return null;
+      var row = findRowByLabel(table, rowLabel);
+      if (!row) return null;
+      var map = columnIndexMap(table);
+      var idx = map ? map[col] : undefined;
+      if (idx === undefined) return null;
+      return row.children[idx] || null;
+    },
+
+    tableRow: function (rowLabel) {
+      var table = findExpenseTable();
+      if (!table) return null;
+      return findRowByLabel(table, rowLabel);
+    },
+
+    /** อ่านค่าตัวเลขจากช่องที่เราแทรก — คืน null ถ้าไม่มี/ว่าง/ไม่ใช่ตัวเลข */
+    numberValue: function (id) {
+      var el = document.getElementById(id);
+      if (!el) return null;
+      var v = String(el.value || "").replace(/,/g, "").trim();
+      if (!v) return null;
+      var n = Number(v);
+      return isNaN(n) ? null : n;
+    },
+  };
+
+  // ═════════════════════════════════════════════════════════
+  window.SEInject = SEInject;
   window.SEResolve = {
     version: VERSION,
     el: elOf,

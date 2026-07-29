@@ -77,14 +77,39 @@
     return null;
   }
 
-  /** checkbox ติ๊กอยู่ไหม — component ไม่มี (โหมด SEMS) → false */
+  /** โหมด DOM = ไม่มี ExtJS ให้พึ่ง (เว็บใหม่ React+MUI) */
+  function domMode() {
+    return typeof Ext === "undefined" || typeof Ext.getCmp !== "function";
+  }
+
+  /** id ของช่อง host → logical key ของ resolver */
+  const KEY_OF = {
+    [NUM_CMP_ID]: "dailyNumCmpId",
+    [SUR_CMP_ID]: "surDailyCmpId",
+    [INS_CMP_ID]: "insDailyCmpId",
+  };
+
+  /** checkbox ติ๊กอยู่ไหม — ไม่มี (โหมด SEMS ไม่มีกล่อง "ผิด") → false */
   function chkChecked(id) {
+    if (domMode()) {
+      const el = document.getElementById(id);
+      return !!(el && el.checked);
+    }
     const c = Ext.getCmp(id);
     return !!(c && typeof c.getValue === "function" && c.getValue() === true);
   }
 
-  /** set disabled ให้ checkbox — no-op ถ้า component ไม่มี */
+  /** set disabled ให้ checkbox — no-op ถ้าไม่มี */
   function setChkDisabled(id, disabled) {
+    if (domMode()) {
+      const el = document.getElementById(id);
+      if (el && el.disabled !== !!disabled) {
+        el.disabled = !!disabled;
+        const wrap = el.closest("label");
+        if (wrap) wrap.style.opacity = disabled ? "0.45" : "";
+      }
+      return;
+    }
     const c = Ext.getCmp(id);
     if (c && typeof c.setDisabled === "function" && !!c.disabled !== !!disabled) {
       c.setDisabled(!!disabled);
@@ -108,6 +133,13 @@
 
   /** เซ็ตค่า field ผ่าน Ext (trigger การคำนวณยอดรวมของ host) */
   function setField(cmpId, value) {
+    const R = window.SEResolve, key = KEY_OF[cmpId];
+    if (domMode() || (R && key && !Ext.getCmp(cmpId))) {
+      if (!R || !key) return false;
+      if (String(R.read(key)) === String(value)) return false;
+      // เว็บใหม่เป็น controlled input — resolver เขียนผ่าน native setter ให้
+      return R.write(key, value);
+    }
     const c = Ext.getCmp(cmpId);
     if (!c || typeof c.setValue !== "function") return false;
     if (String(c.getValue()) === String(value)) return false;   // ไม่แตะถ้าเท่าเดิม (กัน flash รัว)
@@ -118,6 +150,14 @@
 
   /** ล้าง field เป็นค่าว่าง — skip ถ้าว่างอยู่แล้ว (กัน flash รัว) */
   function clearField(cmpId) {
+    const R = window.SEResolve, key = KEY_OF[cmpId];
+    if (domMode()) {
+      if (!R || !key) return false;
+      const cur = String(R.read(key) || "").trim();
+      // เว็บใหม่ช่องว่างแสดงเป็น "0" — ถือว่าว่างแล้ว ไม่ต้องเขียนซ้ำ
+      if (cur === "" || Number(cur) === 0) return false;
+      return R.write(key, "0");
+    }
     const c = Ext.getCmp(cmpId);
     if (!c || typeof c.setValue !== "function") return false;
     const v = c.getValue();
@@ -230,9 +270,58 @@
     return anchor ? anchor.ownerCt : null;
   }
 
+  // ─────────────────────────────────────────────────────────
+  // โหมด DOM (เว็บใหม่ React+MUI)
+  //   แถว "5.ค่าคัดประจำวัน" มีอยู่แล้ว มี cell "จำนวน" ที่เขียนว่า "ข้อ"
+  //   → แทรก checkbox ต่อท้ายใน cell นั้น
+  //   ตรรกะคิดเงินใช้ recompute() ตัวเดียวกับเว็บเก่า ไม่แยกโค้ด
+  // ─────────────────────────────────────────────────────────
+  const DOM_WRAP_ID = "tab1_daily_check_group_dom";
+
+  function domInit() {
+    const I = window.SEInject;
+    if (!I) return;
+
+    const prefix = surveyPrefix();
+    const existing = document.getElementById(DOM_WRAP_ID);
+
+    // prefix เปลี่ยน (SETP↔SEMS) → ชุดกล่องต่างกัน ต้องสร้างใหม่
+    if (existing && existing.dataset.prefix === String(prefix)) return;
+    if (existing) existing.remove();
+
+    const cell = I.tableCell("ค่าคัดประจำวัน", "amount");
+    if (!cell) return;
+
+    const wrap = document.createElement("span");
+    wrap.id = DOM_WRAP_ID;
+    wrap.dataset.prefix = String(prefix);
+    wrap.style.cssText = "display:inline-flex;align-items:center;gap:2px;margin-left:6px";
+    cell.appendChild(wrap);
+
+    // SEMS = กล่องเดียว "ถูก" ; อื่นๆ = ถูก/ผิด/รอผล
+    const boxes = (prefix === "SEMS")
+      ? [[CHK_RIGHT_ID, RIGHT_LABEL]]
+      : [[CHK_RIGHT_ID, RIGHT_LABEL], [CHK_WRONG_ID, WRONG_LABEL], [CHK_WAIT_ID, WAIT_LABEL]];
+
+    boxes.forEach(([id, label]) => {
+      I.checkbox({ id, label, into: wrap, onChange: recompute });
+    });
+    log(`สร้าง checkbox (${prefix || "default"}) ในแถวค่าคัดประจำวัน (โหมด DOM)`);
+  }
+
   let lastRow = null;
+  let lastErr = "";
 
   function pollOnce() {
+    // เว็บใหม่ไม่มี ExtJS → เส้นทาง DOM
+    if (domMode()) {
+      try { domInit(); } catch (e) {
+        const msg = String(e && e.message || e);
+        if (msg !== lastErr) { lastErr = msg; warn("โหมด DOM ล้มเหลว:", e); }
+      }
+      return;
+    }
+
     const row = tryFindRow();
     if (!row) return;
 
@@ -242,7 +331,10 @@
       return;
     }
     lastRow = row;
-    init(row);
+    try { init(row); } catch (e) {
+      const msg = String(e && e.message || e);
+      if (msg !== lastErr) { lastErr = msg; warn("init ล้มเหลว:", e); }
+    }
   }
 
   pollOnce();
