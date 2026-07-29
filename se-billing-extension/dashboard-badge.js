@@ -18,6 +18,26 @@
   }
   const TITLE_ID = "main-tab_header-title-textEl";
 
+  // ── หา element ที่แสดงชื่อผู้ล็อกอิน ──────────────────────
+  //   เว็บเก่า (ExtJS): <div id="main-tab_header-title-textEl">Hi, นายนพดล ...</div>
+  //   เว็บใหม่ (MUI)  : <span class="MuiChip-label">นายนพดล สมบูรณ์กุล</span>  (ไม่มี id)
+  //   ไฟล์นี้รันใน ISOLATED world จึงเรียก SEResolve (MAIN world) ไม่ได้ ต้องหาเอง
+  const NAME_RE = /^\s*(Hi,\s*)?(นางสาว|นาง|นาย|น\.ส\.|คุณ)\s*\S/;
+  let _titleCache = null;
+
+  function titleEl() {
+    const byId = titleEl();
+    if (byId) { _titleCache = null; return byId; }
+    if (_titleCache && _titleCache.isConnected) return _titleCache;
+    // เว็บใหม่: หา chip/ข้อความสั้นที่ขึ้นต้นด้วยคำนำหน้าชื่อไทย
+    const cands = document.querySelectorAll(".MuiChip-label, header span, nav span, [class*='userName'], [class*='UserName']");
+    for (let i = 0; i < cands.length; i++) {
+      const t = (cands[i].textContent || "").trim();
+      if (t.length <= 40 && NAME_RE.test(t)) { _titleCache = cands[i]; return cands[i]; }
+    }
+    return null;
+  }
+
   // admins[] + aliases{} มาจาก payload /api/dashboard (config-driven ที่ /admin)
   //   admins  = ชื่อหัวหน้าที่เห็นยอดรวมทั้งบริษัท ; fallback = [นพดล] (คงพฤติกรรมเดิม)
   //   aliases = { ชื่อตอน login : ชื่อใน snapshot } — map ชื่อ login → bucket ที่ถูกต้อง
@@ -194,6 +214,13 @@
     rg.selectNodeContents(title);
     const rr = rg.getBoundingClientRect();
     if (!rr.width && !rr.height) return null;
+
+    // เว็บใหม่ (MUI chip) element กว้างพอดีข้อความอยู่แล้ว → ขอบซ้ายคือตำแหน่งชื่อจริง
+    // ใช้ trick วัดด้วย canvas เฉพาะเว็บเก่า ที่ ExtJS ทำ element กว้างเต็มแถบแล้วชิดขวา
+    if (title.id !== TITLE_ID) {
+      return { left: rr.left, top: rr.top, height: rr.height };
+    }
+
     const cs = getComputedStyle(title);
     if (!_cv) _cv = document.createElement("canvas").getContext("2d");
     _cv.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
@@ -203,7 +230,7 @@
 
   // ---- วางป้ายให้อยู่ "หน้าชื่อ" (ชิดซ้ายของตัวอักษรชื่อจริง) แบบไดนามิก ----
   function positionBadge(b) {
-    const title = document.getElementById(TITLE_ID);
+    const title = titleEl();
     if (!title) return;
     const n = nameLeftX(title);
     if (!n) return;
@@ -225,7 +252,7 @@
   }
 
   function renderBadge() {
-    const title = document.getElementById(TITLE_ID);
+    const title = titleEl();
     if (!title) return; // header ยังไม่พร้อม
     const b = badgeEl();
     let html = "";
@@ -245,7 +272,7 @@
 
   // ---- อ่านชื่อจาก header ----
   function capture() {
-    const el = document.getElementById(TITLE_ID);
+    const el = titleEl();
     const raw = el ? el.textContent.trim() : "";
     if (!raw) return;
     const display = raw.replace(/^\s*Hi,\s*/, "").trim();

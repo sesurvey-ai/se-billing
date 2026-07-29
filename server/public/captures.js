@@ -50,8 +50,12 @@ function render() {
     const oaAmt    = r.out_of_area  ? (Number(r.out_of_area_amt)  || 0) : 0;
     const ohAmt    = r.out_of_hours ? (Number(r.out_of_hours_amt) || 0) : 0;
     const ded      = Number(r.deduct_amt) || 0;
-    const basePnk  = sur - oaAmt - ohAmt + ded;
-    const sumPnk   = basePnk + oaAmt + ohAmt - ded;       // = sur (math ตรงตามที่แสดง)
+    const otherAmt = Number(r.other_expense_amt) || 0;
+    // เว็บเก่า: ยอดหักถูกลบออกจาก sur_invest แล้ว → บวกกลับเพื่อ derive ฐาน
+    // เว็บใหม่: หักที่ช่อง "ค่าใช้จ่ายอื่นๆ" (ติดลบ) sur_invest ไม่เคยถูกหัก → ห้ามบวกกลับ
+    const dedInSur = otherAmt < 0 ? 0 : ded;
+    const basePnk  = sur - oaAmt - ohAmt + dedInSur;
+    const sumPnk   = basePnk + oaAmt + ohAmt - dedInSur;  // = sur (math ตรงตามที่แสดง)
     const sumCo    = (Number(r.ins_invest) || 0)
                    + (Number(r.ins_trans)  || 0)
                    + (Number(r.ins_photo)  || 0);
@@ -81,6 +85,7 @@ function render() {
       <td>${r.out_of_area  ? `<span class="amount-pos">+${r.out_of_area_amt  ?? 0}</span>` : ""}</td>
       <td>${r.out_of_hours ? `<span class="amount-pos">+${r.out_of_hours_amt ?? 0}</span>` : ""}</td>
       <td class="numeric">${r.deduct_amt ? `<span class="amount-neg">-${r.deduct_amt}</span>` : ""}</td>
+      <td class="numeric">${otherAmt ? `<span class="${otherAmt < 0 ? "amount-neg" : "amount-pos"}">${otherAmt > 0 ? "+" : ""}${otherAmt}</span>` : ""}</td>
       <td>${r.late_submit     ? "✓" : ""}</td>
       <td>${r.incomplete_docs ? "✓" : ""}</td>
       <td class="numeric"><strong>${sumPnk}</strong></td>

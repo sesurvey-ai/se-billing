@@ -25,7 +25,7 @@
   if (window.SEResolve) return;   // กันโหลดซ้ำ
 
   var TAG = "[SEResolve]";
-  var VERSION = "2.11.0-r8";   // เช็กว่า reload extension แล้วจริงไหม: SEResolve.version
+  var VERSION = "2.11.0-r10";   // เช็กว่า reload extension แล้วจริงไหม: SEResolve.version
   function CFG() { return window.ISURVEY_HELPER_CONFIG || {}; }
   function dbg() {
     if (!CFG().debug) return;
@@ -118,6 +118,12 @@
   money("recvClaimCmpId", "tab1_RECV_CLAIM", "ค่าเรียกร้อง",   "amount");
   money("surClaimCmpId",  "tab1_SUR_CLAIM",  "ค่าเรียกร้อง",   "proposed");
   money("insClaimCmpId",  "tab1_INS_CLAIM",  "ค่าเรียกร้อง",   "approved");
+  // ค่าใช้จ่ายอื่นๆ — เว็บใหม่ใช้ช่องนี้เป็นตัวรับยอดหักเงิน (ติดลบ)
+  //   ยังไม่รู้ id ฝั่งเว็บเก่า จึงหาด้วยแถว×คอลัมน์อย่างเดียว
+  K("otherExpenseCmpId", {
+    shape: "cmpId", kind: "field",
+    row: "ค่าใช้จ่ายอื่นๆ", col: "proposed", optional: true,
+  });
   money("dailyNumCmpId",  "tab1_DAILY_NUM",  "ค่าคัดประจำวัน", "amount",   { mutating: true });
   money("surDailyCmpId",  "tab1_SUR_DAILY",  "ค่าคัดประจำวัน", "proposed", { mutating: true });
   money("insDailyCmpId",  "tab1_INS_DAILY",  "ค่าคัดประจำวัน", "approved", { mutating: true });
@@ -724,6 +730,72 @@
   window.addEventListener("pageshow", function () { bumpEpoch("pageshow"); });
 
   // ═════════════════════════════════════════════════════════
+  // ชื่อ → รหัส (จังหวัด/อำเภอ/ตำบล)
+  //   เว็บเก่าอ่านค่าได้เป็นรหัสอยู่แล้ว · เว็บใหม่ combobox คืน "ชื่อ"
+  //   แต่ตรรกะเรตทั้งหมดใช้รหัส จึงต้องแปลงกลับ
+  //   ข้อมูลอ้างอิงมาจาก window.__ISURVEY_REF__ (loader.js โหลดจากไฟล์ในตัว extension)
+  // ═════════════════════════════════════════════════════════
+  var _rev = null;
+  function reverseIndex() {
+    var ref = window.__ISURVEY_REF__;
+    if (!ref) return null;
+    if (_rev && _rev.__src === ref) return _rev;
+    function invert(dict) {
+      var out = {};
+      for (var id in (dict || {})) {
+        var nm = String(dict[id] || "").trim();
+        if (!nm) continue;
+        (out[nm] = out[nm] || []).push(String(id));
+      }
+      return out;
+    }
+    _rev = {
+      __src: ref,
+      province: invert(ref.byProvinceId),
+      amphur: invert(ref.byAmphurId),
+      tumbon: invert(ref.byTumbonId),
+    };
+    return _rev;
+  }
+
+  /** ตัดคำนำหน้าที่หน้าเว็บใส่มาแต่ไม่มีในฐานข้อมูล */
+  function stripAreaPrefix(name) {
+    return String(name || "")
+      .replace(/^(จังหวัด|เขต\/อำเภอ|เขต|อำเภอ|ตำบล|แขวง|จ\.|อ\.|ต\.)\s*/, "")
+      .trim();
+  }
+
+  function lookupId(level, name, parentId) {
+    var raw = String(name || "").trim();
+    if (!raw) return "";
+    if (/^\d+$/.test(raw)) return raw;          // เป็นรหัสอยู่แล้ว
+    var idx = reverseIndex();
+    if (!idx) return "";
+    var dict = idx[level] || {};
+    var ids = dict[raw] || dict[stripAreaPrefix(raw)] || [];
+    if (!ids.length) return "";
+    if (ids.length === 1) return ids[0];
+    if (parentId) {
+      var under = ids.filter(function (id) { return id.indexOf(String(parentId)) === 0; });
+      if (under.length) return under[0];
+    }
+    return ids[0];
+  }
+
+  var LEVEL_OF = { provinceHidden: "province", amphurHidden: "amphur", tumbonHidden: "tumbon" };
+
+  /** อ่านที่ตั้งแล้วคืนเป็น "รหัส" เสมอ ไม่ว่าหน้าเว็บจะเก็บเป็นรหัสหรือชื่อ */
+  function locationId(key) {
+    var raw = String(read(key) || "").trim();
+    if (!raw) return "";
+    if (/^\d+$/.test(raw)) return raw;
+    var level = LEVEL_OF[key];
+    if (!level) return raw;
+    var parent = (level === "province") ? "" : locationId("provinceHidden");
+    return lookupId(level, raw, parent);
+  }
+
+  // ═════════════════════════════════════════════════════════
   // SEInject — แทรกฟิลด์ของเราเองลงหน้าเว็บ (เฉพาะโหมด DOM)
   //   เว็บเก่ายังใช้ ExtJS container.insert() ในไฟล์ feature เหมือนเดิม
   //   ตัวนี้ใช้เฉพาะเว็บใหม่ที่ไม่มี Ext ให้พึ่ง
@@ -855,6 +927,8 @@
   window.SEResolve = {
     version: VERSION,
     el: elOf,
+    lookupId: lookupId,
+    locationId: locationId,
     cmp: cmpOf,
     read: read,
     write: write,

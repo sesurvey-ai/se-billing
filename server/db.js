@@ -99,6 +99,7 @@ db.exec(`
     out_of_hours    INTEGER,
     out_of_hours_amt INTEGER,
     deduct_amt      INTEGER,
+    other_expense_amt INTEGER,
     late_submit     INTEGER DEFAULT 0,
     incomplete_docs INTEGER DEFAULT 0,
     mode            TEXT,
@@ -126,6 +127,10 @@ ensureColumn("captures", "case_status",     "TEXT");
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_captures_status ON captures(case_status);"); } catch {}
 // v2.7.20: เก็บ "วันจ่ายงาน" (จ่ายงานเวลา จาก tab Summary) — date + time เป็น string เดียว
 ensureColumn("captures", "dispatch_date",   "TEXT");
+// v2.11: ค่าใช้จ่ายอื่นๆ (แถวที่ 3 ของ isurvey)
+//   เว็บใหม่ใช้ช่องนี้รับยอดหักเงิน โดยติดลบเมื่อติ๊กเหตุผล (ส่งช้า/เอกสารไม่ครบ)
+//   บวก = ค่าใช้จ่ายจริง · ลบ = ยอดที่ถูกหัก · null = ไม่ได้กรอก
+ensureColumn("captures", "other_expense_amt", "INTEGER");
 // v2.8: Chonburi team-based rates
 ensureColumn("amphur_table", "sur_invest_by_team", "TEXT");
 // v2.9: Kanchanaburi per-team INS_TRANS override (+ flat fallback)
@@ -537,10 +542,10 @@ export const Captures = {
       ts, dispatch_date, province_id, province_name, amphur_id, amphur_name, tumbon_id, tumbon_name,
       mtype_id, claim_no, survey_no, case_status, surveyor_name, oss_company, is_se, inspector_name,
       sur_invest, ins_invest, ins_trans, ins_photo,
-      out_of_area, out_of_area_amt, out_of_hours, out_of_hours_amt, deduct_amt,
+      out_of_area, out_of_area_amt, out_of_hours, out_of_hours_amt, deduct_amt, other_expense_amt,
       late_submit, incomplete_docs,
       mode, raw
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     rec.ts || new Date().toISOString(),
     rec.dispatch_date ?? null,
@@ -554,7 +559,7 @@ export const Captures = {
     rec.sur_invest ?? null, rec.ins_invest ?? null, rec.ins_trans ?? null, rec.ins_photo ?? null,
     rec.out_of_area ? 1 : 0, rec.out_of_area_amt ?? null,
     rec.out_of_hours ? 1 : 0, rec.out_of_hours_amt ?? null,
-    rec.deduct_amt ?? null,
+    rec.deduct_amt ?? null, rec.other_expense_amt ?? null,
     rec.late_submit ? 1 : 0, rec.incomplete_docs ? 1 : 0,
     rec.mode ?? null,
     rec.raw ? JSON.stringify(rec.raw) : null

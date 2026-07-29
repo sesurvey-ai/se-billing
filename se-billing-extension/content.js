@@ -603,11 +603,32 @@
   const isIncompleteDocs = () => readDeductFlag("incompleteDocsCmpId", SEL.incompleteDocsCmpId, SEL.incompleteDocsInputId);
 
   /**
+   * ยอดหักสำหรับ "บันทึกลง DB" เท่านั้น — ไม่เอาไปคิดลบ SUR_INVEST
+   *
+   * เว็บเก่า: อ่านจากแถวที่ 7 ที่ extension สร้างเอง (getDeductAmount)
+   * เว็บใหม่: ยอดหักอยู่ในช่องเงินจริง "ค่าใช้จ่ายอื่นๆ" เป็นค่าติดลบ
+   *           isurvey หักที่ยอดรวมให้แล้ว จึงห้ามหักซ้ำที่ค่าบริการ
+   *           แต่ยังต้องเก็บตัวเลขไว้ทำรายงาน
+   */
+  function readDeductForCapture() {
+    const direct = getDeductAmount();
+    if (direct > 0) return direct;                 // เว็บเก่า
+
+    const R = window.SEResolve;
+    if (!R || !R.read) return 0;
+    const raw = String(R.read("otherExpenseCmpId") || "").replace(/,/g, "").trim();
+    if (!raw) return 0;
+    const n = Number(raw);
+    if (!isFinite(n) || n >= 0) return 0;          // บวก = ค่าใช้จ่ายปกติ ไม่ใช่การหัก
+    return (isLateSubmit() || isIncompleteDocs()) ? Math.abs(n) : 0;
+  }
+
+  /**
    * Validate deduct: ถ้ากรอกยอด > 0 ต้องติ๊กอย่างน้อย 1 ใน 2 (ส่งช้า / เอกสารไม่ครบ)
    * คืน { valid, deduct, late, docs }
    */
   function checkDeductValid() {
-    const deduct = getDeductAmount();
+    const deduct = readDeductForCapture();
     const late   = isLateSubmit();
     const docs   = isIncompleteDocs();
     const valid  = deduct === 0 || late || docs;
@@ -1278,6 +1299,15 @@
       out_of_hours: outOfHours,
       out_of_hours_amt: outOfHoursInfo ? outOfHoursInfo.amount : null,
       deduct_amt: deduct > 0 ? deduct : null,
+      // ค่าใช้จ่ายอื่นๆ (เว็บใหม่) — บวก = ค่าใช้จ่ายจริง, ลบ = ยอดที่ถูกหัก
+      other_expense_amt: (() => {
+        const R = window.SEResolve;
+        if (!R || !R.read) return null;
+        const raw = String(R.read("otherExpenseCmpId") || "").replace(/,/g, "").trim();
+        if (!raw) return null;
+        const n = Number(raw);
+        return isFinite(n) && n !== 0 ? n : null;
+      })(),
       late_submit: isLateSubmit(),
       incomplete_docs: isIncompleteDocs(),
       mode,

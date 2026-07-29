@@ -66,7 +66,8 @@
     },
     {
       "matches": [
-        "https://cloud.isurvey.mobi/*"
+        "https://cloud.isurvey.mobi/*",
+        "https://se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com/*"
       ],
       "js": [
         "dashboard-badge.js"

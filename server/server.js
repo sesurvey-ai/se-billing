@@ -311,6 +311,7 @@ app.post("/api/captures", (req, res) => {
     out_of_hours:     !!b.out_of_hours,
     out_of_hours_amt: b.out_of_hours_amt ?? null,
     deduct_amt:    b.deduct_amt    ?? null,
+    other_expense_amt: b.other_expense_amt ?? null,   // เว็บใหม่: ลบ = ยอดหัก, บวก = ค่าใช้จ่ายจริง
     late_submit:     !!b.late_submit,
     incomplete_docs: !!b.incomplete_docs,
     mode:          b.mode          || null,
@@ -366,6 +367,7 @@ app.get("/api/captures.xlsx", async (req, res) => {
     { header: "นอกพื้นที่",        key: "out_of_area_amt", width: 11 },
     { header: "นอกเวลา",          key: "out_of_hours_amt", width: 10 },
     { header: "หัก",              key: "deduct_amt",      width: 8  },
+    { header: "ค่าใช้จ่ายอื่นๆ",   key: "other_expense",   width: 13 },
     { header: "ส่งช้า",           key: "late_label",      width: 8  },
     { header: "เอกสารไม่ครบ",     key: "docs_label",      width: 12 },
     { header: "รวมพนักงาน",       key: "sum_pnk",         width: 12 },
@@ -377,8 +379,13 @@ app.get("/api/captures.xlsx", async (req, res) => {
     const oaAmt   = r.out_of_area  ? (Number(r.out_of_area_amt)  || 0) : 0;
     const ohAmt   = r.out_of_hours ? (Number(r.out_of_hours_amt) || 0) : 0;
     const ded     = Number(r.deduct_amt) || 0;
-    const basePnk = sur - oaAmt - ohAmt + ded;       // derive base (ตรงกับหน้าเว็บ)
-    const sumPnk  = basePnk + oaAmt + ohAmt - ded;   // = sur_invest
+    const otherAmt = Number(r.other_expense_amt) || 0;
+    // เว็บเก่า: ยอดหักถูกลบออกจาก sur_invest แล้ว → ต้องบวกกลับเพื่อ derive ฐาน
+    // เว็บใหม่: ยอดหักอยู่ในช่อง "ค่าใช้จ่ายอื่นๆ" (ติดลบ) isurvey หักที่ยอดรวมเอง
+    //          sur_invest ไม่เคยถูกหัก → ห้ามบวกกลับ ไม่งั้นฐานจะเกิน
+    const dedInSur = otherAmt < 0 ? 0 : ded;
+    const basePnk = sur - oaAmt - ohAmt + dedInSur;   // derive base (ตรงกับหน้าเว็บ)
+    const sumPnk  = basePnk + oaAmt + ohAmt - dedInSur;
     const sumCo   = (Number(r.ins_invest) || 0)
                   + (Number(r.ins_trans)  || 0)
                   + (Number(r.ins_photo)  || 0);
@@ -407,6 +414,7 @@ app.get("/api/captures.xlsx", async (req, res) => {
       out_of_area_amt:  r.out_of_area  ? oaAmt : "",
       out_of_hours_amt: r.out_of_hours ? ohAmt : "",
       deduct_amt:       r.deduct_amt   ? ded   : "",
+      other_expense:    otherAmt !== 0 ? otherAmt : "",
       late_label:       r.late_submit     ? "✓" : "",
       docs_label:       r.incomplete_docs ? "✓" : "",
       sum_pnk:          sumPnk,
