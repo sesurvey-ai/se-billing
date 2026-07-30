@@ -96,6 +96,10 @@ const api = {
     get: () => req("GET", "/api/dashboard-config"),
     set: (cfg) => req("PUT", "/api/dashboard-config", cfg), // { admins, aliases }
   },
+  allowedOrigins: {
+    get: () => req("GET", "/api/allowed-origins"),
+    set: (origins) => req("PUT", "/api/allowed-origins", { origins }), // string[]
+  },
   captures: {
     list:   ({ limit = 100, offset = 0, provinceId, status } = {}) => {
       const q = new URLSearchParams();

@@ -21,6 +21,20 @@ Copy each block into the matching field in the Privacy practices tab.
 
 > Required to (a) read the form fields on the iSurvey survey page (province, district, claim type, surveyor name) and auto-fill the matching service fees, and (b) read the logged-in user's display name from the page header so the backlog dashboard can show that supervisor their own outstanding-work summary. The content scripts run only on this exact domain and do not touch any other website.
 
+### Host permissions: `https://*.isurvey.mobi/*` and `https://*.appspot.com/*`
+
+> iSurvey — the single web application this extension serves — is migrating its survey form to a rebuilt front end, and the operator has not yet published the production hostname. The extension therefore requests these two host patterns so that it keeps working on the day of the switchover instead of leaving every user without fee auto-fill for the duration of a store review.
+>
+> Breadth of permission is not breadth of behaviour. Content scripts are declared for two exact hosts only (`cloud.isurvey.mobi` and the operator's staging host). Any additional host must be added to an allow-list held in the user's own configured backend; the service worker then registers content scripts for that host via `chrome.scripting.registerContentScripts()`. With an empty or unreachable allow-list the extension injects nothing beyond the two declared hosts, so it never reads or modifies any other `appspot.com` or `isurvey.mobi` site.
+
+### `scripting`
+
+> Used solely to register content scripts for the additional iSurvey host described above, once that host appears in the user's backend allow-list. No code is fetched or executed from any remote source — the registered scripts are the files bundled in this package.
+
+### `alarms`
+
+> Used to wake the service worker every 5 minutes to re-read the allow-list, so a hostname change takes effect without the user reinstalling or updating the extension.
+
 ### Host permission: `https://billing.sesurvey.cloud/*`
 
 > The background service worker calls this URL to (a) fetch the user's fee-rate configuration via `GET /api/config` so the auto-fill knows the correct rates, (b) `POST` a snapshot of each submitted form to `/api/captures` for the user's own audit log, and (c) fetch a read-only backlog summary via `GET /api/dashboard` to show the logged-in supervisor their outstanding-work counts and claim list. This is the default Server URL — the user can replace it with their own self-hosted backend in the Options page. All requests are authenticated with the user-supplied API token.
@@ -85,6 +99,8 @@ This version adds an "outstanding work" (backlog) view for the logged-in supervi
 - [ ] Single Purpose filled in (block 1)
 - [ ] Justification for `storage` permission filled in
 - [ ] Justification for `cloud.isurvey.mobi` host permission filled in
+- [ ] Justification for `*.isurvey.mobi` + `*.appspot.com` host permissions filled in (breadth vs. behaviour — see block 2)
+- [ ] Justification for `scripting` + `alarms` permissions filled in
 - [ ] Justification for `billing.sesurvey.cloud` host permission filled in
 - [ ] "Remote code" answered: *No remote code*
 - [ ] Data Usage disclosures ticked (block 4)

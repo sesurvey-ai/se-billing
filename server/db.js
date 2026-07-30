@@ -347,11 +347,14 @@ export function readConfig() {
   const requiredFields = getSetting("requiredFields", DEFAULT_REQUIRED_FIELDS);
   const saveButtonIds  = getSetting("saveButtonIds",  DEFAULT_SAVE_BUTTON_IDS);
   const requiredFieldsMtypes = getSetting("requiredFieldsMtypes", DEFAULT_REQUIRED_MTYPES);
+  // background.js ใช้ตัดสินว่าจะ inject content script ที่โดเมนไหน (ดู AllowedOrigins)
+  const allowedOrigins = getSetting("allowedOrigins", DEFAULT_ALLOWED_ORIGINS);
   return {
     PROVINCE_FEE_MAP, AMPHUR_FEE_MAP, TUMBON_FEE_MAP, AMPHUR_FEE_TABLE,
     TUMBON_FEE_OVERRIDE, SURVEYOR_TEAMS,
     enabledProvinces, modifierFees,
     requiredFields, saveButtonIds, requiredFieldsMtypes,
+    allowedOrigins,
   };
 }
 
@@ -532,6 +535,51 @@ export const DashboardConfig = {
       }
       setSetting("dashboard_aliases", clean);
     }
+  },
+};
+
+/** ── Allowed origins (โดเมนที่ extension ยอมทำงานด้วย) ─────────────────────
+ * isurvey กำลังย้ายไปเว็บใหม่ แต่ยังไม่บอก URL production
+ * manifest จึงประกาศ host_permissions แบบกว้าง (*.isurvey.mobi / *.appspot.com)
+ * เพื่อไม่ต้องรอ Web Store review หลายวันในวันที่เขาสลับเว็บ
+ *
+ * "กว้าง" ต้องไม่แปลว่า "ทำงานทุกที่" — background.js จะ register content script
+ * ให้เฉพาะ origin ในรายการนี้ ที่อื่นไม่ inject อะไรเลย
+ * URL ใหม่มา = เพิ่มที่ /admin แล้วรอ 5 นาที (หรือ reload extension) ไม่ต้องอัปเดต ext
+ *
+ * default = 2 โฮสต์ที่ประกาศตรงใน manifest อยู่แล้ว → พฤติกรรมเท่าเดิมถ้าไม่เคยตั้งค่า
+ */
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://cloud.isurvey.mobi",
+  "https://se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com",
+];
+
+/** "https://host" เท่านั้น — ตัด path/query/ท้าย slash, ต้องเป็น https */
+function normalizeOrigin(s) {
+  const raw = String(s || "").trim();
+  if (!raw) return null;
+  let u;
+  try { u = new URL(raw.includes("://") ? raw : "https://" + raw); }
+  catch { return null; }
+  if (u.protocol !== "https:") return null;
+  if (!u.hostname || u.hostname.indexOf(".") === -1) return null;
+  return "https://" + u.hostname;
+}
+
+export const AllowedOrigins = {
+  get: () => getSetting("allowedOrigins", DEFAULT_ALLOWED_ORIGINS),
+  /** คืนรายการที่บันทึกจริง (ตัวที่ผิดรูปถูกทิ้ง) — ว่าง = คืนไป default กัน extension ตาย */
+  set: (list) => {
+    if (!Array.isArray(list)) return AllowedOrigins.get();
+    const seen = new Set();
+    const clean = [];
+    for (const o of list) {
+      const n = normalizeOrigin(o);
+      if (n && !seen.has(n)) { seen.add(n); clean.push(n); }
+    }
+    const final = clean.length ? clean : DEFAULT_ALLOWED_ORIGINS;
+    setSetting("allowedOrigins", final);
+    return final;
   },
 };
 

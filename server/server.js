@@ -37,6 +37,7 @@ import {
   ProvinceRate, AmphurOverride, TumbonOverride, AmphurTable,
   TumbonOverrideTable, SurveyorTeams,
   EnabledProvinces, Modifiers, RequiredFields, Captures, Dashboard, DashboardConfig,
+  AllowedOrigins,
 } from "./db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -463,6 +464,19 @@ app.put("/api/dashboard-config", (req, res) => {
   }
   DashboardConfig.set({ admins: b.admins, aliases: b.aliases });
   res.json({ ok: true, ...DashboardConfig.get() });
+});
+
+// ── Allowed origins — โดเมนที่ extension ยอม inject (ดู AllowedOrigins ใน db.js) ──
+// isurvey เปลี่ยน URL → เพิ่มที่นี่ ไม่ต้องรอ Chrome Web Store review
+app.get("/api/allowed-origins", (_req, res) => res.json({ origins: AllowedOrigins.get() }));
+app.put("/api/allowed-origins", (req, res) => {
+  const b = req.body || {};
+  if (!Array.isArray(b.origins)) {
+    return res.status(400).json({ error: "origins must be an array of https origins" });
+  }
+  const saved = AllowedOrigins.set(b.origins);
+  // ตัวที่ผิดรูปถูกทิ้งเงียบ — คืนรายการจริงกลับไปให้ /admin แสดงว่าเก็บอะไรได้บ้าง
+  res.json({ ok: true, origins: saved, dropped: b.origins.length - saved.length });
 });
 
 // ── Static (viewer + admin pages) ──────────────────────────────────────────

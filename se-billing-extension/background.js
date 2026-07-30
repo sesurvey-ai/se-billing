@@ -22,6 +22,124 @@
 
 const DEFAULT_SERVER_URL = "https://billing.sesurvey.cloud";
 
+// ═══════════════════════════════════════════════════════════════════════
+// Dynamic content scripts — รองรับ URL ใหม่ของ isurvey โดยไม่ต้องรอ Web Store
+//
+// ปัญหา: isurvey กำลังย้ายเว็บแต่ยังไม่บอก URL production ถ้า URL ไม่อยู่ใน
+// manifest extension จะไม่ inject เลย และแก้ทีต้องรอ review หลายวัน
+//
+// วิธีแก้: manifest ขอ host_permissions กว้าง (*.isurvey.mobi / *.appspot.com)
+// แต่ content_scripts ประกาศตรงแค่ 2 โฮสต์ที่รู้แน่ ส่วนโดเมนอื่นมาจาก
+// allowedOrigins ในคอนฟิกเซิร์ฟเวอร์ → register ตอน runtime
+//
+// ผลลัพธ์: กว้างในสิทธิ์ แคบในพฤติกรรม — ไม่แตะเว็บ appspot อื่นในโลก
+// และเพิ่ม URL ใหม่ได้จาก /admin ใน 30 วินาที
+// ═══════════════════════════════════════════════════════════════════════
+
+// โฮสต์ที่ manifest ประกาศ content_scripts ไว้ตรงๆ แล้ว — ห้าม register ซ้ำ (จะ inject 2 รอบ)
+const STATIC_HOSTS = [
+  "cloud.isurvey.mobi",
+  "se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com",
+];
+
+// ต้องตรงกับ host_permissions ใน manifest — register match ที่ไม่มีสิทธิ์จะ throw ทั้งชุด
+const PERMITTED_HOST_RE = /(^|\.)(isurvey\.mobi|appspot\.com)$/i;
+
+// โครงเดียวกับ content_scripts ใน manifest — แก้ที่นั่นต้องแก้ที่นี่ด้วย
+const SCRIPT_BLOCKS = [
+  { id: "dyn-loader", js: ["loader.js"], runAt: "document_start", world: "ISOLATED" },
+  {
+    id: "dyn-main",
+    js: [
+      "config-bridge.js",
+      "resolver.js",
+      "content.js",
+      "feature-out-of-area-amount.js",
+      "feature-out-of-hours-amount.js",
+      "feature-deduct-amount.js",
+      "feature-sub-area-checkbox.js",
+      "feature-daily-check-amount.js",
+    ],
+    runAt: "document_idle",
+    world: "MAIN",
+  },
+  { id: "dyn-badge", js: ["dashboard-badge.js"], runAt: "document_idle", world: "ISOLATED" },
+];
+
+const DYN_IDS = SCRIPT_BLOCKS.map((b) => b.id);
+
+/** origin ("https://host") → match pattern ; null ถ้าใช้ไม่ได้/ไม่ต้องทำ */
+function originToMatch(origin) {
+  let host;
+  try {
+    const u = new URL(String(origin));
+    if (u.protocol !== "https:") return null;
+    host = u.hostname;
+  } catch {
+    return null;
+  }
+  if (!host || STATIC_HOSTS.includes(host)) return null;   // ประกาศใน manifest แล้ว
+  if (!PERMITTED_HOST_RE.test(host)) return null;          // ไม่มีสิทธิ์ — ข้ามเงียบ
+  return "https://" + host + "/*";
+}
+
+let lastSyncedKey = "";
+
+/**
+ * อัปเดต dynamic content scripts ให้ตรงกับ allowedOrigins
+ * เซิร์ฟเวอร์ล่ม / ไม่มีคอนฟิก → ไม่แตะของเดิม (ดีกว่าถอนสิทธิ์ตัวเองกลางวัน)
+ */
+async function syncDynamicScripts(allowedOrigins) {
+  if (!Array.isArray(allowedOrigins)) return;
+
+  const matches = [...new Set(allowedOrigins.map(originToMatch).filter(Boolean))];
+  const key = matches.join("|");
+  if (key === lastSyncedKey) return;    // ไม่เปลี่ยน — ไม่ต้องทำอะไร
+
+  const existing = await chrome.scripting.getRegisteredContentScripts({ ids: DYN_IDS })
+    .catch(() => []);
+  if (existing.length) {
+    await chrome.scripting.unregisterContentScripts({ ids: existing.map((s) => s.id) })
+      .catch(() => {});
+  }
+
+  if (matches.length) {
+    await chrome.scripting.registerContentScripts(
+      SCRIPT_BLOCKS.map((b) => ({ ...b, matches, allFrames: false, persistAcrossSessions: true }))
+    );
+  }
+
+  lastSyncedKey = key;
+  console.log(
+    "[ISurveyHelper/background] dynamic scripts:",
+    matches.length ? matches.join(", ") : "(ไม่มีโดเมนเพิ่ม — ใช้เฉพาะที่ประกาศใน manifest)"
+  );
+}
+
+/** ดึงคอนฟิกแล้ว sync — ใช้ตอน startup/alarm ที่ไม่มี content script คอยเรียกให้ */
+async function refreshDynamicScripts() {
+  try {
+    const config = await fetchJson("/api/config");
+    await syncDynamicScripts(config?.allowedOrigins);
+  } catch (e) {
+    // โดเมนใหม่จะยังไม่ทำงานจนกว่าจะต่อเซิร์ฟเวอร์ได้ — ตั้งใจให้ fail-closed
+    console.warn("[ISurveyHelper/background] sync dynamic scripts ล้มเหลว:", String(e?.message || e));
+  }
+}
+
+const ALARM_SYNC = "se-billing-sync-origins";
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.alarms.create(ALARM_SYNC, { periodInMinutes: 5 });
+  refreshDynamicScripts();
+});
+chrome.runtime.onStartup.addListener(() => {
+  chrome.alarms.create(ALARM_SYNC, { periodInMinutes: 5 });
+  refreshDynamicScripts();
+});
+chrome.alarms.onAlarm.addListener((a) => {
+  if (a.name === ALARM_SYNC) refreshDynamicScripts();
+});
+
 async function getServerUrl() {
   const { serverUrl } = await chrome.storage.local.get("serverUrl");
   return serverUrl || DEFAULT_SERVER_URL;
@@ -104,6 +222,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         case "fetch-config": {
           const config = await fetchJson("/api/config");
           sendResponse({ ok: true, config });
+          // loader poll ทุก 30s อยู่แล้ว — เกาะไปด้วยเลย ได้ผลเร็วกว่ารอ alarm 5 นาที
+          syncDynamicScripts(config?.allowedOrigins);
           break;
         }
         case "fetch-reference": {

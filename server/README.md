@@ -49,6 +49,7 @@ node server.js
 | POST / GET / DELETE / DELETE (`:id`) | `/api/captures` | rec | เก็บ/อ่าน/ลบ capture log |
 | GET    | `/api/captures.xlsx?provinceId=…` | — | ดาวน์โหลด Excel ของ captures (ExcelJS) |
 | POST / GET | `/api/dashboard` | snapshot งานค้างต่อหัวหน้า | extenBoard: scraper อัป (POST), extension อ่าน (GET) — เก็บใน setting `dashboard_latest` ; GET จะ merge `admins` + `aliases` ติดไปด้วย |
+| GET / PUT | `/api/allowed-origins` | `{ origins: ["https://host", …] }` | โดเมนที่ extension ยอม inject — background.js อ่านไป `registerContentScripts()` ; ใช้ตอน isurvey เปลี่ยน URL โดยไม่ต้องรอ Web Store review · แก้ผ่าน /admin แท็บ "โดเมนที่ใช้งาน" · ค่าที่ผิดรูป (ไม่ใช่ https / ไม่มีจุด) ถูกทิ้งเงียบ, ว่าง = คืนไป default 2 โฮสต์ |
 | GET / PUT | `/api/dashboard-config` | `{ admins: [...], aliases: {login: snapshot} }` | admin (เห็นยอดรวม) + ชื่อแทน badge/popup งานค้าง — แก้ผ่าน /admin แท็บ "Dashboard งานค้าง" (default admins=[นพดล]) |
 
 ### Capture validation

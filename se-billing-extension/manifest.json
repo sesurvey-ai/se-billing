@@ -9,11 +9,14 @@
     "128": "icon-128.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "scripting",
+    "alarms"
   ],
   "host_permissions": [
     "https://cloud.isurvey.mobi/*",
-    "https://se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com/*",
+    "https://*.isurvey.mobi/*",
+    "https://*.appspot.com/*",
     "https://billing.sesurvey.cloud/*"
   ],
   "background": {
@@ -85,7 +88,8 @@
       ],
       "matches": [
         "https://cloud.isurvey.mobi/*",
-        "https://se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com/*"
+        "https://*.isurvey.mobi/*",
+        "https://*.appspot.com/*"
       ]
     }
   ]
