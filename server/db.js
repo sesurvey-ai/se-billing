@@ -99,6 +99,7 @@ db.exec(`
     out_of_hours    INTEGER,
     out_of_hours_amt INTEGER,
     deduct_amt      INTEGER,
+    other_expense_amt INTEGER,
     late_submit     INTEGER DEFAULT 0,
     incomplete_docs INTEGER DEFAULT 0,
     mode            TEXT,
@@ -126,6 +127,10 @@ ensureColumn("captures", "case_status",     "TEXT");
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_captures_status ON captures(case_status);"); } catch {}
 // v2.7.20: เก็บ "วันจ่ายงาน" (จ่ายงานเวลา จาก tab Summary) — date + time เป็น string เดียว
 ensureColumn("captures", "dispatch_date",   "TEXT");
+// v2.11: ค่าใช้จ่ายอื่นๆ (แถวที่ 3 ของ isurvey)
+//   เว็บใหม่ใช้ช่องนี้รับยอดหักเงิน โดยติดลบเมื่อติ๊กเหตุผล (ส่งช้า/เอกสารไม่ครบ)
+//   บวก = ค่าใช้จ่ายจริง · ลบ = ยอดที่ถูกหัก · null = ไม่ได้กรอก
+ensureColumn("captures", "other_expense_amt", "INTEGER");
 // v2.8: Chonburi team-based rates
 ensureColumn("amphur_table", "sur_invest_by_team", "TEXT");
 // v2.9: Kanchanaburi per-team INS_TRANS override (+ flat fallback)
@@ -342,11 +347,14 @@ export function readConfig() {
   const requiredFields = getSetting("requiredFields", DEFAULT_REQUIRED_FIELDS);
   const saveButtonIds  = getSetting("saveButtonIds",  DEFAULT_SAVE_BUTTON_IDS);
   const requiredFieldsMtypes = getSetting("requiredFieldsMtypes", DEFAULT_REQUIRED_MTYPES);
+  // background.js ใช้ตัดสินว่าจะ inject content script ที่โดเมนไหน (ดู AllowedOrigins)
+  const allowedOrigins = getSetting("allowedOrigins", DEFAULT_ALLOWED_ORIGINS);
   return {
     PROVINCE_FEE_MAP, AMPHUR_FEE_MAP, TUMBON_FEE_MAP, AMPHUR_FEE_TABLE,
     TUMBON_FEE_OVERRIDE, SURVEYOR_TEAMS,
     enabledProvinces, modifierFees,
     requiredFields, saveButtonIds, requiredFieldsMtypes,
+    allowedOrigins,
   };
 }
 
@@ -530,6 +538,51 @@ export const DashboardConfig = {
   },
 };
 
+/** ── Allowed origins (โดเมนที่ extension ยอมทำงานด้วย) ─────────────────────
+ * isurvey กำลังย้ายไปเว็บใหม่ แต่ยังไม่บอก URL production
+ * manifest จึงประกาศ host_permissions แบบกว้าง (*.isurvey.mobi / *.appspot.com)
+ * เพื่อไม่ต้องรอ Web Store review หลายวันในวันที่เขาสลับเว็บ
+ *
+ * "กว้าง" ต้องไม่แปลว่า "ทำงานทุกที่" — background.js จะ register content script
+ * ให้เฉพาะ origin ในรายการนี้ ที่อื่นไม่ inject อะไรเลย
+ * URL ใหม่มา = เพิ่มที่ /admin แล้วรอ 5 นาที (หรือ reload extension) ไม่ต้องอัปเดต ext
+ *
+ * default = 2 โฮสต์ที่ประกาศตรงใน manifest อยู่แล้ว → พฤติกรรมเท่าเดิมถ้าไม่เคยตั้งค่า
+ */
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://cloud.isurvey.mobi",
+  "https://se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com",
+];
+
+/** "https://host" เท่านั้น — ตัด path/query/ท้าย slash, ต้องเป็น https */
+function normalizeOrigin(s) {
+  const raw = String(s || "").trim();
+  if (!raw) return null;
+  let u;
+  try { u = new URL(raw.includes("://") ? raw : "https://" + raw); }
+  catch { return null; }
+  if (u.protocol !== "https:") return null;
+  if (!u.hostname || u.hostname.indexOf(".") === -1) return null;
+  return "https://" + u.hostname;
+}
+
+export const AllowedOrigins = {
+  get: () => getSetting("allowedOrigins", DEFAULT_ALLOWED_ORIGINS),
+  /** คืนรายการที่บันทึกจริง (ตัวที่ผิดรูปถูกทิ้ง) — ว่าง = คืนไป default กัน extension ตาย */
+  set: (list) => {
+    if (!Array.isArray(list)) return AllowedOrigins.get();
+    const seen = new Set();
+    const clean = [];
+    for (const o of list) {
+      const n = normalizeOrigin(o);
+      if (n && !seen.has(n)) { seen.add(n); clean.push(n); }
+    }
+    const final = clean.length ? clean : DEFAULT_ALLOWED_ORIGINS;
+    setSetting("allowedOrigins", final);
+    return final;
+  },
+};
+
 /** ── Captures ───────────────────────────────────────────────────────────── */
 export const Captures = {
   insert: (rec) => db.prepare(`
@@ -537,10 +590,10 @@ export const Captures = {
       ts, dispatch_date, province_id, province_name, amphur_id, amphur_name, tumbon_id, tumbon_name,
       mtype_id, claim_no, survey_no, case_status, surveyor_name, oss_company, is_se, inspector_name,
       sur_invest, ins_invest, ins_trans, ins_photo,
-      out_of_area, out_of_area_amt, out_of_hours, out_of_hours_amt, deduct_amt,
+      out_of_area, out_of_area_amt, out_of_hours, out_of_hours_amt, deduct_amt, other_expense_amt,
       late_submit, incomplete_docs,
       mode, raw
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     rec.ts || new Date().toISOString(),
     rec.dispatch_date ?? null,
@@ -554,7 +607,7 @@ export const Captures = {
     rec.sur_invest ?? null, rec.ins_invest ?? null, rec.ins_trans ?? null, rec.ins_photo ?? null,
     rec.out_of_area ? 1 : 0, rec.out_of_area_amt ?? null,
     rec.out_of_hours ? 1 : 0, rec.out_of_hours_amt ?? null,
-    rec.deduct_amt ?? null,
+    rec.deduct_amt ?? null, rec.other_expense_amt ?? null,
     rec.late_submit ? 1 : 0, rec.incomplete_docs ? 1 : 0,
     rec.mode ?? null,
     rec.raw ? JSON.stringify(rec.raw) : null

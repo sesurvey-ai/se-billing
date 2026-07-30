@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>fixture — isurvey v2 (React + MUI)</title>
+<style>
+  body { font-family: sans-serif; font-size: 13px; }
+  .fld { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+  .fld label { width: 160px; }
+  table { border-collapse: collapse; width: 1344px; }
+  td, th { border-bottom: 1px solid #eee; height: 51px; padding: 0 8px; }
+  .c-seq { width: 110px; text-align: center; }
+  .c-desc { width: 243px; }
+  .c-unit { width: 200px; }
+  .c-money { width: 396px; text-align: center; }
+</style>
+</head>
+<body>
+<!--
+  Fixture จำลอง "เว็บใหม่" ตามโครงสร้างจริงที่ probe เจอเมื่อ 2026-07-28
+  (se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com/supervisor/.../approval)
+
+  จุดสำคัญที่ต่างจากเว็บเก่าอย่างสิ้นเชิง:
+    1. ไม่มี ExtJS — เป็น React + MUI (class MuiTableRow-root, css-xxxxx จาก emotion)
+    2. id เป็น React useId (":r2e:") เปลี่ยนทุก render → ใช้เป็น selector ไม่ได้
+    3. ตารางเป็น <table><tr><td> จริง — input อยู่ "ใน" td ไม่ใช่ลูกตรงของ tr
+    4. มีหัวตารางบอกความหมายคอลัมน์ชัดเจน → ใช้ map คอลัมน์ได้แม่นกว่าเดาตำแหน่ง
+-->
+
+<!-- ค่าที่แสดงเป็นข้อความอย่างเดียว (ไม่ใช่ช่องกรอก) — extension แค่อ่าน -->
+<div class="fld"><span>เลขที่เซอร์เวย์</span><span>SEMS68000999</span></div>
+<div class="fld"><span>ผู้สำรวจ</span><span>SEC148 ทดสอบ ระบบ</span></div>
+<div class="fld"><span>ประเภทบริการ:</span><span>ต่อเนื่อง</span></div>
+<div class="fld"><span>วันจ่ายงาน</span><span>14/06/2026 13:31</span></div>
+
+<div class="fld"><label id=":r26:-label" for=":r26:">ประเภทเคลม</label><input id=":r28:" value="เคลมสด"></div>
+<div class="fld"><label id="เลขเคลมประกัน-label" for="เลขเคลมประกัน">เลขเคลมประกัน</label><input id="เลขเคลมประกัน" value="C-123456"></div>
+<div class="fld"><label id="บริษัทประกัน-label" for="บริษัทประกัน">บริษัทประกัน</label><input id="บริษัทประกัน" value=""></div>
+<div class="fld"><label for=":r2e:">จังหวัด</label><input id=":r2e:" value="ชลบุรี"></div>
+<div class="fld"><label for=":r2g:">อำเภอ</label><input id=":r2g:" value="บางละมุง"></div>
+<div class="fld"><label for=":r33:">จังหวัดที่ตรวจสอบ</label><input id=":r33:" data-testid="survey-province" value="ชลบุรี"></div>
+<div class="fld"><label for=":r35:">อำเภอที่ตรวจสอบ</label><input id=":r35:" data-testid="survey-amphur" value="บางละมุง"></div>
+
+<div class="fld">
+  <label id="demo-row-radio-buttons-group-label">ใน/นอกเวลางาน</label>
+  <input type="radio" name="radio-buttons-group" value="ใน" checked><span>ใน</span>
+  <input type="radio" name="radio-buttons-group" value="นอก"><span>นอก</span>
+</div>
+
+<table class="MuiTable-root">
+  <thead>
+    <tr class="MuiTableRow-root css-12u3sxa">
+      <th class="c-seq">ลำดับ</th><th class="c-desc">รายละเอียด</th><th class="c-unit">จำนวน</th>
+      <th class="c-money">จำนวนเงินเสนอ</th><th class="c-money">จำนวนเงินอนุมัติ</th>
+    </tr>
+  </thead>
+  <tbody class="MuiTableBody-root css-1xnox0e">
+    <tr class="MuiTableRow-root css-12u3sxa">
+      <td class="c-seq">1.</td><td class="c-desc">ค่าบริการ</td><td class="c-unit"></td>
+      <td class="c-money"><input id=":r40:" data-testid="fee-proposed" value="500.00"></td>
+      <td class="c-money"><input id=":r41:" data-testid="fee-approved" value="500.00"></td>
+    </tr>
+    <tr class="MuiTableRow-root css-12u3sxa">
+      <td class="c-seq">2.</td><td class="c-desc">ค่าเดินทาง/ค่าพาหนะ</td><td class="c-unit"></td>
+      <td class="c-money"><input id=":r42:" data-testid="travel-proposed" value=""></td>
+      <td class="c-money"><input id=":r43:" data-testid="travel-approved" value="300.00"></td>
+    </tr>
+    <tr class="MuiTableRow-root css-12u3sxa">
+      <td class="c-seq">3.</td><td class="c-desc">ค่าใช้จ่ายอื่นๆ</td><td class="c-unit">บาท</td>
+      <td class="c-money"><input id=":r44:" value=""></td>
+      <td class="c-money"><input id=":r45:" value=""></td>
+    </tr>
+    <tr class="MuiTableRow-root css-12u3sxa">
+      <td class="c-seq">4.</td><td class="c-desc">ค่ารูปถ่าย</td><td class="c-unit">รูป</td>
+      <td class="c-money"><input id=":r46:" data-testid="photo-proposed" value=""></td>
+      <td class="c-money"><input id=":r47:" data-testid="photo-approved" value="50.00"></td>
+    </tr>
+    <tr class="MuiTableRow-root css-12u3sxa">
+      <td class="c-seq">5.</td><td class="c-desc">ค่าคัดประจำวัน</td>
+      <td class="c-unit"><input id=":r48:" data-testid="daily-count" value=""> ข้อ</td>
+      <td class="c-money"><input id=":r49:" data-testid="daily-proposed" value=""></td>
+      <td class="c-money"><input id=":r4a:" data-testid="daily-approved" value=""></td>
+    </tr>
+    <tr class="MuiTableRow-root css-12u3sxa">
+      <td class="c-seq">6.</td><td class="c-desc">ค่าเรียกร้อง</td>
+      <td class="c-unit"><input id=":r4b:" data-testid="claim-received" value="10000"> บาท</td>
+      <td class="c-money"><input id=":r4c:" data-testid="claim-proposed" value="500.00"></td>
+      <td class="c-money"><input id=":r4d:" data-testid="claim-approved" value="1000.00"></td>
+    </tr>
+    <tr class="MuiTableRow-root css-12u3sxa">
+      <td class="c-seq"></td><td class="c-desc"></td><td class="c-unit"></td>
+      <td class="c-money">เซอร์เวย์</td><td class="c-money">ประกัน</td>
+    </tr>
+    <tr class="MuiTableRow-root css-12u3sxa">
+      <td class="c-seq"></td><td class="c-desc">รวมเป็นเงิน :</td><td class="c-unit"></td>
+      <td class="c-money"><input id=":r4e:" value="1350.00"></td>
+      <td class="c-money"><input id=":r4f:" value="1850.00"></td>
+    </tr>
+    <tr class="MuiTableRow-root css-12u3sxa">
+      <td class="c-seq"></td><td class="c-desc">ภาษีมูลค่าเพิ่ม:</td><td class="c-unit"></td>
+      <td class="c-money"><input id=":r4g:" value="0.00"></td>
+      <td class="c-money"><input id=":r4h:" value="0.00"></td>
+    </tr>
+    <tr class="MuiTableRow-root css-12u3sxa">
+      <td class="c-seq"></td><td class="c-desc">จำนวนเงินรวม:</td><td class="c-unit"></td>
+      <td class="c-money"><input id=":r4i:" value="1350.00"></td>
+      <td class="c-money"><input id=":r4j:" value="1850.00"></td>
+    </tr>
+  </tbody>
+</table>
+
+<button id=":r50:" data-testid="btn-save">บันทึก</button>
+</body>
+</html>

@@ -34,6 +34,7 @@
     <button class="tab" data-tab="modifiers">Modifier defaults</button>
     <button class="tab" data-tab="required-fields">ฟิลด์บังคับ</button>
     <button class="tab" data-tab="dashboard-config">Dashboard งานค้าง</button>
+    <button class="tab" data-tab="allowed-origins">โดเมนที่ใช้งาน</button>
   </nav>
 
   <main>
@@ -245,6 +246,35 @@
         </table>
         <div class="empty-state hidden" id="empty-dash-aliases">ยังไม่มีชื่อแทน</div>
       </div>
+    </section>
+
+    <section class="panel hidden" data-panel="allowed-origins">
+      <div class="panel-header">
+        <h2>โดเมนที่ extension ยอมทำงาน</h2>
+        <p class="hint">
+          extension จะ inject เฉพาะโดเมนในรายการนี้ ที่อื่นไม่ทำอะไรเลย<br>
+          ใช้ตอน isurvey เปลี่ยน URL — <b>เพิ่มที่นี่แล้วใช้ได้เลย ไม่ต้องรอ Chrome Web Store review</b><br>
+          พิมพ์บรรทัดละ 1 โดเมน · ต้องเป็น <code>https://</code> · ใส่แค่ชื่อโฮสต์ ไม่ต้องมี path
+        </p>
+      </div>
+
+      <div style="margin-top:12px">
+        <textarea id="fld-allowed-origins" rows="8" spellcheck="false"
+          style="width:100%;max-width:620px;font-family:monospace;font-size:13px;padding:8px"
+          placeholder="https://cloud.isurvey.mobi&#10;https://se-web-prodv2-dot-isurvey-se-gcp.as.r.appspot.com"></textarea>
+      </div>
+
+      <div class="panel-actions" style="margin-top:8px">
+        <button id="save-allowed-origins" class="btn btn-primary">บันทึกโดเมน</button>
+        <span class="info" id="info-allowed-origins"></span>
+      </div>
+
+      <p class="hint" style="margin-top:16px">
+        <b>ข้อจำกัดที่ต้องรู้:</b> extension ขอสิทธิ์ไว้แค่ <code>*.isurvey.mobi</code> และ
+        <code>*.appspot.com</code> — โดเมนนอกสองกลุ่มนี้ใส่ได้แต่จะไม่ทำงาน
+        (ต้องแก้ manifest แล้วส่ง Web Store ใหม่)<br>
+        เพิ่มโดเมนแล้วมีผลภายใน 5 นาที หรือให้ผู้ใช้ reload extension เพื่อให้ทันที
+      </p>
     </section>
   </main>
 

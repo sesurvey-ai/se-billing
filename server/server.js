@@ -37,6 +37,7 @@ import {
   ProvinceRate, AmphurOverride, TumbonOverride, AmphurTable,
   TumbonOverrideTable, SurveyorTeams,
   EnabledProvinces, Modifiers, RequiredFields, Captures, Dashboard, DashboardConfig,
+  AllowedOrigins,
 } from "./db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -311,6 +312,7 @@ app.post("/api/captures", (req, res) => {
     out_of_hours:     !!b.out_of_hours,
     out_of_hours_amt: b.out_of_hours_amt ?? null,
     deduct_amt:    b.deduct_amt    ?? null,
+    other_expense_amt: b.other_expense_amt ?? null,   // เว็บใหม่: ลบ = ยอดหัก, บวก = ค่าใช้จ่ายจริง
     late_submit:     !!b.late_submit,
     incomplete_docs: !!b.incomplete_docs,
     mode:          b.mode          || null,
@@ -366,6 +368,7 @@ app.get("/api/captures.xlsx", async (req, res) => {
     { header: "นอกพื้นที่",        key: "out_of_area_amt", width: 11 },
     { header: "นอกเวลา",          key: "out_of_hours_amt", width: 10 },
     { header: "หัก",              key: "deduct_amt",      width: 8  },
+    { header: "ค่าใช้จ่ายอื่นๆ",   key: "other_expense",   width: 13 },
     { header: "ส่งช้า",           key: "late_label",      width: 8  },
     { header: "เอกสารไม่ครบ",     key: "docs_label",      width: 12 },
     { header: "รวมพนักงาน",       key: "sum_pnk",         width: 12 },
@@ -377,8 +380,13 @@ app.get("/api/captures.xlsx", async (req, res) => {
     const oaAmt   = r.out_of_area  ? (Number(r.out_of_area_amt)  || 0) : 0;
     const ohAmt   = r.out_of_hours ? (Number(r.out_of_hours_amt) || 0) : 0;
     const ded     = Number(r.deduct_amt) || 0;
-    const basePnk = sur - oaAmt - ohAmt + ded;       // derive base (ตรงกับหน้าเว็บ)
-    const sumPnk  = basePnk + oaAmt + ohAmt - ded;   // = sur_invest
+    const otherAmt = Number(r.other_expense_amt) || 0;
+    // เว็บเก่า: ยอดหักถูกลบออกจาก sur_invest แล้ว → ต้องบวกกลับเพื่อ derive ฐาน
+    // เว็บใหม่: ยอดหักอยู่ในช่อง "ค่าใช้จ่ายอื่นๆ" (ติดลบ) isurvey หักที่ยอดรวมเอง
+    //          sur_invest ไม่เคยถูกหัก → ห้ามบวกกลับ ไม่งั้นฐานจะเกิน
+    const dedInSur = otherAmt < 0 ? 0 : ded;
+    const basePnk = sur - oaAmt - ohAmt + dedInSur;   // derive base (ตรงกับหน้าเว็บ)
+    const sumPnk  = basePnk + oaAmt + ohAmt - dedInSur;
     const sumCo   = (Number(r.ins_invest) || 0)
                   + (Number(r.ins_trans)  || 0)
                   + (Number(r.ins_photo)  || 0);
@@ -407,6 +415,7 @@ app.get("/api/captures.xlsx", async (req, res) => {
       out_of_area_amt:  r.out_of_area  ? oaAmt : "",
       out_of_hours_amt: r.out_of_hours ? ohAmt : "",
       deduct_amt:       r.deduct_amt   ? ded   : "",
+      other_expense:    otherAmt !== 0 ? otherAmt : "",
       late_label:       r.late_submit     ? "✓" : "",
       docs_label:       r.incomplete_docs ? "✓" : "",
       sum_pnk:          sumPnk,
@@ -455,6 +464,19 @@ app.put("/api/dashboard-config", (req, res) => {
   }
   DashboardConfig.set({ admins: b.admins, aliases: b.aliases });
   res.json({ ok: true, ...DashboardConfig.get() });
+});
+
+// ── Allowed origins — โดเมนที่ extension ยอม inject (ดู AllowedOrigins ใน db.js) ──
+// isurvey เปลี่ยน URL → เพิ่มที่นี่ ไม่ต้องรอ Chrome Web Store review
+app.get("/api/allowed-origins", (_req, res) => res.json({ origins: AllowedOrigins.get() }));
+app.put("/api/allowed-origins", (req, res) => {
+  const b = req.body || {};
+  if (!Array.isArray(b.origins)) {
+    return res.status(400).json({ error: "origins must be an array of https origins" });
+  }
+  const saved = AllowedOrigins.set(b.origins);
+  // ตัวที่ผิดรูปถูกทิ้งเงียบ — คืนรายการจริงกลับไปให้ /admin แสดงว่าเก็บอะไรได้บ้าง
+  res.json({ ok: true, origins: saved, dropped: b.origins.length - saved.length });
 });
 
 // ── Static (viewer + admin pages) ──────────────────────────────────────────

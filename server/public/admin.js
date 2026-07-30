@@ -16,6 +16,7 @@ let state = {
   config: null,            // PROVINCE_FEE_MAP / AMPHUR_FEE_MAP / TUMBON_FEE_MAP / AMPHUR_FEE_TABLE / enabledProvinces / modifierFees
   ref: null,               // provinces/amphurs/tumbons (lists + maps)
   dashboardConfig: null,   // { admins:[], aliases:{} } — badge/popup งานค้าง
+  allowedOrigins: null,    // string[] — โดเมนที่ extension ยอม inject
   dashboard: null,         // snapshot งานค้าง (best-effort — ใช้ทำ datalist ชื่อ snapshot)
 };
 
@@ -37,6 +38,9 @@ async function loadAll() {
   catch { state.dashboardConfig = { admins: [], aliases: {} }; }
   try { state.dashboard = await api.dashboard.get(); }
   catch { state.dashboard = null; }
+  // โดเมนที่ extension ยอม inject (เซิร์ฟเวอร์เก่ายังไม่มี endpoint นี้ → ปล่อยว่าง)
+  try { state.allowedOrigins = (await api.allowedOrigins.get()).origins || []; }
+  catch { state.allowedOrigins = []; }
 }
 
 async function reloadConfig() {
@@ -280,6 +284,7 @@ function renderAll() {
   renderModifiers();
   renderRequiredFields();
   renderDashboardConfig();
+  renderAllowedOrigins();
 }
 
 // ─── Modal helpers ───
@@ -1044,6 +1049,31 @@ function openDashAliasModal(loginKey = null) {
   });
 }
 
+// ─── Allowed origins (โดเมนที่ extension ยอม inject) ───
+// สิทธิ์ที่ manifest ขอไว้ — โดเมนนอกนี้บันทึกได้แต่ extension จะ inject ไม่ได้
+const ORIGIN_PERMITTED_RE = /(^|\.)(isurvey\.mobi|appspot\.com)$/i;
+
+function renderAllowedOrigins() {
+  const ta = document.getElementById("fld-allowed-origins");
+  if (!ta) return;
+  ta.value = (state.allowedOrigins || []).join("\n");
+  showOriginWarning(state.allowedOrigins || []);
+}
+
+/** เตือนโดเมนที่อยู่นอกสิทธิ์ manifest — บันทึกได้ แต่จะไม่ทำงาน */
+function showOriginWarning(origins) {
+  const info = document.getElementById("info-allowed-origins");
+  if (!info) return;
+  const bad = origins.filter((o) => {
+    try { return !ORIGIN_PERMITTED_RE.test(new URL(o).hostname); }
+    catch { return true; }
+  });
+  info.textContent = bad.length
+    ? `⚠ ${bad.length} โดเมนอยู่นอกสิทธิ์ที่ extension ขอไว้ (จะไม่ทำงาน): ${bad.join(", ")}`
+    : `${origins.length} โดเมน`;
+  info.style.color = bad.length ? "#b45309" : "";
+}
+
 // ─── Import/Export/Reset ───
 function exportJson() {
   const c = state.config;
@@ -1195,6 +1225,18 @@ async function main() {
       await api.modifiers.set({ outOfArea: a, outOfHours: h });
       state.config.modifierFees = { outOfArea: a, outOfHours: h };
       showStatus("บันทึก modifier");
+    } catch (e) { showStatus(e.message, true); }
+  };
+
+  document.getElementById("save-allowed-origins").onclick = async () => {
+    const raw = document.getElementById("fld-allowed-origins").value || "";
+    const list = raw.split("\n").map(s => s.trim()).filter(Boolean);
+    if (!list.length) { showStatus("ต้องมีอย่างน้อย 1 โดเมน", true); return; }
+    try {
+      const r = await api.allowedOrigins.set(list);
+      state.allowedOrigins = r.origins || [];
+      renderAllowedOrigins();   // เขียนกลับด้วยรูปที่ normalize แล้ว
+      showStatus(r.dropped ? `บันทึกแล้ว (ทิ้ง ${r.dropped} บรรทัดที่ผิดรูป)` : "บันทึกโดเมน");
     } catch (e) { showStatus(e.message, true); }
   };
 

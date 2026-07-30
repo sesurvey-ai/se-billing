@@ -1,0 +1,117 @@
+{
+  "_comment": "Baseline จากเว็บ isurvey ตัวจริง (เก่า) 2026-07-28 — ใช้เป็นเกณฑ์ว่า resolver ต้องคืนค่าเท่านี้เป๊ะ ห้าม regress",
+  "schemaVersion": 1,
+  "probedAt": "2026-07-28T09:49:35.922Z",
+  "site": "legacy",
+  "url": { "origin": "https://cloud.isurvey.mobi", "pathname": "/main.php" },
+  "framework": { "kind": "extjs", "version": "6.2.0.981", "jquery": "3.3.1", "extClasses": 188 },
+  "frames": { "count": 0, "note": "ฟอร์มอยู่ใน top document — manifest all_frames:false ถูกต้อง" },
+  "counts": { "components": 398, "componentsKept": 205, "domTotal": 1988, "domKept": 1403 },
+
+  "resolved": {
+    "provinceHidden": "tab1_survey_provinceID",
+    "amphurHidden": "tab1_survey_amphurID",
+    "tumbonHidden": null,
+    "provinceCmpId": "tab1_survey_provinceID",
+    "amphurCmpId": "tab1_survey_amphurID",
+    "tumbonCmpId": null,
+    "feeCmpId": "tab1_SUR_INVEST",
+    "insInvestCmpId": "tab1_INS_INVEST",
+    "insTransCmpId": "tab1_INS_TRANS",
+    "insPhotoCmpId": "tab1_INS_PHOTO",
+    "recvClaimCmpId": "tab1_RECV_CLAIM",
+    "surClaimCmpId": "tab1_SUR_CLAIM",
+    "insClaimCmpId": "tab1_INS_CLAIM",
+    "dailyNumCmpId": "tab1_DAILY_NUM",
+    "surDailyCmpId": "tab1_SUR_DAILY",
+    "insDailyCmpId": "tab1_INS_DAILY",
+    "outOfAreaCmpId": "tab1_chk_co_area",
+    "inOutGroupCmpId": "tab1_grd-in_out",
+    "inOutRadioName": "tab1_rd-in_out",
+    "closeCaseInputId": "close_case",
+    "cancelCaseInputId": "cancel_case",
+    "mtypeIdCmpId": "tab1_claim_MtypeID",
+    "serviceTypeCmpId": "tab1_service_type",
+    "surveyorNameCmpId": "tab1_surveyor_name",
+    "ossCompanyInputId": "tab1_OSS_company",
+    "claimNoInputId": "tab1_claim_no",
+    "surveyNoInputId": "tab1_survey_no",
+    "dispatchDateInputId": "tab1_dispatch_date",
+    "dispatchTimeInputId": "tab1_dispatch_time",
+    "headerTitleId": "main-tab_header-title-textEl",
+    "saveButtonId": "tab1_save",
+    "tab1CmpId": "tab-1_clone",
+    "tab2CmpId": "tab-2_clone",
+    "tab3CmpId": "tab-3_clone"
+  },
+
+  "notFound": {
+    "tumbonHidden": "ไม่มีในหน้าที่ probe — combobox ตำบลยังไม่ถูกสร้าง (ต้องเลือกอำเภอก่อน)",
+    "tumbonCmpId": "เหมือนกัน — resolver ต้องยอมให้ค่านี้เป็น null ได้โดยไม่พัง"
+  },
+
+  "expenseTable": {
+    "_comment": "ตารางรายการค่าใช้จ่าย — id ของแถวเป็น auto-generated (panel-XXXX) เปลี่ยนทุก render ห้ามใช้เป็น anchor",
+    "tableCmpId": "panel-1959 (auto-gen)",
+    "tableLayout": "form",
+    "tableWidth": 944,
+    "rowCount": 19,
+    "rowLayout": "hbox",
+    "rowOrder": [
+      "(hidden)", "หัวตาราง: ลำดับ/รายละเอียด/จำนวน/จำนวนเงินเสนอ/จำนวนเงินอนุมัติ",
+      "1.ค่าบริการ", "2.ระยะทาง (hidden)", "2.ค่าเดินทาง/ค่าพาหนะ", "3.ค่าใช้จ่ายอื่นๆ",
+      "4.ค่ารูปถ่าย", "4.ค่าโทรศัพท์ (hidden)", "5.ค่าประกันตัว (hidden)", "5.ค่าคัดประจำวัน",
+      "6.ค่าเรียกร้อง", "7.หักเงิน (extension สร้างเอง)", "9.ค่ารถยก (hidden)",
+      "เซอร์เวย์/ประกัน", "รวมเป็นเงิน", "ภาษีมูลค่าเพิ่ม", "คิด Vat (hidden)",
+      "คำนวณจำนวนเงินรวม", "หมายเหตุ"
+    ],
+    "hiddenRowsDetectedBy": "display:none → getBoundingClientRect เป็น 0 ทั้งหมด (left/top อ่านได้ -486/-1271)",
+    "columnX": {
+      "_comment": "อ่านจาก styleLeft ของ component จริง — ไม่ตรงกันทุกแถว จึงต้องวัดจากแถวจริง ไม่ใช่ hardcode",
+      "seq": 10,
+      "desc": 55,
+      "amount": { "ค่าคัดประจำวัน": 215, "ค่าเรียกร้อง": 160 },
+      "unit": 250,
+      "proposed": 510,
+      "approved": 630
+    },
+    "rows": {
+      "ค่าบริการ": { "layout": "hbox", "w": 730, "h": 35,
+        "children": ["label 1.@10", "label ค่าบริการ@55", "tab1_INVEST_NUM (hidden)", "label ครั้ง (hidden)", "tab1_SUR_INVEST@510", "tab1_INS_INVEST@630"] },
+      "ค่าเรียกร้อง": { "layout": "hbox", "w": 730, "h": 35,
+        "children": ["label 6.@10", "label ค่าเรียกร้อง@55", "tab1_RECV_CLAIM@160", "label บาท@250", "tab1_SUR_CLAIM@510", "tab1_INS_CLAIM@630"] },
+      "ค่าคัดประจำวัน": { "layout": "hbox", "w": 924, "h": 35,
+        "children": ["label 5.@10", "label ค่าคัดประจำวัน@55", "tab1_DAILY_NUM@215", "label ข้อ@250", "tab1_SUR_DAILY@510", "tab1_INS_DAILY@630", "tab1_daily_check_group@290 (extension สร้างเอง)"] }
+    }
+  },
+
+  "inOutRow": {
+    "_comment": "แถว ใน/นอกเวลางาน + นอกพื้นที่ อยู่คนละ fieldset กับตารางค่าใช้จ่าย",
+    "rowCmpId": "panel-1949 (auto-gen)",
+    "rowLayout": "hbox",
+    "rowWidth": 955,
+    "parentCmpId": "fieldset-1940",
+    "parentLayout": "vbox",
+    "children": ["tab1_grd-in_out (radiogroup, w400)@0", "tab1_chk_co_area (checkbox, w400)@555"]
+  },
+
+  "extensionState": {
+    "loaded": true,
+    "injectedComponentsPresent": [
+      "tab1_deduct_row", "tab1_deduct_amount", "tab1_deduct_late_submit",
+      "tab1_deduct_incomplete_docs", "tab1_deduct_warning",
+      "tab1_daily_check_group", "tab1_daily_chk_right", "tab1_daily_chk_wrong", "tab1_daily_chk_wait"
+    ],
+    "deductRow": { "left": 10, "top": 239, "w": 850, "h": 35, "note": "กว้าง 850 ขณะที่แถว host กว้าง 730/924" },
+    "configKeys": ["modifierFees", "enabledProvinces", "userProvincePreferences", "requiredFields", "saveButtonIds", "requiredFieldsMtypes", "pollIntervalMs", "highlightColor", "highlightDurationMs", "debug", "selectors"],
+    "feeMapSizes": { "province": 0, "amphurTable": 334 }
+  },
+
+  "ambiguityRisks": {
+    "_comment": "id ที่ fuzzy match อาจไปโดนตัวผิด — resolver ต้องให้ exact id ชนะเสมอ",
+    "header-title": ["main-tab_header-title-textEl (ถูก)", "ext-quicktips-tip_header-title", "main-left_menu_header-title"],
+    "tab1_save": ["tab1_save (ถูก)", "tab1_saveOSS (ปุ่มบันทึกตัวที่สอง — มีอยู่จริง)"],
+    "tab-1": ["tab-1_clone (ถูก)", "tab-1159 (ExtJS auto-id)"],
+    "grd-in_out": ["tab1_grd-in_out (ถูก)", "tab1_grd-in_out-labelEl"]
+  }
+}

@@ -38,6 +38,10 @@
   }
 
   function readAmphurId() {
+    // เว็บใหม่ไม่มี hidden input และ combobox คืน "ชื่อ" ไม่ใช่รหัส
+    // resolver.locationId() อ่านแล้วแปลงเป็นรหัสให้เสร็จ ใช้ได้ทั้งสองเว็บ
+    const R = window.SEResolve;
+    if (R && R.locationId) return String(R.locationId("amphurHidden") || "");
     const el = document.querySelector('input[type="hidden"][name="tab1_survey_amphurID"]');
     return el ? String(el.value || "") : "";
   }
@@ -97,8 +101,50 @@
    *  - match → ตรวจว่า checkbox มี + label ตรง entry; ถ้าไม่มี/ไม่ตรง destroy + create ใหม่
    *  - ไม่ match → destroy
    */
+  // ─────────────────────────────────────────────────────────
+  // โหมด DOM (เว็บใหม่ React+MUI)
+  //   หลักการเดียวกับเว็บเก่า: ดูจาก "อำเภอ" ไม่ได้ใช้ช่องตำบล
+  //   อำเภอตรงกับ parentAmphur ของเรตพิเศษ → แทรก checkbox ชื่อตำบลนั้น
+  //   ติ๊ก → content.js สลับไปใช้เรตของตำบลแทนเรตอำเภอ
+  // ─────────────────────────────────────────────────────────
+  const DOM_WRAP_ID = "tab1_chk_sub_area_dom";
+
+  function domSyncOnce() {
+    const R = window.SEResolve, I = window.SEInject;
+    if (!R || !I) return;
+
+    const found = findEntry(readAmphurId());
+    const wrap = document.getElementById(DOM_WRAP_ID);
+
+    if (!found) {
+      if (wrap) { wrap.remove(); log("อำเภอไม่มีเรตตำบลพิเศษ → ลบ checkbox"); }
+      return;
+    }
+
+    const desired = String(found.entry.label || found.tumbonId);
+    if (wrap && wrap.dataset.label === desired) return;   // ตรงอยู่แล้ว
+    if (wrap) wrap.remove();
+
+    // เกาะท้าย combobox "เขต/อำเภอที่ตรวจสอบ"
+    const amphurEl = R.el("amphurCmpId");
+    const anchor = amphurEl && (amphurEl.closest(".MuiFormControl-root, .MuiAutocomplete-root") || amphurEl);
+    if (!anchor || !anchor.parentNode) return;
+
+    const holder = document.createElement("span");
+    holder.id = DOM_WRAP_ID;
+    holder.dataset.label = desired;
+    holder.style.cssText = "display:inline-flex;align-items:center;margin-left:8px;vertical-align:middle";
+    anchor.parentNode.insertBefore(holder, anchor.nextSibling);
+
+    I.checkbox({ id: CHECKBOX_ID, label: desired, into: holder });
+    log(`แทรก checkbox ตำบลพิเศษ '${desired}' (โหมด DOM)`);
+  }
+
   function syncOnce() {
-    if (typeof Ext === "undefined" || typeof Ext.getCmp !== "function") return;
+    if (typeof Ext === "undefined" || typeof Ext.getCmp !== "function") {
+      try { domSyncOnce(); } catch (e) { warn("โหมด DOM ล้มเหลว:", e); }
+      return;
+    }
     const amphurId = readAmphurId();
     const found = findEntry(amphurId);
 
