@@ -158,7 +158,8 @@
     const cb = R.el("outOfAreaCmpId");
     if (!cb) return;
 
-    if (cb.checked) {
+    // ผ่าน domChecked — เว็บใหม่เป็น MUI ที่สถานะจริงอยู่ที่ class ไม่ใช่ el.checked
+    if (R.domChecked ? R.domChecked(cb) : cb.checked) {
       if (!I.get(FIELD_ID)) {
         // แทรกต่อท้าย <label> ที่ครอบ checkbox ไม่ใช่ตัว checkbox เปล่าๆ
         // ไม่งั้นช่องจะไปแทรกกลางระหว่าง checkbox กับข้อความ "นอกพื้นที่"

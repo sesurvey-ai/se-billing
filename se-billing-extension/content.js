@@ -381,6 +381,13 @@
    *   ไม่ได้เลือกอะไร                  → null
    */
   function readCaseStatus() {
+    // ผ่าน resolver — เว็บใหม่เป็น MUI radio ที่ el.checked เชื่อไม่ได้ (ดู domChecked)
+    const R = window.SEResolve;
+    if (R) {
+      if (R.isChecked("closeCaseInputId")) return "close";
+      if (R.isChecked("cancelCaseInputId")) return "cancel";
+      return null;
+    }
     const close = document.getElementById(SEL.closeCaseInputId);
     if (close && close.checked) return "close";
     const cancel = document.getElementById(SEL.cancelCaseInputId);
@@ -416,6 +423,8 @@
 
   /** sub-area checkbox state (inject โดย feature-sub-area-checkbox.js) */
   function isSubAreaChecked() {
+    const R = window.SEResolve;
+    if (R) return R.isChecked("subAreaCmpId");
     const cmp = getExtCmp(SEL.subAreaCmpId);
     if (cmp && typeof cmp.getValue === "function") return cmp.getValue() === true;
     const el = document.getElementById(SEL.subAreaInputId);
@@ -1467,6 +1476,13 @@
     refreshRequiredCache(); // sync ค่าล่าสุด (รวม MtypeID) ของแท็บที่เปิดอยู่ก่อนตัดสิน
     if (!requiredFieldsApply()) return { ok: true, empty: [], unvisited: [] };
     const fields = getRequiredFields();
+
+    // ฟอร์มคนละชุด (เช่นเว็บใหม่ ที่ id ฟิลด์เป็นคนละระบบ) → ไม่เคยเจอฟิลด์ไหนเลย
+    // ถ้าไม่กันไว้ ทุกฟิลด์จะถูกนับเป็น "ยังไม่เปิดแท็บ" แล้วบล็อกไม่ให้บันทึก
+    // fail-open เหมือนตอน config โหลดไม่ได้ — ไม่ขวางการทำงานของผู้ใช้
+    const anySeen = fields.some((f) => f && f.id && _reqCache[f.id] && _reqCache[f.id].seen);
+    if (!anySeen) return { ok: true, empty: [], unvisited: [] };
+
     const empty = [], unvisited = [];
     for (const f of fields) {
       if (!f || !f.id) continue;
@@ -1676,6 +1692,24 @@
     attachObserverFor("tumbonHidden");
   }
 
+  /** ตัด suffix "-inputEl" ของ Ext ออก เพื่อเทียบ id ข้ามสองเว็บได้ */
+  const stripInputElSuffix = (s) => String(s || "").replace(/-inputEl$/, "");
+
+  /** key ใน SEL ที่ถ้าค่าเปลี่ยน ต้อง sync ยอดใหม่ทันที */
+  const CHANGE_TRIGGER_KEYS = [
+    "outOfAreaInputId",
+    "outOfAreaAmountInputId",
+    "outOfHoursAmountInputId",
+    "deductAmountInputId",
+    "lateSubmitInputId",
+    "incompleteDocsInputId",
+    "mtypeIdInputId",
+    "surveyorNameInputId",
+    "recvClaimInputId",
+    "serviceTypeInputId",
+    "subAreaInputId",
+  ];
+
   /**
    * Listener แบบ delegated สำหรับ checkbox/radio ของ modifier
    * ติดครั้งเดียวที่ document — ไม่ต้องผูกใหม่ตอน DOM เปลี่ยน
@@ -1688,18 +1722,11 @@
     document.addEventListener("change", (ev) => {
       const t = ev.target;
       if (!t) return;
+      // เทียบแบบตัด "-inputEl" ทั้งสองฝั่ง — เว็บเก่า Ext ต่อท้าย suffix นี้
+      // แต่ช่องที่ extension สร้างเองบนเว็บใหม่เป็น id เปล่าๆ (ไม่มี suffix)
+      const tid = stripInputElSuffix(t.id);
       const matches =
-        t.id === SEL.outOfAreaInputId ||
-        t.id === SEL.outOfAreaAmountInputId ||
-        t.id === SEL.outOfHoursAmountInputId ||
-        t.id === SEL.deductAmountInputId ||
-        t.id === SEL.lateSubmitInputId ||
-        t.id === SEL.incompleteDocsInputId ||
-        t.id === SEL.mtypeIdInputId ||
-        t.id === SEL.surveyorNameInputId ||
-        t.id === SEL.recvClaimInputId ||
-        t.id === SEL.serviceTypeInputId ||
-        t.id === SEL.subAreaInputId ||
+        (!!tid && CHANGE_TRIGGER_KEYS.some((k) => stripInputElSuffix(SEL[k]) === tid)) ||
         (t.type === "radio" && t.name === SEL.inOutRadioName);
       if (matches) {
         // sync ทันทีหลัง Ext กระจาย event ภายใน
@@ -1887,6 +1914,14 @@
       const selector = getSaveButtonIds().map((id) => "#" + esc(id)).join(", ");
       let btn = null;
       try { btn = ev.target.closest(selector); } catch (_) { return; } // id แปลกใน config → selector พัง: ไม่ block
+
+      // เว็บใหม่: ปุ่ม "บันทึกข้อมูล" ไม่มี id คงที่ (MUI สร้าง id ใหม่ทุก render)
+      // → เทียบกับ element ที่ resolver หาเจอจากข้อความบนปุ่มแทน
+      if (!btn) {
+        const R = window.SEResolve;
+        const resolved = R && R.el("saveButtonId");
+        if (resolved && (ev.target === resolved || resolved.contains(ev.target))) btn = resolved;
+      }
       if (!btn) return;
 
       // evaluateRequired คืน ok:true เองเมื่อไม่ต้องตรวจ (ปิดฟีเจอร์ / ไม่มีฟิลด์ /
@@ -1904,8 +1939,10 @@
       // ครบ → ปล่อยผ่านปกติ (host บันทึกเอง) + capture
       // ต้องเทียบกับ saveButtonIds ทั้งชุด ไม่ใช่ hardcode "tab1_save"
       // ไม่งั้นปุ่มที่เพิ่มใน /admin (เช่น tab1_saveOSS) จะ "บล็อกได้แต่ไม่ capture"
-      if (getSaveButtonIds().indexOf(btn.id) !== -1) {
-        log(`Required ครบ → บันทึกต่อ (#${btn.id})`);
+      const R2 = window.SEResolve;
+      const isResolvedSave = !!(R2 && R2.el("saveButtonId") === btn);
+      if (isResolvedSave || getSaveButtonIds().indexOf(btn.id) !== -1) {
+        log(`Required ครบ → บันทึกต่อ (${btn.id ? "#" + btn.id : "ปุ่ม: " + (btn.textContent || "").trim()})`);
         setTimeout(captureNow, 100);
       }
     }, true);

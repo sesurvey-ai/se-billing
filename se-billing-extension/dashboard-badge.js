@@ -25,8 +25,11 @@
   const NAME_RE = /^\s*(Hi,\s*)?(นางสาว|นาง|นาย|น\.ส\.|คุณ)\s*\S/;
   let _titleCache = null;
 
+  // ตัวบอกเวอร์ชัน — อ่านได้จาก console: document.documentElement.dataset.seBadge
+  try { document.documentElement.dataset.seBadge = "2.11.0-b5"; } catch (e) {}
+
   function titleEl() {
-    const byId = titleEl();
+    const byId = document.getElementById(TITLE_ID);
     if (byId) { _titleCache = null; return byId; }
     if (_titleCache && _titleCache.isConnected) return _titleCache;
     // เว็บใหม่: หา chip/ข้อความสั้นที่ขึ้นต้นด้วยคำนำหน้าชื่อไทย
@@ -229,6 +232,28 @@
   }
 
   // ---- วางป้ายให้อยู่ "หน้าชื่อ" (ชิดซ้ายของตัวอักษรชื่อจริง) แบบไดนามิก ----
+  /**
+   * หา "ขอบซ้ายสุด" ของปุ่ม/ไอคอนบนแถบหัวที่อยู่แถวเดียวกับป้าย
+   * เว็บใหม่มีปุ่มสลับธีมคั่นอยู่ระหว่างป้ายกับชื่อ ถ้าไม่หลบจะทับกัน
+   * คืน Infinity ถ้าไม่เจออะไรกีดขวาง (เว็บเก่าเป็นแบบนั้น)
+   */
+  function obstacleLeft(badgeRect) {
+    const scope = document.querySelector("header, .MuiAppBar-root, .x-toolbar") || document.body;
+    let min = Infinity;
+    const items = scope.querySelectorAll('button, [role="button"], .MuiIconButton-root, .MuiSwitch-root, a, svg');
+    for (const el of items) {
+      if (el.closest("#extenboard-badge") || el.closest("#extenboard-panel")) continue;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      // เอาเฉพาะตัวที่อยู่แนวตั้งซ้อนกับป้าย และอยู่ทางขวาของขอบซ้ายป้าย
+      const overlapsY = r.bottom > badgeRect.top && r.top < badgeRect.bottom;
+      if (!overlapsY) continue;
+      if (r.left < badgeRect.left) continue;
+      if (r.left < min) min = r.left;
+    }
+    return min;
+  }
+
   function positionBadge(b) {
     const title = titleEl();
     if (!title) return;
@@ -239,14 +264,56 @@
     b.style.transform = "translateY(-50%)";
     b.style.left = "auto";
     b.style.right = (vw - n.left + 12) + "px"; // ขอบขวาของป้าย = ขอบซ้ายของชื่อ − 12px
+
+    // หลบปุ่มบนแถบหัว (เว็บใหม่มีปุ่มสลับธีมคั่นอยู่) — ถ้าทับ ให้ขยับไปทางซ้ายอีก
+    const r = b.getBoundingClientRect();
+    if (!r.width) return;
+    const block = obstacleLeft(r);
+    if (block !== Infinity && r.right > block - 10) {
+      b.style.right = (vw - block + 10) + "px";
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // ชุดสี — เว็บเก่าแถบหัวสีเข้ม เว็บใหม่สีอ่อน ใช้ชุดเดียวกันไม่ได้
+  //   วัดความสว่างของพื้นหลังที่ป้ายไปวางทับจริง แล้วเลือกชุดสีให้ตัดกัน
+  // ─────────────────────────────────────────────────────────
+  function bgLuminance(x, y) {
+    const stack = document.elementsFromPoint(x, y) || [];
+    for (const el of stack) {
+      if (el.id === "extenboard-badge" || el.closest("#extenboard-badge")) continue;
+      const bg = getComputedStyle(el).backgroundColor || "";
+      const m = bg.match(/rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?/);
+      if (!m) continue;
+      const a = m[4] === undefined ? 1 : parseFloat(m[4]);
+      if (a < 0.5) continue;                       // โปร่งใส — ดูตัวถัดไป
+      const [r, g, bl] = [+m[1], +m[2], +m[3]];
+      return (0.2126 * r + 0.7152 * g + 0.0722 * bl) / 255;
+    }
+    return 0;                                      // หาไม่เจอ → ถือว่าพื้นเข้ม (พฤติกรรมเดิม)
+  }
+
+  let THEME = null;
+  function refreshTheme(b) {
+    const r = b.getBoundingClientRect();
+    const light = bgLuminance(r.left + r.width / 2, r.top + r.height / 2) > 0.5;
+    const t = light
+      ? { pillBg: "rgba(21,101,192,.08)", label: "#1565c0", neutral: "#1565c0",
+          warn: "#b45309", ok: "#15803d", tag: "#1565c0", border: "1px solid rgba(21,101,192,.25)" }
+      : { pillBg: "rgba(255,255,255,.13)", label: "#cfe0ef", neutral: "#cfe0ef",
+          warn: "#ffd479", ok: "#7fd18f", tag: "#9bb4c9", border: "1px solid transparent" };
+    if (!THEME || THEME.label !== t.label) { THEME = t; lastHtml = null; }  // ธีมเปลี่ยน → วาดใหม่
+    return THEME;
   }
 
   function pill(label, n, color, view) {
+    const t = THEME || { pillBg: "rgba(255,255,255,.13)", label: "#cfe0ef", border: "1px solid transparent" };
     return (
       '<span data-ebview="' + view + '" title="คลิกเพื่อดูรายการเลขเคลม" ' +
-      'style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.13);' +
+      'style="display:inline-flex;align-items:center;gap:5px;background:' + t.pillBg + ";" +
+      "border:" + t.border + ";" +
       'border-radius:11px;padding:2px 9px;line-height:1.5;white-space:nowrap;pointer-events:auto;cursor:pointer;">' +
-      '<span style="font-size:11px;color:#cfe0ef;">' + label + "</span>" +
+      '<span style="font-size:11px;color:' + t.label + ';">' + label + "</span>" +
       '<span style="font-size:13px;font-weight:800;color:' + color + ';">' + n + "</span></span>"
     );
   }
@@ -255,15 +322,17 @@
     const title = titleEl();
     if (!title) return; // header ยังไม่พร้อม
     const b = badgeEl();
+    positionBadge(b);              // ต้องวางก่อน เพื่อวัดสีพื้นหลังตรงตำแหน่งจริง
+    const t = refreshTheme(b);
     let html = "";
     if (cache) {
       const c = pickCounts(cache);
       if (c) {
         html =
-          (c.tag ? '<span style="font-size:10px;color:#9bb4c9;">[' + c.tag + "]</span>" : "") +
-          pill("งานค้าง isurvey", c.backlog, c.backlog > 0 ? "#ffd479" : "#7fd18f", "backlog") +
-          pill("งานแก้ไข emcs", c.edit, c.edit > 0 ? "#ffd479" : "#cfe0ef", "edit") +
-          pill("งานต่อเนื่อง emcs", c.cont, c.cont > 0 ? "#ffd479" : "#cfe0ef", "cont");
+          (c.tag ? '<span style="font-size:10px;color:' + t.tag + ';">[' + c.tag + "]</span>" : "") +
+          pill("งานค้าง isurvey", c.backlog, c.backlog > 0 ? t.warn : t.ok, "backlog") +
+          pill("งานแก้ไข emcs", c.edit, c.edit > 0 ? t.warn : t.neutral, "edit") +
+          pill("งานต่อเนื่อง emcs", c.cont, c.cont > 0 ? t.warn : t.neutral, "cont");
       }
     }
     if (html !== lastHtml) { b.innerHTML = html; lastHtml = html; } // เขียนเฉพาะตอนเปลี่ยน
@@ -271,10 +340,15 @@
   }
 
   // ---- อ่านชื่อจาก header ----
+  let _loggedNoTitle = false;
   function capture() {
     const el = titleEl();
     const raw = el ? el.textContent.trim() : "";
-    if (!raw) return;
+    if (!raw) {
+      if (!_loggedNoTitle) { _loggedNoTitle = true; console.log("[extenBoard] ยังหาชื่อผู้ล็อกอินบนหัวเว็บไม่เจอ"); }
+      return;
+    }
+    if (_loggedNoTitle) { _loggedNoTitle = false; console.log("[extenBoard] เจอชื่อผู้ล็อกอิน:", raw); }
     const display = raw.replace(/^\s*Hi,\s*/, "").trim();
     const n = norm(raw);
     if (n !== curNorm) { curNorm = n; lastHtml = null; panelView = null; renderPanel(); } // ชื่อเปลี่ยน -> วาดใหม่ + ปิดแผง

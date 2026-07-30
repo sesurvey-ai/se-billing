@@ -68,10 +68,14 @@
     return (Math.round(n * 100) / 100).toFixed(2);
   }
 
-  /** อ่าน prefix เลขเซอร์เวย์ → "SETP" | "SEMS" | null (อ่าน DOM ตรง ไม่พึ่ง content.js) */
+  /** อ่าน prefix เลขเซอร์เวย์ → "SETP" | "SEMS" | null (ไม่พึ่ง content.js) */
   function surveyPrefix() {
-    const el = document.getElementById("tab1_survey_no-inputEl");
-    const v = String(el && el.value ? el.value : "").trim().toUpperCase();
+    // เว็บใหม่ id ของช่องนี้เป็น "เลขเซอเวย์" ไม่ใช่ tab1_survey_no-inputEl
+    // ถ้าอ่านไม่ได้ prefix จะเป็น null → โหมดบริษัท 2 (SETP/SEMS) ไม่ทำงานเลย
+    const R = window.SEResolve;
+    const raw = R ? R.read("surveyNoInputId")
+                  : (document.getElementById("tab1_survey_no-inputEl") || {}).value;
+    const v = String(raw == null ? "" : raw).trim().toUpperCase();
     if (v.indexOf("SETP") === 0) return "SETP";
     if (v.indexOf("SEMS") === 0) return "SEMS";
     return null;

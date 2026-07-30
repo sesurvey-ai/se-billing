@@ -25,7 +25,7 @@
   if (window.SEResolve) return;   // กันโหลดซ้ำ
 
   var TAG = "[SEResolve]";
-  var VERSION = "2.11.0-r10";   // เช็กว่า reload extension แล้วจริงไหม: SEResolve.version
+  var VERSION = "2.11.0-r13";   // เช็กว่า reload extension แล้วจริงไหม: SEResolve.version
   function CFG() { return window.ISURVEY_HELPER_CONFIG || {}; }
   function dbg() {
     if (!CFG().debug) return;
@@ -191,7 +191,10 @@
   });
   K("subAreaCmpId", {
     shape: "cmpId", kind: "checkbox",
-    cmpIds: ["tab1_chk_sub_area"], domIds: ["tab1_chk_sub_area-inputEl"],
+    cmpIds: ["tab1_chk_sub_area"],
+    // เว็บเก่า Ext ต่อท้าย "-inputEl"; เว็บใหม่เราสร้าง <input> เอง id เปล่าๆ
+    // ต้องมีทั้งสองแบบ ไม่งั้น isSubAreaChecked() บนเว็บใหม่คืน false ตลอด
+    domIds: ["tab1_chk_sub_area-inputEl", "tab1_chk_sub_area"],
     optional: true,   // extension สร้างเอง
   });
   K("closeCaseInputId", {
@@ -214,7 +217,8 @@
   K("saveButtonId", {
     shape: "domId", kind: "button",
     cmpIds: ["tab1_save"], domIds: ["tab1_save"],
-    ownText: ["ยืนยันการตรวจสอบ", "บันทึกข้อมูล", "บันทึก"],
+    // ต้องตรงเป๊ะ — คำว่า "บันทึก" เฉยๆ กว้างเกินไป เสี่ยงไปโดนปุ่มอื่น
+    ownText: ["ยืนยันการตรวจสอบ", "บันทึกข้อมูล"],
   });
 
   // ── ฟิลด์เฉพาะเว็บใหม่ (ยังไม่มีใน content.js — เผื่ออนาคต) ──
@@ -524,7 +528,7 @@
       if (!e.radioGroupLabel) return null;
       var rs = radioGroupEls(e);
       if (!rs || !rs.length) return null;
-      for (var i = 0; i < rs.length; i++) if (rs[i].checked) return rs[i];
+      for (var i = 0; i < rs.length; i++) if (domChecked(rs[i])) return rs[i];
       return rs[0];
     }],
     ["placeholder", byPlaceholder],
@@ -608,7 +612,7 @@
       if (typeof v === "boolean") return v;
     }
     var el = h.isExtCmp ? h.el : h;
-    return !!(el && el.checked);
+    return domChecked(el);
   }
 
   function setChecked(key, want) {
@@ -620,9 +624,28 @@
     }
     var el = h.isExtCmp ? h.el : h;
     if (!el) return false;
-    if (!!el.checked === !!want) return false;
+    if (domChecked(el) === !!want) return false;
     el.click();     // React/MUI ต้องผ่าน click ถึงจะอัปเดต state
     return true;
+  }
+
+  /**
+   * สถานะติ๊กของ input — ใช้แทน el.checked ตรงๆ ทุกที่
+   *
+   * เว็บใหม่ (MUI) radio ทั้ง 17 ตัวในหน้าใช้ name="radio-buttons-group" ร่วมกันหมด
+   * เบราว์เซอร์จึงยอมให้ checked จริงได้แค่ตัวเดียวทั้งหน้า → พอ React set หลายตัว
+   * ผลลัพธ์คือ input.checked เป็น false ทั้ง 17 ตัว (ยืนยันบนหน้าจริงแล้ว)
+   * สถานะที่แสดงจริงอยู่ที่ class "Mui-checked" ของ span ที่ครอบ input
+   *
+   * checkbox ไม่โดนปัญหานี้ (name ไม่ซ้ำ) — el.checked ยังเชื่อได้ แต่เช็ค class เผื่อไว้ไม่เสียหาย
+   */
+  function domChecked(el) {
+    if (!el) return false;
+    if (el.checked) return true;
+    var box = safe(function () {
+      return el.closest(".PrivateSwitchBase-root, .MuiRadio-root, .MuiCheckbox-root, .MuiSwitch-root");
+    }, null);
+    return !!(box && box.classList && box.classList.contains("Mui-checked"));
   }
 
   /** ค่าที่เลือกอยู่ของ radio group (คืน value เช่น "ใน" / "นอก") */
@@ -639,7 +662,7 @@
     }
     var rs = radioGroupEls(entry);
     if (!rs) return "";
-    for (var i = 0; i < rs.length; i++) if (rs[i].checked) return String(rs[i].value || "");
+    for (var i = 0; i < rs.length; i++) if (domChecked(rs[i])) return String(rs[i].value || "");
     return "";
   }
 
@@ -649,7 +672,7 @@
     if (!rs) return false;
     for (var i = 0; i < rs.length; i++) {
       if (String(rs[i].value) === String(value)) {
-        if (rs[i].checked) return false;
+        if (domChecked(rs[i])) return false;
         rs[i].click();
         return true;
       }
@@ -933,6 +956,7 @@
     read: read,
     write: write,
     isChecked: isChecked,
+    domChecked: domChecked,   // อ่านสถานะติ๊กของ element ที่มีอยู่แล้ว (ไม่ผ่าน registry)
     setChecked: setChecked,
     radioValue: radioValue,
     setRadioValue: setRadioValue,
