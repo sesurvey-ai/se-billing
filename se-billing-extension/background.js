@@ -91,6 +91,8 @@ let lastSyncedKey = "";
  */
 async function syncDynamicScripts(allowedOrigins) {
   if (!Array.isArray(allowedOrigins)) return;
+  // permission "scripting" ยังไม่ถูกอนุมัติ (manifest เก่าค้างอยู่) → ข้ามไปเงียบๆ
+  if (!chrome.scripting?.registerContentScripts) return;
 
   const matches = [...new Set(allowedOrigins.map(originToMatch).filter(Boolean))];
   const key = matches.join("|");
@@ -127,18 +129,31 @@ async function refreshDynamicScripts() {
   }
 }
 
+// ── ผูก listener แบบไม่ให้ล้ม service worker ─────────────────────────────
+// ถ้า permission ใน manifest ไม่ตรงกับโค้ด (เช่น ผู้ใช้ยังไม่ reload extension
+// หลังอัปเดต manifest) chrome.alarms/scripting จะเป็น undefined → throw ที่
+// top-level → service worker ไม่ start → ทั้ง extension ตาย (config โหลดไม่ได้,
+// capture ส่งไม่ได้) ฟีเจอร์ allowlist สำคัญน้อยกว่าตัว extension ทั้งตัวมาก
 const ALARM_SYNC = "se-billing-sync-origins";
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.alarms.create(ALARM_SYNC, { periodInMinutes: 5 });
+
+function scheduleOriginSync() {
+  try {
+    if (chrome.alarms?.create) chrome.alarms.create(ALARM_SYNC, { periodInMinutes: 5 });
+  } catch (e) {
+    console.warn("[ISurveyHelper/background] ตั้ง alarm ไม่ได้:", String(e?.message || e));
+  }
   refreshDynamicScripts();
-});
-chrome.runtime.onStartup.addListener(() => {
-  chrome.alarms.create(ALARM_SYNC, { periodInMinutes: 5 });
-  refreshDynamicScripts();
-});
-chrome.alarms.onAlarm.addListener((a) => {
-  if (a.name === ALARM_SYNC) refreshDynamicScripts();
-});
+}
+
+try {
+  chrome.runtime.onInstalled.addListener(scheduleOriginSync);
+  chrome.runtime.onStartup.addListener(scheduleOriginSync);
+  chrome.alarms?.onAlarm?.addListener((a) => {
+    if (a.name === ALARM_SYNC) refreshDynamicScripts();
+  });
+} catch (e) {
+  console.warn("[ISurveyHelper/background] ผูก listener โดเมนไม่ได้:", String(e?.message || e));
+}
 
 async function getServerUrl() {
   const { serverUrl } = await chrome.storage.local.get("serverUrl");
