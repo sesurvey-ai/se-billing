@@ -55,7 +55,10 @@ function render() {
     // เว็บใหม่: หักที่ช่อง "ค่าใช้จ่ายอื่นๆ" (ติดลบ) sur_invest ไม่เคยถูกหัก → ห้ามบวกกลับ
     const dedInSur = otherAmt < 0 ? 0 : ded;
     const basePnk  = sur - oaAmt - ohAmt + dedInSur;
-    const sumPnk   = basePnk + oaAmt + ohAmt - dedInSur;  // = sur (math ตรงตามที่แสดง)
+    // "ค่าใช้จ่ายอื่นๆ" อยู่คอลัมน์ "จำนวนเงินเสนอ" = ฝั่งพนักงาน จึงเข้ารวมพนักงานตรงๆ
+    //   บวก = พนักงานสำรองจ่ายแล้วเบิกคืน · ลบ = ยอดหัก (ติ๊กส่งช้า/เอกสารไม่ครบ)
+    //   otherAmt มีเครื่องหมายในตัวอยู่แล้ว บวกเข้าไปตัวเดียวครอบทั้งสองทาง
+    const sumPnk   = basePnk + oaAmt + ohAmt - dedInSur + otherAmt;
     const sumCo    = (Number(r.ins_invest) || 0)
                    + (Number(r.ins_trans)  || 0)
                    + (Number(r.ins_photo)  || 0);
@@ -84,7 +87,7 @@ function render() {
       <td class="numeric">${basePnk}</td>
       <td>${r.out_of_area  ? `<span class="amount-pos">+${r.out_of_area_amt  ?? 0}</span>` : ""}</td>
       <td>${r.out_of_hours ? `<span class="amount-pos">+${r.out_of_hours_amt ?? 0}</span>` : ""}</td>
-      <td class="numeric">${r.deduct_amt ? `<span class="amount-neg">-${r.deduct_amt}</span>` : ""}</td>
+      <td class="numeric">${dedInSur ? `<span class="amount-neg">-${dedInSur}</span>` : ""}</td>
       <td class="numeric">${otherAmt ? `<span class="${otherAmt < 0 ? "amount-neg" : "amount-pos"}">${otherAmt > 0 ? "+" : ""}${otherAmt}</span>` : ""}</td>
       <td>${r.late_submit     ? "✓" : ""}</td>
       <td>${r.incomplete_docs ? "✓" : ""}</td>

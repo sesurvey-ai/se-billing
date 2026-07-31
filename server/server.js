@@ -386,7 +386,8 @@ app.get("/api/captures.xlsx", async (req, res) => {
     //          sur_invest ไม่เคยถูกหัก → ห้ามบวกกลับ ไม่งั้นฐานจะเกิน
     const dedInSur = otherAmt < 0 ? 0 : ded;
     const basePnk = sur - oaAmt - ohAmt + dedInSur;   // derive base (ตรงกับหน้าเว็บ)
-    const sumPnk  = basePnk + oaAmt + ohAmt - dedInSur;
+    // "ค่าใช้จ่ายอื่นๆ" อยู่คอลัมน์ "จำนวนเงินเสนอ" = ฝั่งพนักงาน (ดู captures.js)
+    const sumPnk  = basePnk + oaAmt + ohAmt - dedInSur + otherAmt;
     const sumCo   = (Number(r.ins_invest) || 0)
                   + (Number(r.ins_trans)  || 0)
                   + (Number(r.ins_photo)  || 0);
@@ -414,7 +415,7 @@ app.get("/api/captures.xlsx", async (req, res) => {
       base_pnk:         basePnk,
       out_of_area_amt:  r.out_of_area  ? oaAmt : "",
       out_of_hours_amt: r.out_of_hours ? ohAmt : "",
-      deduct_amt:       r.deduct_amt   ? ded   : "",
+      deduct_amt:       dedInSur       ? dedInSur : "",
       other_expense:    otherAmt !== 0 ? otherAmt : "",
       late_label:       r.late_submit     ? "✓" : "",
       docs_label:       r.incomplete_docs ? "✓" : "",
