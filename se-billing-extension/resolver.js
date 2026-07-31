@@ -25,7 +25,7 @@
   if (window.SEResolve) return;   // กันโหลดซ้ำ
 
   var TAG = "[SEResolve]";
-  var VERSION = "2.11.0-r18";   // เช็กว่า reload extension แล้วจริงไหม: SEResolve.version
+  var VERSION = "2.11.0-r19";   // เช็กว่า reload extension แล้วจริงไหม: SEResolve.version
   function CFG() { return window.ISURVEY_HELPER_CONFIG || {}; }
   function dbg() {
     if (!CFG().debug) return;

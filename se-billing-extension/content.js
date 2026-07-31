@@ -654,7 +654,8 @@
     const raw = String(R.read("otherExpenseCmpId") || "").replace(/,/g, "").trim();
     if (!raw) return 0;
     const n = Number(raw);
-    if (!isFinite(n) || n >= 0) return 0;          // บวก = ค่าใช้จ่ายปกติ ไม่ใช่การหัก
+    // เว็บใหม่บังคับให้ติดลบเสมอแล้ว — ค่าบวกเกิดได้เฉพาะของเก่าที่ค้างมา ไม่นับเป็นยอดหัก
+    if (!isFinite(n) || n >= 0) return 0;
     return (isLateSubmit() || isIncompleteDocs()) ? Math.abs(n) : 0;
   }
 
@@ -677,8 +678,8 @@
    * ต่างจาก checkDeductValid() ตรงที่อันนั้นดูยอด "หลังตีความ" (readDeductForCapture
    * คืน 0 เมื่อยังไม่ติ๊ก) จึงมองไม่เห็นกรณีนี้ — อันนี้ดูค่าดิบในช่องตรงๆ
    *
-   * ผลข้างเคียงที่ตั้งใจ: กรอกค่าใช้จ่ายปกติ (บวก ไม่ติ๊ก) จะบันทึกไม่ได้ด้วย
-   * ตามที่ผู้ใช้กำหนด — ช่องนี้ใช้สำหรับหักเงินเท่านั้น
+   * ช่องนี้เป็นช่องหักเงินล้วน (feature-deduct-amount.js บังคับให้ติดลบเสมอ)
+   * checkbox จึงเหลือหน้าที่บอกเหตุผล และต้องเลือกก่อนบันทึกได้
    */
   function checkOtherExpenseValid() {
     const R = window.SEResolve;
