@@ -157,10 +157,33 @@
     return !!((a && a.checked) || (b && b.checked));
   }
 
+  // ── คำเตือน: กรอกยอดแล้วต้องเลือกเหตุผลหักเงิน ────────────────
+  //   content.js ใช้ตรรกะเดียวกันบล็อกปุ่มบันทึก (ดู checkOtherExpenseValid)
+  //   ตรงนี้ทำหน้าที่บอกผู้ใช้ตั้งแต่ตอนพิมพ์ ไม่ต้องรอกดบันทึกถึงจะรู้
+  const WARN_ID = "tab1_other_expense_warning";
+
+  /** มียอดกรอกอยู่ไหม (ไม่สนเครื่องหมาย) */
+  function hasOtherExpenseAmount() {
+    return otherExpenseInputs().some((el) => {
+      const raw = String(el.value || "").replace(/,/g, "").trim();
+      if (raw === "") return false;
+      const n = Number(raw);
+      return isFinite(n) && n !== 0;
+    });
+  }
+
+  function updateWarning() {
+    const el = document.getElementById(WARN_ID);
+    if (!el) return;
+    const show = hasOtherExpenseAmount() && !isDeductChecked();
+    el.style.display = show ? "inline" : "none";
+  }
+
   /** บังคับเครื่องหมายของช่องให้ตรงกับสถานะ checkbox */
   function applySign() {
     const R = window.SEResolve;
     if (!R) return;
+    updateWarning();
     const want = isDeductChecked() ? -1 : 1;
     otherExpenseInputs().forEach((el) => {
       const raw = String(el.value || "").replace(/,/g, "").trim();
@@ -177,7 +200,8 @@
   function domPollOnce() {
     const I = window.SEInject;
     if (!I) return;
-    if (document.getElementById(DOM_WRAP_ID)) return;   // สร้างแล้ว
+    // สร้างแล้ว — แค่ sync คำเตือนทุกรอบ (React re-render ทำให้ listener ที่ผูกไว้หลุดได้)
+    if (document.getElementById(DOM_WRAP_ID)) { updateWarning(); return; }
 
     // วาง checkbox ไว้ใน cell "รายละเอียด" ต่อท้ายข้อความ ค่าใช้จ่ายอื่นๆ
     const row = I.tableRow(OTHER_ROW_LABEL);
@@ -193,8 +217,20 @@
     I.checkbox({ id: LATE_CHK_ID, label: "หักเงินส่งช้า",      into: wrap, onChange: applySign });
     I.checkbox({ id: DOCS_CHK_ID, label: "หักเงินเอกสารไม่ครบ", into: wrap, onChange: applySign });
 
+    const warn = document.createElement("span");
+    warn.id = WARN_ID;
+    warn.textContent = "← เลือกเหตุผลหักเงิน ไม่งั้นบันทึกไม่ได้";
+    warn.style.cssText =
+      "display:none;margin-left:6px;color:#c62828;font-size:12px;font-weight:600;white-space:nowrap";
+    wrap.appendChild(warn);
+
     // ผู้ใช้พิมพ์เสร็จแล้วออกจากช่อง → ค่อยใส่เครื่องหมาย
-    otherExpenseInputs().forEach((el) => el.addEventListener("blur", applySign));
+    // แต่คำเตือนต้องขึ้นตั้งแต่ตอนพิมพ์ (input) ไม่ใช่รอ blur
+    otherExpenseInputs().forEach((el) => {
+      el.addEventListener("blur", applySign);
+      el.addEventListener("input", updateWarning);
+    });
+    updateWarning();
 
     log(`แทรกตัวเลือกหักเงินในแถว "${OTHER_ROW_LABEL}" (โหมด DOM)`);
   }

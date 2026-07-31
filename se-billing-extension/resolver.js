@@ -25,7 +25,7 @@
   if (window.SEResolve) return;   // กันโหลดซ้ำ
 
   var TAG = "[SEResolve]";
-  var VERSION = "2.11.0-r15";   // เช็กว่า reload extension แล้วจริงไหม: SEResolve.version
+  var VERSION = "2.11.0-r18";   // เช็กว่า reload extension แล้วจริงไหม: SEResolve.version
   function CFG() { return window.ISURVEY_HELPER_CONFIG || {}; }
   function dbg() {
     if (!CFG().debug) return;
@@ -796,6 +796,16 @@
     if (!idx) return "";
     var dict = idx[level] || {};
     var ids = dict[raw] || dict[stripAreaPrefix(raw)] || [];
+    // ชื่อย่อด้วย "ฯ" — ฐานข้อมูลเก็บ "กรุงเทพฯ" แต่เว็บใหม่แสดง "กรุงเทพมหานคร"
+    // ตัด "ฯ" แล้วเทียบว่าเป็นคำขึ้นต้นของชื่อบนหน้าเว็บไหม (ตรรกะเดียวกับ content.js)
+    if (!ids.length) {
+      var target = stripAreaPrefix(raw);
+      for (var nm in dict) {
+        if (nm.indexOf("ฯ") === -1) continue;
+        var stem = nm.replace(/ฯ+$/, "");
+        if (stem && target.indexOf(stem) === 0) { ids = dict[nm]; break; }
+      }
+    }
     if (!ids.length) return "";
     if (ids.length === 1) return ids[0];
     if (parentId) {

@@ -514,6 +514,18 @@
     const dict = _revIndex[level] || {};
 
     let ids = dict[raw] || dict[stripAreaPrefix(raw)] || [];
+
+    // ชื่อย่อด้วย "ฯ" — ฐานข้อมูลเก็บ "กรุงเทพฯ" แต่เว็บใหม่แสดง "กรุงเทพมหานคร"
+    // จับคู่โดยตัด "ฯ" ออกแล้วเทียบว่าเป็นคำขึ้นต้นของชื่อบนหน้าเว็บไหม
+    // (ในฐานข้อมูลมีจังหวัดเดียวที่ใช้ "ฯ" คือ 10 กรุงเทพฯ — โอกาสจับผิดตัวแทบไม่มี)
+    if (!ids.length) {
+      const target = stripAreaPrefix(raw);
+      for (const nm in dict) {
+        if (nm.indexOf("ฯ") === -1) continue;
+        const stem = nm.replace(/ฯ+$/, "");
+        if (stem && target.indexOf(stem) === 0) { ids = dict[nm]; break; }
+      }
+    }
     if (!ids.length) return "";
     if (ids.length === 1) return ids[0];
 
@@ -656,6 +668,27 @@
     const docs   = isIncompleteDocs();
     const valid  = deduct === 0 || late || docs;
     return { valid, deduct, late, docs };
+  }
+
+  /**
+   * เว็บใหม่: กรอกยอดในช่อง "ค่าใช้จ่ายอื่นๆ" แล้วต้องเลือกเหตุผลหักเงิน
+   * (หักเงินส่งช้า / หักเงินเอกสารไม่ครบ) ไม่งั้นบันทึกไม่ได้
+   *
+   * ต่างจาก checkDeductValid() ตรงที่อันนั้นดูยอด "หลังตีความ" (readDeductForCapture
+   * คืน 0 เมื่อยังไม่ติ๊ก) จึงมองไม่เห็นกรณีนี้ — อันนี้ดูค่าดิบในช่องตรงๆ
+   *
+   * ผลข้างเคียงที่ตั้งใจ: กรอกค่าใช้จ่ายปกติ (บวก ไม่ติ๊ก) จะบันทึกไม่ได้ด้วย
+   * ตามที่ผู้ใช้กำหนด — ช่องนี้ใช้สำหรับหักเงินเท่านั้น
+   */
+  function checkOtherExpenseValid() {
+    const R = window.SEResolve;
+    if (!R || !R.read) return { valid: true, amount: 0 };
+    const raw = String(R.read("otherExpenseCmpId") ?? "").replace(/,/g, "").trim();
+    if (raw === "") return { valid: true, amount: 0 };
+    const n = Number(raw);
+    if (!isFinite(n) || n === 0) return { valid: true, amount: 0 };
+    const ok = isLateSubmit() || isIncompleteDocs();
+    return { valid: ok, amount: n };
   }
 
   /** อัพเดท visibility ของ warning label ให้ตรงกับสถานะ */
@@ -1701,6 +1734,24 @@
     window.alert(title + "\n\n" + body);
   }
 
+  /** แจ้งเตือนตอนกรอก "ค่าใช้จ่ายอื่นๆ" แล้วยังไม่เลือกเหตุผลหักเงิน */
+  function showOtherExpenseAlert(amount) {
+    const title = "ยังบันทึกไม่ได้ — ค่าใช้จ่ายอื่นๆ ต้องระบุเหตุผล";
+    const body =
+      'กรอกยอด "ค่าใช้จ่ายอื่นๆ" ไว้ ' + Math.abs(amount) + " บาท\n\n" +
+      "กรุณาเลือกอย่างน้อย 1 ข้อ:\n" +
+      "  • หักเงินส่งช้า\n" +
+      "  • หักเงินเอกสารไม่ครบ\n\n" +
+      "ถ้าไม่ต้องการหักเงิน ให้ลบยอดในช่องออก";
+    try {
+      if (typeof Ext !== "undefined" && Ext.Msg && typeof Ext.Msg.alert === "function") {
+        Ext.Msg.alert(title, body.replace(/\n/g, "<br>"));
+        return;
+      }
+    } catch (_) { /* fallthrough alert */ }
+    window.alert(title + "\n\n" + body);
+  }
+
   // ─────────────────────────────────────────────────────────
   // Watchers: location hidden inputs + modifier inputs + polling
   // ─────────────────────────────────────────────────────────
@@ -1965,6 +2016,17 @@
         if (resolved && (ev.target === resolved || resolved.contains(ev.target))) btn = resolved;
       }
       if (!btn) return;
+
+      // กรอก "ค่าใช้จ่ายอื่นๆ" แล้วยังไม่เลือกเหตุผลหักเงิน → บล็อก
+      // ตรวจก่อน required fields เพราะเป็นคนละเรื่องและข้อความแจ้งต่างกัน
+      const oe = checkOtherExpenseValid();
+      if (!oe.valid) {
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        showOtherExpenseAlert(oe.amount);
+        log(`Save blocked: ค่าใช้จ่ายอื่นๆ = ${oe.amount} แต่ยังไม่เลือกเหตุผลหักเงิน`);
+        return;
+      }
 
       // evaluateRequired คืน ok:true เองเมื่อไม่ต้องตรวจ (ปิดฟีเจอร์ / ไม่มีฟิลด์ /
       // ยกเลิกเคลม / MtypeID 3-4) → ตกไปทาง "ปล่อยผ่าน + capture" ด้านล่าง
