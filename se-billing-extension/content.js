@@ -291,8 +291,22 @@
    * (นางสาว ก่อน นาง — ไม่งั้น "นางสาวสมศรี" จะถูกตัดเหลือ "สาวสมศรี")
    */
   const TITLE_PREFIX_RE = /^(นางสาว|นาง|นาย|ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง)\s*/;
+  // เว็บใหม่ไม่มี element นี้ และข้อความหัวเป็นก้อนเดียว ("Supervisorนายนพดล …น")
+  // จึงต้องหา chip ชื่อสั้นๆ ที่ขึ้นต้นด้วยคำนำหน้าไทย — วิธีเดียวกับ dashboard-badge.js
+  const NAME_CHIP_RE = /^\s*(Hi,\s*)?(นางสาว|นาง|นาย|น\.ส\.|คุณ)\s*\S/;
+  function readInspectorNameEl() {
+    const byId = document.getElementById("main-tab_header-title-textEl");
+    if (byId) return byId;
+    const cands = document.querySelectorAll(
+      ".MuiChip-label, header span, nav span, [class*='userName'], [class*='UserName']");
+    for (let i = 0; i < cands.length; i++) {
+      const t = (cands[i].textContent || "").trim();
+      if (t.length <= 40 && NAME_CHIP_RE.test(t)) return cands[i];
+    }
+    return null;
+  }
   function readInspectorName() {
-    const el = document.getElementById("main-tab_header-title-textEl");
+    const el = readInspectorNameEl();
     if (!el) return null;
     let text = (el.textContent || "").trim();
     if (!text) return null;
@@ -1237,7 +1251,21 @@
 
   let lastCaptureSig = "";  // dedup: skip ถ้า payload เหมือนรอบก่อน
 
-  function readExtNumber(cmpId, sel) {
+  /**
+   * อ่านตัวเลขจากช่องเงิน
+   * @param key  logical key ของ resolver — ต้องส่งเสมอสำหรับเว็บใหม่
+   *   เว็บใหม่ไม่มี Ext และไม่มี id ลงท้าย -inputEl ทั้ง 2 ทางล่างจึงคืน null
+   *   ทำให้ capture เก็บค่าเงินไม่ได้เลย (เจอจากเรคคอร์ดจริงที่ค่าเงินว่างทั้งแถว)
+   */
+  function readExtNumber(cmpId, sel, key) {
+    const R = window.SEResolve;
+    if (R && key) {
+      const raw = String(R.read(key) ?? "").replace(/,/g, "").trim();
+      if (raw !== "") {
+        const n = Number(raw);
+        if (!isNaN(n)) return n;
+      }
+    }
     const cmp = getExtCmp(cmpId);
     if (cmp && typeof cmp.getValue === "function") {
       const v = cmp.getValue();
@@ -1299,10 +1327,10 @@
       oss_company: readOssCompany(),
       is_se: isSurveyorSE(),
       inspector_name: readInspectorName(),
-      sur_invest: readExtNumber(SEL.feeCmpId, SEL.feeInput),
-      ins_invest: readExtNumber(SEL.insInvestCmpId, SEL.insInvestInput),
-      ins_trans:  readExtNumber(SEL.insTransCmpId, SEL.insTransInput),
-      ins_photo:  readExtNumber(SEL.insPhotoCmpId, SEL.insPhotoInput),
+      sur_invest: readExtNumber(SEL.feeCmpId,       SEL.feeInput,       "feeCmpId"),
+      ins_invest: readExtNumber(SEL.insInvestCmpId, SEL.insInvestInput, "insInvestCmpId"),
+      ins_trans:  readExtNumber(SEL.insTransCmpId,  SEL.insTransInput,  "insTransCmpId"),
+      ins_photo:  readExtNumber(SEL.insPhotoCmpId,  SEL.insPhotoInput,  "insPhotoCmpId"),
       out_of_area: outOfArea,
       out_of_area_amt: outOfAreaInfo ? outOfAreaInfo.amount : null,
       out_of_hours: outOfHours,
@@ -1338,10 +1366,24 @@
    * captureNow — เก็บ snapshot ปัจจุบันทันที (เรียกตอนกดปุ่ม "ยืนยันการตรวจสอบ")
    *   - validate ผ่าน buildCapture (return null ถ้า deduct ไม่มี flag, ฯลฯ)
    *   - dedup: skip ถ้า payload เหมือนครั้งก่อน
+   *
+   * @param preClickRec  snapshot ที่ถ่ายไว้ตอนกดปุ่ม (ก่อน host จัดการ click)
+   *   จำเป็นสำหรับเว็บใหม่: React re-render ทันทีที่กดบันทึก ฟอร์มถูกถอดออก
+   *   พอถึงคิว setTimeout อ่านอะไรไม่ได้อีก -> buildCapture() คืน null
+   *   เว็บเก่า (ExtJS) ฟอร์มยังอยู่ ค่าที่อ่านสดจึงยังชนะเหมือนเดิม
    */
-  function captureNow() {
-    const rec = buildCapture();
-    if (!rec) return; // null = invalid (warning label ในฟอร์มจะแสดงสาเหตุ)
+  function captureNow(preClickRec) {
+    let rec = buildCapture();
+    if (!rec && preClickRec) {
+      rec = preClickRec;
+      log("Capture: ฟอร์มถูกถอดหลังกดบันทึก → ใช้ snapshot ตอนกดปุ่ม");
+    }
+    // เดิมตรงนี้ return เงียบๆ ทำให้ไล่ปัญหาไม่ได้ว่าหายไปตอนไหน
+    if (!rec) {
+      warn("Capture ไม่ถูกส่ง: buildCapture() คืน null ทั้งค่าสดและ snapshot " +
+           "(จังหวัด/อำเภอว่าง, จังหวัดไม่อยู่ใน whitelist, หรือหักเงินไม่ระบุเหตุผล)");
+      return;
+    }
     const { ts, ...rest } = rec;
     const sig = JSON.stringify(rest);
     if (sig === lastCaptureSig) {
@@ -1943,7 +1985,12 @@
       const isResolvedSave = !!(R2 && R2.el("saveButtonId") === btn);
       if (isResolvedSave || getSaveButtonIds().indexOf(btn.id) !== -1) {
         log(`Required ครบ → บันทึกต่อ (${btn.id ? "#" + btn.id : "ปุ่ม: " + (btn.textContent || "").trim()})`);
-        setTimeout(captureNow, 100);
+        // ถ่าย snapshot ตรงนี้เลย ก่อน host จัดการ click — เว็บใหม่ (React) ถอดฟอร์ม
+        // ทิ้งทันที ถ้ารอ setTimeout ค่อยอ่าน จะได้ค่าว่างและ capture หายเงียบ
+        // ยังหน่วง 100ms ไว้เหมือนเดิมเพื่อให้ค่าที่ host คำนวณเพิ่มบนเว็บเก่าเข้ามาทัน
+        let snapshot = null;
+        try { snapshot = buildCapture(); } catch (e) { warn("snapshot ตอนกดปุ่มล้มเหลว:", e); }
+        setTimeout(() => captureNow(snapshot), 100);
       }
     }, true);
     log("Save-button listener attached (cache-on-visit gate + capture)");
