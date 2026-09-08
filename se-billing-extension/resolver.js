@@ -124,13 +124,8 @@
     shape: "cmpId", kind: "field",
     row: "ค่าใช้จ่ายอื่นๆ", col: "proposed", optional: true,
   });
-  // ฝั่งบริษัทของ "ค่าใช้จ่ายอื่นๆ" + ช่องรายละเอียด — อ่านอย่างเดียวตอน capture (09/2569)
+  // ฝั่งบริษัทของ "ค่าใช้จ่ายอื่นๆ" — อ่านอย่างเดียวตอน capture (09/2569)
   money("insOtherCmpId",  "tab1_INS_OTHER",  "ค่าใช้จ่ายอื่นๆ", "approved", { optional: true });
-  K("fulOtherCmpId", {
-    shape: "cmpId", kind: "field",
-    cmpIds: ["tab1_FUL_OTHER"], domIds: ["tab1_FUL_OTHER-inputEl"], css: ["input#tab1_FUL_OTHER-inputEl"],
-    optional: true,
-  });
   money("dailyNumCmpId",  "tab1_DAILY_NUM",  "ค่าคัดประจำวัน", "amount",   { mutating: true });
   money("surDailyCmpId",  "tab1_SUR_DAILY",  "ค่าคัดประจำวัน", "proposed", { mutating: true });
   money("insDailyCmpId",  "tab1_INS_DAILY",  "ค่าคัดประจำวัน", "approved", { mutating: true });

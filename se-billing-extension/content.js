@@ -1327,24 +1327,6 @@
     return null;
   }
 
-  /** ช่องรายละเอียด "ค่าใช้จ่ายอื่นๆ" (tab1_FUL_OTHER) — ข้อความ */
-  function readOtherDetail() {
-    try {
-      const R = window.SEResolve;
-      if (R && R.read) {
-        const v = String(R.read("fulOtherCmpId") || "").trim();
-        if (v) return v;
-      }
-    } catch (e) { /* optional */ }
-    const cmp = getExtCmp("tab1_FUL_OTHER");
-    if (cmp && typeof cmp.getValue === "function") {
-      const v = String(cmp.getValue() || "").trim();
-      if (v) return v;
-    }
-    const el = document.getElementById("tab1_FUL_OTHER-inputEl");
-    return el && el.value ? String(el.value).trim() : null;
-  }
-
   /** อ่านตัวเลขแบบไม่ให้ capture ล้ม — คอลัมน์เสริมพลาดได้ (คืน null) ยอดหลักต้องไม่กระทบ */
   function readExtNumberSafe(cmpId, sel, key) {
     try { return readExtNumber(cmpId, sel, key); }
@@ -1424,7 +1406,7 @@
       sur_daily:      readExtNumberSafe("tab1_SUR_DAILY", "input#tab1_SUR_DAILY-inputEl", "surDailyCmpId"),
       ins_daily:      readExtNumberSafe("tab1_INS_DAILY", "input#tab1_INS_DAILY-inputEl", "insDailyCmpId"),
       ins_other:      readExtNumberSafe("tab1_INS_OTHER", "input#tab1_INS_OTHER-inputEl", "insOtherCmpId"),
-      other_detail:   readOtherDetail(),
+      // other_detail ไม่มีบน ISURVEY — tab1_FUL_OTHER เป็น numberfield ซ่อน (ช่อง "จำนวน" ของแถวอื่นๆ) ไม่ใช่ข้อความ (ตรวจบนหน้าจริง 08/09/69)
     };
   }
 
@@ -2161,7 +2143,6 @@
     version: "2.12.0",
     buildCapture: () => buildCapture(),
     readDailyCheck: () => readDailyCheck(),
-    readOtherDetail: () => readOtherDetail(),
   };
 
   if (document.readyState === "loading") {
