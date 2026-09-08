@@ -54,7 +54,14 @@ node server.js
 
 ### Capture validation
 - ถ้า `deduct_amt > 0` ต้องมี `late_submit: true` หรือ `incomplete_docs: true`
-  อย่างน้อย 1 ใน 2 — ไม่งั้น POST จะถูก reject ด้วย 400
+  อย่างน้อย 1 ใน 2 — ไม่งั้น POST จะถูก reject ด้วย 400 (ยกเว้น `mode: "sesurvey"` — เว็บ se-survey มีช่องเหตุผลเอง ส่งมาใน `raw.deduct_reason`)
+- คอลัมน์เงินแยกตามแถวของ ISURVEY (09/2569): `sur_invest`/`ins_invest` ค่าบริการ · `ins_trans` · `ins_photo` ·
+  `recv_claim_amt` ยอดเรียกร้อง + `sur_claim`/`ins_claim` ค่าเรียกร้อง · `daily_check` ผลคัด ("ถูก"/"ผิด"/"รอผล", ติ๊กหลายอัน = "ถูก+รอผล") + `sur_daily`/`ins_daily` ·
+  `other_expense_amt` (ค่าใช้จ่ายอื่นๆ ฝั่งพนักงาน — extension เว็บใหม่ใช้เป็นยอดหักติดลบ) / `ins_other` / `other_detail`
+- สูตรบนหน้า /captures และ Excel (ต้องตรงกัน — `captures.js` กับ `server.js`):
+  รวมบริษัท = ins_invest + ins_trans + ins_photo + ins_claim + ins_daily + ins_other ·
+  รวมพนักงาน = ฐาน + นอกพื้นที่ + นอกเวลา − หัก + other_expense_amt + sur_claim + sur_daily
+  (extension เว็บเก่าหักไว้ใน sur_invest แล้ว, เว็บใหม่หักผ่าน other_expense_amt ติดลบ, se-survey ส่ง deduct_amt ตรง ๆ)
 - Schema: `inspector_name`, `late_submit`, `incomplete_docs` ถูก auto-migrate ผ่าน
   `ensureColumn(...)` ใน [`db.js`](./db.js) สำหรับ DB ที่มีอยู่แล้ว
 

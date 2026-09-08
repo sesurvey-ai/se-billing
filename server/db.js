@@ -131,6 +131,18 @@ ensureColumn("captures", "dispatch_date",   "TEXT");
 //   เว็บใหม่ใช้ช่องนี้รับยอดหักเงิน โดยติดลบเมื่อติ๊กเหตุผล (ส่งช้า/เอกสารไม่ครบ)
 //   บวก = ค่าใช้จ่ายจริง · ลบ = ยอดที่ถูกหัก · null = ไม่ได้กรอก
 ensureColumn("captures", "other_expense_amt", "INTEGER");
+// 09/2569 (user ขอ 08/09/69): เก็บแถว "ค่าเรียกร้อง" / "ค่าคัดประจำวัน" / "ค่าใช้จ่ายอื่นๆ" แยกคอลัมน์
+//   ชื่อคอลัมน์ล้อกับช่องของ ISURVEY: RECV_CLAIM / SUR_CLAIM / INS_CLAIM · SUR_DAILY / INS_DAILY · INS_OTHER / FUL_OTHER
+//   ฝั่ง SUR_OTHER (พนักงาน) ใช้ other_expense_amt เดิม · daily_check = ผลคัด "ถูก" / "ผิด" / "รอผล" (ติ๊กหลายอัน = "ถูก+รอผล")
+//   ทุกคอลัมน์ nullable — แถวเก่าไม่มีค่า → สูตรรวมได้เท่าเดิม
+ensureColumn("captures", "recv_claim_amt", "INTEGER");   // ยอดเรียกร้อง (ฐานคิด %)
+ensureColumn("captures", "sur_claim",      "INTEGER");   // ค่าเรียกร้อง ฝั่งพนักงาน
+ensureColumn("captures", "ins_claim",      "INTEGER");   // ค่าเรียกร้อง ฝั่งบริษัท
+ensureColumn("captures", "daily_check",    "TEXT");      // ผลคัดประจำวัน
+ensureColumn("captures", "sur_daily",      "INTEGER");   // ค่าคัดประจำวัน ฝั่งพนักงาน
+ensureColumn("captures", "ins_daily",      "INTEGER");   // ค่าคัดประจำวัน ฝั่งบริษัท
+ensureColumn("captures", "ins_other",      "INTEGER");   // ค่าใช้จ่ายอื่นๆ ฝั่งบริษัท
+ensureColumn("captures", "other_detail",   "TEXT");      // รายละเอียดค่าใช้จ่ายอื่นๆ
 // v2.8: Chonburi team-based rates
 ensureColumn("amphur_table", "sur_invest_by_team", "TEXT");
 // v2.9: Kanchanaburi per-team INS_TRANS override (+ flat fallback)
@@ -592,8 +604,10 @@ export const Captures = {
       sur_invest, ins_invest, ins_trans, ins_photo,
       out_of_area, out_of_area_amt, out_of_hours, out_of_hours_amt, deduct_amt, other_expense_amt,
       late_submit, incomplete_docs,
-      mode, raw
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      mode, raw,
+      recv_claim_amt, sur_claim, ins_claim, daily_check, sur_daily, ins_daily, ins_other, other_detail
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     rec.ts || new Date().toISOString(),
     rec.dispatch_date ?? null,
@@ -610,7 +624,10 @@ export const Captures = {
     rec.deduct_amt ?? null, rec.other_expense_amt ?? null,
     rec.late_submit ? 1 : 0, rec.incomplete_docs ? 1 : 0,
     rec.mode ?? null,
-    rec.raw ? JSON.stringify(rec.raw) : null
+    rec.raw ? JSON.stringify(rec.raw) : null,
+    rec.recv_claim_amt ?? null, rec.sur_claim ?? null, rec.ins_claim ?? null,
+    rec.daily_check ?? null, rec.sur_daily ?? null, rec.ins_daily ?? null,
+    rec.ins_other ?? null, rec.other_detail ?? null
   ),
   // status filter: "close" → case_status='close' OR NULL (legacy), "cancel" → case_status='cancel', null = ทั้งหมด
   list: ({ limit = 200, offset = 0, provinceId, status } = {}) => {

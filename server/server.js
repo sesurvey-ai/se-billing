@@ -279,8 +279,9 @@ app.post("/api/captures", (req, res) => {
   const b = req.body || {};
 
   // กฎ: ถ้ามี deduct_amt > 0 ต้องระบุเหตุผล (late_submit หรือ incomplete_docs)
+  //   ยกเว้น mode "sesurvey" — เว็บ se-survey มีช่องเหตุผลของตัวเอง (ส่งมาใน raw.deduct_reason) จึงไม่บังคับ 2 กล่องนี้
   const deduct = Number(b.deduct_amt || 0);
-  if (deduct > 0 && !b.late_submit && !b.incomplete_docs) {
+  if (deduct > 0 && !b.late_submit && !b.incomplete_docs && b.mode !== "sesurvey") {
     return res.status(400).json({
       error: "deduct_amt > 0 requires at least one of: late_submit, incomplete_docs",
     });
@@ -317,6 +318,15 @@ app.post("/api/captures", (req, res) => {
     incomplete_docs: !!b.incomplete_docs,
     mode:          b.mode          || null,
     raw:           b.raw           || null,
+    // 09/2569: ค่าเรียกร้อง / ค่าคัดประจำวัน / ค่าใช้จ่ายอื่นๆ แยกคอลัมน์ (ดู db.js)
+    recv_claim_amt: b.recv_claim_amt ?? null,
+    sur_claim:      b.sur_claim      ?? null,
+    ins_claim:      b.ins_claim      ?? null,
+    daily_check:    b.daily_check    || null,
+    sur_daily:      b.sur_daily      ?? null,
+    ins_daily:      b.ins_daily      ?? null,
+    ins_other:      b.ins_other      ?? null,
+    other_detail:   b.other_detail   || null,
   });
   res.json({ ok: true, id: r.lastInsertRowid });
 });
@@ -362,13 +372,21 @@ app.get("/api/captures.xlsx", async (req, res) => {
     { header: "ค่าบริการ",         key: "ins_invest",      width: 10 },
     { header: "ค่าพาหนะ",         key: "ins_trans",       width: 10 },
     { header: "รูป",              key: "ins_photo",       width: 8  },
+    { header: "ค่าเรียกร้อง (บริษัท)",   key: "ins_claim",  width: 12 },
+    { header: "ค่าคัดประจำวัน (บริษัท)", key: "ins_daily",  width: 12 },
+    { header: "อื่นๆ (บริษัท)",         key: "ins_other",  width: 10 },
     { header: "รวมบริษัท",         key: "sum_company",     width: 11 },
     { header: "พนักงานสำรวจ",      key: "surveyor_label",  width: 32 },
     { header: "พนักงาน",          key: "base_pnk",        width: 10 },
     { header: "นอกพื้นที่",        key: "out_of_area_amt", width: 11 },
     { header: "นอกเวลา",          key: "out_of_hours_amt", width: 10 },
+    { header: "ยอดเรียกร้อง",      key: "recv_claim_amt",  width: 12 },
+    { header: "ค่าเรียกร้อง",      key: "sur_claim",       width: 11 },
+    { header: "ผลคัด",            key: "daily_check",     width: 9  },
+    { header: "ค่าคัดประจำวัน",    key: "sur_daily",       width: 12 },
     { header: "หัก",              key: "deduct_amt",      width: 8  },
     { header: "ค่าใช้จ่ายอื่นๆ",   key: "other_expense",   width: 13 },
+    { header: "รายละเอียดอื่นๆ",   key: "other_detail",    width: 20 },
     { header: "ส่งช้า",           key: "late_label",      width: 8  },
     { header: "เอกสารไม่ครบ",     key: "docs_label",      width: 12 },
     { header: "รวมพนักงาน",       key: "sum_pnk",         width: 12 },
@@ -381,16 +399,28 @@ app.get("/api/captures.xlsx", async (req, res) => {
     const ohAmt   = r.out_of_hours ? (Number(r.out_of_hours_amt) || 0) : 0;
     const ded     = Number(r.deduct_amt) || 0;
     const otherAmt = Number(r.other_expense_amt) || 0;
+    // สูตรเดียวกับ captures.js — แก้ที่หนึ่งต้องแก้อีกที่
+    const fromWeb  = r.mode === "sesurvey";
     // เว็บเก่า: ยอดหักถูกลบออกจาก sur_invest แล้ว → ต้องบวกกลับเพื่อ derive ฐาน
     // เว็บใหม่: ยอดหักอยู่ในช่อง "ค่าใช้จ่ายอื่นๆ" (ติดลบ) isurvey หักที่ยอดรวมเอง
     //          sur_invest ไม่เคยถูกหัก → ห้ามบวกกลับ ไม่งั้นฐานจะเกิน
-    const dedInSur = otherAmt < 0 ? 0 : ded;
+    // se-survey: sur_invest = ฐาน + ตัวปรับ (ไม่เคยหัก) · deduct_amt = ยอดหักจริง · ค่าใช้จ่ายอื่นๆ = รายจ่ายจริง (บวก)
+    const dedInSur = fromWeb ? 0 : (otherAmt < 0 ? 0 : ded);
+    const dedShown = fromWeb ? ded : dedInSur;
     const basePnk = sur - oaAmt - ohAmt + dedInSur;   // derive base (ตรงกับหน้าเว็บ)
     // "ค่าใช้จ่ายอื่นๆ" อยู่คอลัมน์ "จำนวนเงินเสนอ" = ฝั่งพนักงาน (ดู captures.js)
-    const sumPnk  = basePnk + oaAmt + ohAmt - dedInSur + otherAmt;
+    // ค่าเรียกร้อง/ค่าคัดประจำวันฝั่งพนักงาน (09/2569) เป็นแถวแยกของ ISURVEY → บวกเข้ารวมพนักงาน (แถวเก่า = null = 0)
+    const surClaim = Number(r.sur_claim) || 0;
+    const surDaily = Number(r.sur_daily) || 0;
+    const sumPnk  = basePnk + oaAmt + ohAmt - dedShown + otherAmt + surClaim + surDaily;
+    const insClaim = Number(r.ins_claim) || 0;
+    const insDaily = Number(r.ins_daily) || 0;
+    const insOther = Number(r.ins_other) || 0;
     const sumCo   = (Number(r.ins_invest) || 0)
                   + (Number(r.ins_trans)  || 0)
-                  + (Number(r.ins_photo)  || 0);
+                  + (Number(r.ins_photo)  || 0)
+                  + insClaim + insDaily + insOther;
+    const recvClaim = Number(r.recv_claim_amt) || 0;
 
     // surveyor label: OSS_company มีค่า → แสดงบริษัท OSS + tag; ไม่งั้นแสดง surveyor SE
     const surveyorLabel = r.oss_company
@@ -411,12 +441,20 @@ app.get("/api/captures.xlsx", async (req, res) => {
       ins_invest:       r.ins_invest ?? "",
       ins_trans:        r.ins_trans  ?? "",
       ins_photo:        r.ins_photo  ?? "",
+      ins_claim:        insClaim || "",
+      ins_daily:        insDaily || "",
+      ins_other:        insOther || "",
       sum_company:      sumCo,
       base_pnk:         basePnk,
       out_of_area_amt:  r.out_of_area  ? oaAmt : "",
       out_of_hours_amt: r.out_of_hours ? ohAmt : "",
-      deduct_amt:       dedInSur       ? dedInSur : "",
+      recv_claim_amt:   recvClaim || "",
+      sur_claim:        surClaim  || "",
+      daily_check:      r.daily_check || "",
+      sur_daily:        surDaily  || "",
+      deduct_amt:       dedShown       ? dedShown : "",
       other_expense:    otherAmt !== 0 ? otherAmt : "",
+      other_detail:     r.other_detail || "",
       late_label:       r.late_submit     ? "✓" : "",
       docs_label:       r.incomplete_docs ? "✓" : "",
       sum_pnk:          sumPnk,

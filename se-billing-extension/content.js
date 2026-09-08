@@ -1318,6 +1318,39 @@
     return null;
   }
 
+  /** ผลคัดประจำวันจากกล่องที่ติ๊ก (feature-daily-check-amount.js) — "ถูก" / "ผิด" / "รอผล" / "ถูก+รอผล" · ไม่ติ๊ก = null */
+  function readDailyCheck() {
+    try {
+      const f = window.__SEDailyCheck;
+      if (f && typeof f.state === "function") return f.state() || null;
+    } catch (e) { warn("readDailyCheck failed:", e); }
+    return null;
+  }
+
+  /** ช่องรายละเอียด "ค่าใช้จ่ายอื่นๆ" (tab1_FUL_OTHER) — ข้อความ */
+  function readOtherDetail() {
+    try {
+      const R = window.SEResolve;
+      if (R && R.read) {
+        const v = String(R.read("fulOtherCmpId") || "").trim();
+        if (v) return v;
+      }
+    } catch (e) { /* optional */ }
+    const cmp = getExtCmp("tab1_FUL_OTHER");
+    if (cmp && typeof cmp.getValue === "function") {
+      const v = String(cmp.getValue() || "").trim();
+      if (v) return v;
+    }
+    const el = document.getElementById("tab1_FUL_OTHER-inputEl");
+    return el && el.value ? String(el.value).trim() : null;
+  }
+
+  /** อ่านตัวเลขแบบไม่ให้ capture ล้ม — คอลัมน์เสริมพลาดได้ (คืน null) ยอดหลักต้องไม่กระทบ */
+  function readExtNumberSafe(cmpId, sel, key) {
+    try { return readExtNumber(cmpId, sel, key); }
+    catch (e) { warn("readExtNumberSafe", key, e); return null; }
+  }
+
   function buildCapture() {
     const provinceId = readHiddenValue("provinceHidden");
     const amphurId   = readHiddenValue("amphurHidden");
@@ -1382,6 +1415,16 @@
       late_submit: isLateSubmit(),
       incomplete_docs: isIncompleteDocs(),
       mode,
+      // 09/2569 (user ขอ 08/09/69): ค่าเรียกร้อง / ค่าคัดประจำวัน / ค่าใช้จ่ายอื่นๆ ฝั่งบริษัท เก็บแยกคอลัมน์ใน captures
+      //   ชื่อคีย์ตรงกับคอลัมน์ของ server (db.js) — ทุกตัว optional อ่านไม่ได้ = null
+      recv_claim_amt: readExtNumberSafe(SEL.recvClaimCmpId, SEL.recvClaimInput, "recvClaimCmpId"),
+      sur_claim:      readExtNumberSafe(SEL.surClaimCmpId,  SEL.surClaimInput,  "surClaimCmpId"),
+      ins_claim:      readExtNumberSafe(SEL.insClaimCmpId,  SEL.insClaimInput,  "insClaimCmpId"),
+      daily_check:    readDailyCheck(),
+      sur_daily:      readExtNumberSafe("tab1_SUR_DAILY", "input#tab1_SUR_DAILY-inputEl", "surDailyCmpId"),
+      ins_daily:      readExtNumberSafe("tab1_INS_DAILY", "input#tab1_INS_DAILY-inputEl", "insDailyCmpId"),
+      ins_other:      readExtNumberSafe("tab1_INS_OTHER", "input#tab1_INS_OTHER-inputEl", "insOtherCmpId"),
+      other_detail:   readOtherDetail(),
     };
   }
 

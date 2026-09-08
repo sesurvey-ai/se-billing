@@ -28,6 +28,10 @@ function fmtMtype(id) {
   return ({ "1":"1·เคลมสด","2":"2·เคลมแห้ง","3":"3·ติดตาม","4":"4·เจรจา" })[id] || (id || "");
 }
 
+/** ยอดเงินคอลัมน์เสริม — ว่าง/0 ไม่โชว์ ให้ตารางโล่ง */
+const fmtAmt = (v) => { const n = Number(v); return n ? String(n) : ""; };
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
 function render() {
   const tbody = $("tbody");
   const empty = $("empty");
@@ -51,17 +55,30 @@ function render() {
     const ohAmt    = r.out_of_hours ? (Number(r.out_of_hours_amt) || 0) : 0;
     const ded      = Number(r.deduct_amt) || 0;
     const otherAmt = Number(r.other_expense_amt) || 0;
+    // สูตรเดียวกับ Excel export ใน server.js — แก้ที่หนึ่งต้องแก้อีกที่
+    const fromWeb  = r.mode === "sesurvey";
     // เว็บเก่า: ยอดหักถูกลบออกจาก sur_invest แล้ว → บวกกลับเพื่อ derive ฐาน
     // เว็บใหม่: หักที่ช่อง "ค่าใช้จ่ายอื่นๆ" (ติดลบ) sur_invest ไม่เคยถูกหัก → ห้ามบวกกลับ
-    const dedInSur = otherAmt < 0 ? 0 : ded;
+    // se-survey: sur_invest = ฐาน + ตัวปรับ (ไม่เคยหัก) · deduct_amt = ยอดหักจริง (เหตุผลอยู่ในเว็บนั้น) ·
+    //            ค่าใช้จ่ายอื่นๆ = รายจ่ายจริง (บวก) · ค่าเรียกร้อง/ค่าคัดประจำวัน แยกคอลัมน์
+    const dedInSur = fromWeb ? 0 : (otherAmt < 0 ? 0 : ded);
+    const dedShown = fromWeb ? ded : dedInSur;
     const basePnk  = sur - oaAmt - ohAmt + dedInSur;
     // "ค่าใช้จ่ายอื่นๆ" อยู่คอลัมน์ "จำนวนเงินเสนอ" = ฝั่งพนักงาน จึงเข้ารวมพนักงานตรงๆ
     //   บวก = พนักงานสำรองจ่ายแล้วเบิกคืน · ลบ = ยอดหัก (ติ๊กส่งช้า/เอกสารไม่ครบ)
     //   otherAmt มีเครื่องหมายในตัวอยู่แล้ว บวกเข้าไปตัวเดียวครอบทั้งสองทาง
-    const sumPnk   = basePnk + oaAmt + ohAmt - dedInSur + otherAmt;
+    // ค่าเรียกร้อง/ค่าคัดประจำวันฝั่งพนักงาน (09/2569) = แถวแยกของ ISURVEY → บวกเข้ารวม (แถวเก่าไม่มี = 0)
+    const surClaim = Number(r.sur_claim) || 0;
+    const surDaily = Number(r.sur_daily) || 0;
+    const sumPnk   = basePnk + oaAmt + ohAmt - dedShown + otherAmt + surClaim + surDaily;
+    const insClaim = Number(r.ins_claim) || 0;
+    const insDaily = Number(r.ins_daily) || 0;
+    const insOther = Number(r.ins_other) || 0;
     const sumCo    = (Number(r.ins_invest) || 0)
                    + (Number(r.ins_trans)  || 0)
-                   + (Number(r.ins_photo)  || 0);
+                   + (Number(r.ins_photo)  || 0)
+                   + insClaim + insDaily + insOther;
+    const detail   = r.other_detail ? `<br><small class="muted" title="${esc(r.other_detail)}">${esc(r.other_detail)}</small>` : "";
 
     // surveyor cell: ถ้า oss_company มีค่า แสดง OSS company + tag (OSS), ไม่งั้นแสดง SE
     const surveyorCell = r.oss_company
@@ -82,12 +99,19 @@ function render() {
       <td class="numeric">${r.ins_invest ?? ""}</td>
       <td class="numeric">${r.ins_trans  ?? ""}</td>
       <td class="numeric">${r.ins_photo  ?? ""}</td>
+      <td class="numeric">${fmtAmt(insClaim)}</td>
+      <td class="numeric">${fmtAmt(insDaily)}</td>
+      <td class="numeric">${fmtAmt(insOther)}${detail}</td>
       <td class="numeric"><strong>${sumCo}</strong></td>
       <td>${surveyorCell}</td>
       <td class="numeric">${basePnk}</td>
       <td>${r.out_of_area  ? `<span class="amount-pos">+${r.out_of_area_amt  ?? 0}</span>` : ""}</td>
       <td>${r.out_of_hours ? `<span class="amount-pos">+${r.out_of_hours_amt ?? 0}</span>` : ""}</td>
-      <td class="numeric">${dedInSur ? `<span class="amount-neg">-${dedInSur}</span>` : ""}</td>
+      <td class="numeric">${fmtAmt(r.recv_claim_amt)}</td>
+      <td class="numeric">${fmtAmt(surClaim)}</td>
+      <td>${esc(r.daily_check || "")}</td>
+      <td class="numeric">${fmtAmt(surDaily)}</td>
+      <td class="numeric">${dedShown ? `<span class="amount-neg">-${dedShown}</span>` : ""}</td>
       <td class="numeric">${otherAmt ? `<span class="${otherAmt < 0 ? "amount-neg" : "amount-pos"}">${otherAmt > 0 ? "+" : ""}${otherAmt}</span>` : ""}</td>
       <td>${r.late_submit     ? "✓" : ""}</td>
       <td>${r.incomplete_docs ? "✓" : ""}</td>

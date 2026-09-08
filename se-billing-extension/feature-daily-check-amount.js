@@ -345,4 +345,17 @@
   setInterval(pollOnce, POLL_INTERVAL_MS);
 
   return TAG + " script loaded (continuous polling every " + POLL_INTERVAL_MS + "ms)";
+  // ── สถานะกล่องสำหรับ capture (content.js อ่านผ่าน window.__SEDailyCheck.state) 09/2569 ──
+  //   คืน "ถูก" / "ผิด" / "รอผล" / "ถูก+รอผล" … · ไม่ติ๊กเลย = null · ห้าม throw (capture ต้องไม่ล้มเพราะช่องเสริม)
+  window.__SEDailyCheck = {
+    state: function () {
+      try {
+        const labels = [];
+        if (chkChecked(CHK_RIGHT_ID)) labels.push("ถูก");
+        if (chkChecked(CHK_WRONG_ID)) labels.push("ผิด");
+        if (chkChecked(CHK_WAIT_ID))  labels.push("รอผล");
+        return labels.length ? labels.join("+") : null;
+      } catch (e) { return null; }
+    },
+  };
 })();

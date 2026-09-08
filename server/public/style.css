@@ -114,6 +114,12 @@ td.timestamp { font-size: 12px; color: #555; white-space: nowrap; }
 /* หน้า /captures + /admin/captures: ค่าทุกคอลัมน์อยู่กลาง (override .numeric) */
 .captures-table th,
 .captures-table td { text-align: center; font-variant-numeric: tabular-nums; }
+/* หัวตาราง 2 ชั้น: แถวบนบอกฝั่ง (บริษัท / พนักงาน) แถวล่างชื่อช่อง */
+.captures-table th.group { font-weight: 600; color: #374151; border-bottom: 1px solid #d1d5db; letter-spacing: .02em; }
+.captures-table th.group-co  { background: #eff6ff; }
+.captures-table th.group-pnk { background: #f0fdf4; }
+.captures-table thead tr + tr th { border-top: 1px solid #e5e7eb; }
+.captures-table small.muted { color: #888; font-size: 11px; white-space: nowrap; }
 
 .empty-state { padding: 40px; text-align: center; color: #999; }
 .hidden { display: none !important; }
