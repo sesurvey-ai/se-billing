@@ -1,0 +1,10 @@
+# ใช้เมื่อ build context = root ของ repo (Dokploy) — ส่งเข้า image เฉพาะ server/ (ไม่เอา extension/scraper/รูป)
+*
+!server/
+server/node_modules
+server/npm-debug.log
+server/*.md
+# DB ของ local — ห้าม copy เข้า image (volume คุมเอง)
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
