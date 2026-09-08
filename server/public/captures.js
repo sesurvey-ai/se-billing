@@ -111,8 +111,8 @@ function render() {
       <td class="numeric">${fmtAmt(surClaim)}</td>
       <td>${esc(r.daily_check || "")}</td>
       <td class="numeric">${fmtAmt(surDaily)}</td>
-      <td class="numeric">${dedShown ? `<span class="amount-neg">-${dedShown}</span>` : ""}</td>
       <td class="numeric">${otherAmt ? `<span class="${otherAmt < 0 ? "amount-neg" : "amount-pos"}">${otherAmt > 0 ? "+" : ""}${otherAmt}</span>` : ""}</td>
+      <td class="numeric">${dedShown ? `<span class="amount-neg">-${dedShown}</span>` : ""}</td>
       <td>${r.late_submit     ? "✓" : ""}</td>
       <td>${r.incomplete_docs ? "✓" : ""}</td>
       <td class="numeric"><strong>${sumPnk}</strong></td>
