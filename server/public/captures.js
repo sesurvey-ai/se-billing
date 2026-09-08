@@ -78,12 +78,12 @@ function render() {
       <td>${r.amphur_name   || r.amphur_id   || ""}</td>
       <td>${r.tumbon_name   || r.tumbon_id   || ""}</td>
       <td>${fmtMtype(r.mtype_id)}</td>
-      <td>${surveyorCell}</td>
       <td>${r.inspector_name || ""}</td>
       <td class="numeric">${r.ins_invest ?? ""}</td>
       <td class="numeric">${r.ins_trans  ?? ""}</td>
       <td class="numeric">${r.ins_photo  ?? ""}</td>
       <td class="numeric"><strong>${sumCo}</strong></td>
+      <td>${surveyorCell}</td>
       <td class="numeric">${basePnk}</td>
       <td>${r.out_of_area  ? `<span class="amount-pos">+${r.out_of_area_amt  ?? 0}</span>` : ""}</td>
       <td>${r.out_of_hours ? `<span class="amount-pos">+${r.out_of_hours_amt ?? 0}</span>` : ""}</td>
