@@ -2154,6 +2154,16 @@
     startPolling();
   }
 
+  // ── สำหรับทดสอบ (อ่านอย่างเดียว ไม่ส่งอะไรออก) 09/2569 ──
+  //   เปิด console บนหน้า ISURVEY แล้วเรียก window.__SEBillingDebug.buildCapture() ดู payload ที่จะถูกส่งเข้า se-billing
+  //   version ต้อง bump พร้อม manifest.json (MAIN world อ่าน chrome.runtime ไม่ได้)
+  window.__SEBillingDebug = {
+    version: "2.12.0",
+    buildCapture: () => buildCapture(),
+    readDailyCheck: () => readDailyCheck(),
+    readOtherDetail: () => readOtherDetail(),
+  };
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init, { once: true });
   } else {
