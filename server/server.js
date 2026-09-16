@@ -337,10 +337,12 @@ app.get("/api/captures", (req, res) => {
   const provinceId = req.query.provinceId ? String(req.query.provinceId) : null;
   // status: "close" (รวม legacy null) / "cancel" / undefined = ทั้งหมด
   const status = req.query.status === "close" || req.query.status === "cancel" ? req.query.status : null;
+  // q = คำค้น (ค้นทั้งตาราง — เลขเคลม/เลขเซอร์เวย์/พนักงาน/จังหวัด/อำเภอ/ตำบล/วันจ่ายงาน) · ตัดความยาวกันยิงยาว ๆ
+  const q = String(req.query.q ?? "").trim().slice(0, 100) || null;
   res.json({
-    rows: Captures.list({ limit, offset, provinceId, status }),
-    total: Captures.count({ provinceId, status }),
-    limit, offset,
+    rows: Captures.list({ limit, offset, provinceId, status, q }),
+    total: Captures.count({ provinceId, status, q }),
+    limit, offset, q,
   });
 });
 app.delete("/api/captures/:id", (req, res) => { Captures.remove(req.params.id); res.json({ ok: true }); });

@@ -30,15 +30,9 @@ function render() {
   const tbody = $("tbody");
   const empty = $("empty");
   tbody.innerHTML = "";
-  const search = state.search.trim().toLowerCase();
+  // ค้นหาทำที่เซิร์ฟเวอร์แล้ว (16/09/69) — แถวที่ได้มาคือผลค้นทั้งตาราง ไม่กรองซ้ำที่นี่
   let shown = 0;
   for (const r of state.rows) {
-    if (search) {
-      const hay = [r.province_name, r.amphur_name, r.tumbon_name, r.surveyor_name, r.oss_company,
-                   r.claim_no, r.survey_no, r.province_id, r.amphur_id, r.tumbon_id]
-        .filter(Boolean).join(" ").toLowerCase();
-      if (!hay.includes(search)) continue;
-    }
     shown++;
     // surveyor cell: OSS_company มีค่า → แสดง OSS + tag; ไม่งั้นแสดง SE + tag
     const surveyorCell = r.oss_company
@@ -75,6 +69,7 @@ async function load() {
       offset: state.offset,
       provinceId: state.provinceId || undefined,
       status: state.status,
+      q: state.search.trim() || undefined,
     });
     state.rows = res.rows;
     state.total = res.total;
@@ -114,7 +109,13 @@ async function main() {
   applyMode();
   await setupFilter();
   await load();
-  $("search").addEventListener("input", (e) => { state.search = e.target.value; render(); });
+  // ค้นทั้งฐานข้อมูล ไม่ใช่แค่ 100 แถวบนหน้า — หน่วง 300 ms กันยิงทุกตัวอักษร แล้วกลับไปหน้าแรกของผลค้น
+  let searchTimer = null;
+  $("search").addEventListener("input", (e) => {
+    state.search = e.target.value;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { state.offset = 0; load(); }, 300);
+  });
   $("filter-province").addEventListener("change", (e) => {
     state.provinceId = e.target.value || null;
     state.offset = 0;

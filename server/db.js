@@ -596,6 +596,26 @@ export const AllowedOrigins = {
 };
 
 /** ── Captures ───────────────────────────────────────────────────────────── */
+// ช่องที่ค้นหาได้จากหน้า /captures และ /cancelled (ชุดเดียวกับที่หน้าเว็บเคยกรองเองฝั่ง client ก่อน 16/09/69)
+const CAPTURE_SEARCH_COLS = ["province_name", "amphur_name", "tumbon_name", "surveyor_name", "oss_company",
+  "claim_no", "survey_no", "province_id", "amphur_id", "tumbon_id", "dispatch_date"];
+
+// WHERE ร่วมของ list/count: จังหวัด · สถานะ · คำค้น (จับ "มีคำนั้นอยู่" ไม่สนตัวพิมพ์ — SQLite LIKE ไม่สนตัวพิมพ์เฉพาะ ASCII จึง lower() ให้แน่)
+function capturesWhere({ provinceId, status, q } = {}) {
+  const conds = [];
+  const args = [];
+  if (provinceId) { conds.push("province_id = ?"); args.push(provinceId); }
+  if (status === "close")       { conds.push("(case_status = 'close' OR case_status IS NULL)"); }
+  else if (status === "cancel") { conds.push("case_status = 'cancel'"); }
+  const needle = String(q ?? "").trim().toLowerCase();
+  if (needle) {
+    const esc = needle.replace(/[\\%_]/g, (c) => "\\" + c);   // กัน % _ \ ในคำค้นกลายเป็น wildcard
+    conds.push("(" + CAPTURE_SEARCH_COLS.map((c) => `lower(COALESCE(${c}, '')) LIKE ? ESCAPE '\\'`).join(" OR ") + ")");
+    for (let i = 0; i < CAPTURE_SEARCH_COLS.length; i++) args.push(`%${esc}%`);
+  }
+  return { where: conds.length ? "WHERE " + conds.join(" AND ") : "", args };
+}
+
 export const Captures = {
   insert: (rec) => db.prepare(`
     INSERT INTO captures(
@@ -630,22 +650,13 @@ export const Captures = {
     rec.ins_other ?? null, rec.other_detail ?? null
   ),
   // status filter: "close" → case_status='close' OR NULL (legacy), "cancel" → case_status='cancel', null = ทั้งหมด
-  list: ({ limit = 200, offset = 0, provinceId, status } = {}) => {
-    const conds = [];
-    const args = [];
-    if (provinceId) { conds.push("province_id = ?"); args.push(provinceId); }
-    if (status === "close")       { conds.push("(case_status = 'close' OR case_status IS NULL)"); }
-    else if (status === "cancel") { conds.push("case_status = 'cancel'"); }
-    const where = conds.length ? "WHERE " + conds.join(" AND ") : "";
+  // q = ค้นทั้งตาราง (16/09/69: เดิมหน้า /captures กรองเฉพาะ 100 แถวที่โหลดอยู่ เคลมที่เก่ากว่า 1 หน้าหาไม่เจอ)
+  list: ({ limit = 200, offset = 0, provinceId, status, q } = {}) => {
+    const { where, args } = capturesWhere({ provinceId, status, q });
     return db.prepare(`SELECT * FROM captures ${where} ORDER BY ts DESC LIMIT ? OFFSET ?`).all(...args, limit, offset);
   },
-  count: ({ provinceId, status } = {}) => {
-    const conds = [];
-    const args = [];
-    if (provinceId) { conds.push("province_id = ?"); args.push(provinceId); }
-    if (status === "close")       { conds.push("(case_status = 'close' OR case_status IS NULL)"); }
-    else if (status === "cancel") { conds.push("case_status = 'cancel'"); }
-    const where = conds.length ? "WHERE " + conds.join(" AND ") : "";
+  count: ({ provinceId, status, q } = {}) => {
+    const { where, args } = capturesWhere({ provinceId, status, q });
     return db.prepare(`SELECT COUNT(*) AS n FROM captures ${where}`).get(...args).n;
   },
   removeAll: () => db.prepare("DELETE FROM captures").run(),

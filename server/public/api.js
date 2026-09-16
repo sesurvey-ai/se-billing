@@ -101,11 +101,12 @@ const api = {
     set: (origins) => req("PUT", "/api/allowed-origins", { origins }), // string[]
   },
   captures: {
-    list:   ({ limit = 100, offset = 0, provinceId, status } = {}) => {
+    list:   ({ limit = 100, offset = 0, provinceId, status, q: search } = {}) => {
       const q = new URLSearchParams();
       q.set("limit", limit); q.set("offset", offset);
       if (provinceId) q.set("provinceId", provinceId);
       if (status) q.set("status", status);
+      if (search) q.set("q", search);            // ค้นทั้งตารางที่เซิร์ฟเวอร์ (16/09/69)
       return req("GET", `/api/captures?${q}`);
     },
     insert: (rec) => req("POST", "/api/captures", rec),
