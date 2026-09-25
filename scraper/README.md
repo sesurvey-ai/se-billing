@@ -31,6 +31,7 @@ python pull_data.py --daily --show
 ```
 จะ: ดึง isurvey 30 วัน + emcs (แก้ไข/ต่อเนื่อง) → รวมต่อหัวหน้า → POST ขึ้น VPS
 ถ้า upload ล้มเหลว จะเซฟ `last_payload.json` ไว้ให้ดูโครงสร้างผลลัพธ์
+ลองรันโดยไม่ทับแดชบอร์ดของวัน: เติม `--no-upload` (เซฟ `last_payload_dry.json` แทนการอัป)
 
 ## 4) ตั้ง Task Scheduler (รันอัตโนมัติ 06:00)
 สร้าง `run_daily.bat`:
@@ -65,3 +66,23 @@ Task Scheduler → Create Task → Trigger: Daily 06:00 → Action: เรีย
 }
 ```
 > extension จะอ่านชื่อหัวหน้าจากหน้า isurvey (`#main-tab_header-title-textEl`) แล้วหยิบ object ของหัวหน้านั้นมาแสดง
+
+### `emcs_inbox` — รายการเต็มของ 2 กล่องบน EMCS ให้เว็บ se-survey (เพิ่ม 25/09/69)
+หน้า "งานแก้ไข/ต่อเนื่อง (EMCS)" บนเว็บ se-survey อ่านส่วนนี้ (`GET /api/dashboard` ด้วยโทเค็นเดียวกัน) —
+หัวหน้าผู้ตรวจเห็นเฉพาะงานของตัวเอง · แอดมินเห็นทุกคน
+```json
+"emcs_inbox": {
+  "ok": true, "max_age_years": 2, "totals": { "edit": 114, "continuous": 469 },
+  "edit": [ { "date": "01/ส.ค./2569 12:21", "aging_days": 55, "over_age": false,
+              "claim_no": "2026013058321", "esurvey_no": "S68426093061", "notify_no": "", "survey_no": "SEABI-121260900065",
+              "company": "ไอโออิกรุงเทพประกันภัย", "status": "รายงานแก้ไข", "car_role": "ประกัน", "follow_type": "",
+              "keyer": "…", "lock_by": "", "lock_icon": "Lock_Green.gif",
+              "supervisor": "นาย วรภพ หัตถิยา", "supervisor_from": "closer" } ],
+  "continuous": [ … ]
+}
+```
+- **ทุกแถว** ที่ EMCS มี: เกิน `emcs_max_age_years` ไม่ตัด แค่ติด `over_age` (เว็บขึ้นป้าย "เกิน 2 ปี") · แถวไม่มีเลขเคลมก็อยู่
+- หัวหน้า: ผู้ปิดงานเคลมนั้นบน ISURVEY (`closer`) → ไม่เจอ = เจ้าของ prefix เลขเซอร์เวย์ SETP/SEMS (`prefix`) → ไม่เจอ = `sesurvey` (`none`)
+- `ok=false` = รอบนั้นเข้า EMCS ไม่ได้ (รายการว่างไม่ได้แปลว่าไม่มีงาน)
+- ⛔ `supervisors[].emcs_*` ของ extension **คงกติกาเดิม** (ตัดเกิน 2 ปี + ไม่มีเลขเคลม) — แดชบอร์ดเดิมไม่เปลี่ยน
+- ไม่เก็บกรมธรรม์/ทะเบียน/ยี่ห้อ/รุ่น — เฉพาะเลขอ้างอิงงาน

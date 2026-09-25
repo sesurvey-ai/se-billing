@@ -41,12 +41,12 @@ check("isurvey datetime", P.parse_isurvey_dt("2026-06-18 16:17") == datetime(202
 # ---- mapping resolution (real file) ----
 mapping = P.load_mapping()
 code_to_sup, company_to_sups, norm_sup_to_display, supervisors = mapping
-check("map: 9 supervisors incl. สราวุธ", len(supervisors) == 9 and "นายสราวุธ บุญคุ้ม" in supervisors)
+check("map: 10 supervisors incl. สราวุธ", len(supervisors) == 10 and "นายสราวุธ บุญคุ้ม" in supervisors)
 check("map: ศุภชัย is a key", "นาย ศุภชัย เศรษฐชัยชาญ" in supervisors)
 check("map: SEC125 -> ศุภชัย", code_to_sup.get("SEC125") == "นาย ศุภชัย เศรษฐชัยชาญ")
-check("map: SE445 -> ภูริ ภัทรภิรัก", code_to_sup.get("SE445") == "นายภูริ ภัทรภิรัก")
-check("surveyor SE445 -> {ภูริ ภัทรภิรัก}",
-      P.surveyor_supervisors("SE445 นายวีระพงษ์ แก้วเขียว", code_to_sup, company_to_sups) == {"นายภูริ ภัทรภิรัก"})
+check("map: SE297 -> ภูริ ภัทรภิรัก", code_to_sup.get("SE297") == "นายภูริ ภัทรภิรัก")
+check("surveyor SE297 -> {ภูริ ภัทรภิรัก}",
+      P.surveyor_supervisors("SE297 นายวิษณุ แดงจวง", code_to_sup, company_to_sups) == {"นายภูริ ภัทรภิรัก"})
 shared = P.surveyor_supervisors("หจก ศรีราชาเคลม เซอร์วิส", code_to_sup, company_to_sups)
 check("shared outsource under >=2 supervisors", len(shared) >= 2)
 check("closer 'นายภูริ ภัทรภิรัก' -> key", P.closer_supervisor("นายภูริ ภัทรภิรัก", norm_sup_to_display) == "นายภูริ ภัทรภิรัก")
@@ -68,12 +68,12 @@ today = date.today()
 disp = (today - timedelta(days=3)).strftime("%Y-%m-%d 09:00")
 isurvey_rows = [
     {"claim_no": "B1", "empcode": "SEC125 นาย สมภพ ปั้นเปรื่อง", "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
-    {"claim_no": "B2", "empcode": "SE445 นายวีระพงษ์ แก้วเขียว", "stt_desc": "เสร็จงาน",       "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
+    {"claim_no": "B2", "empcode": "SE297 นายวิษณุ แดงจวง", "stt_desc": "เสร็จงาน",       "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
     {"claim_no": "B3", "empcode": "SEC125 นาย สมภพ ปั้นเปรื่อง", "stt_desc": "จบงาน",          "dispatch_dt": disp, "checkByName": "นาย ศุภชัย เศรษฐชัยชาญ", "checker_dt": disp},
     {"claim_no": "B4", "empcode": "SEC125 นาย สมภพ ปั้นเปรื่อง", "stt_desc": "ยกเลิกเคลม",      "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
     {"claim_no": "B5", "empcode": "หจก ศรีราชาเคลม เซอร์วิส",    "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
     {"survey_no": "SEABI-000006", "empcode": "SE999 ไม่รู้จัก",  "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},   # ไม่มี claim_no -> fallback survey_no
-    {"claim_no": "B7", "survey_no": "SETP-6907-000123", "empcode": "SE445 นายวีระพงษ์ แก้วเขียว", "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
+    {"claim_no": "B7", "survey_no": "SETP-6907-000123", "empcode": "SE297 นายวิษณุ แดงจวง", "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
     {"claim_no": "B8", "survey_no": "SEMS6907000124",   "empcode": "SEC125 นาย สมภพ ปั้นเปรื่อง", "stt_desc": "รอตรวจข้อมูล", "dispatch_dt": disp, "checkByName": "", "checker_dt": ""},
 ]
 INV = {v: k for k, v in P.THAI_MONTHS.items()}
@@ -91,14 +91,12 @@ out = P.aggregate_daily(con, isurvey_rows, emcs_lists, mapping, 2, PREFIX_OWNERS
 sup = {s["name"]: s for s in out["supervisors"]}
 S = sup["นาย ศุภชัย เศรษฐชัยชาญ"]
 B = sup["นายภูริ ภัทรภิรัก"]
-PR = sup["นายภูรี ชูลาภโชคทวี"]
 SN = sup["นาย ธนัช หรินทรสุทธิ"]   # เดิม "นาย สันติ หรินทรสุทธิ" — เปลี่ยนชื่อเป็น ธนัช (rename)
 SAR = sup["นายสราวุธ บุญคุ้ม"]
 
 check("agg: ศุภชัย backlog = 2 (B1 + shared B5)", S["isurvey_backlog"] == 2)
 check("agg: ธนัช (เดิม สันติ) backlog = 1 (shared B5)", SN["isurvey_backlog"] == 1)
-check("agg: ภูริ ภัทรภิรัก backlog = 1 (B2, SE445)", B["isurvey_backlog"] == 1)
-check("agg: ภูรี ชูลาภโชคทวี (คนละคน, ไม่มีงานใน fixture) backlog = 0", PR["isurvey_backlog"] == 0)
+check("agg: ภูริ ภัทรภิรัก backlog = 1 (B2, SE297)", B["isurvey_backlog"] == 1)
 check("agg: จบงาน & ยกเลิก excluded from backlog", "จบงาน" not in S["isurvey_by_status"] and "ยกเลิกเคลม" not in S["isurvey_by_status"])
 check("agg: B6 (ผู้สำรวจนอก mapping) -> bucket 'sesurvey'", sup["sesurvey"]["isurvey_backlog"] == 1)
 check("agg: claim_no ว่าง -> item.claim_no fallback เป็น survey_no", sup["sesurvey"]["isurvey_items"][0]["claim_no"] == "SEABI-000006")
@@ -115,6 +113,48 @@ check("agg: สราวุธ backlog = 2 (SETP B7 + SEMS B8 by survey_no)", SA
 check("agg: SETP job NOT double-counted to surveyor's sup (ภูริ ภัทรภิรัก stays 1)", B["isurvey_backlog"] == 1)
 check("agg: SEMS job NOT double-counted to surveyor's sup (ศุภชัย stays 2)", S["isurvey_backlog"] == 2)
 check("agg: survey_no kept on isurvey item", any((it.get("survey_no") or "").startswith("SETP") for it in SAR["isurvey_items"]))
+
+# ---- แถว EMCS แบบ dict (ตัวดึงรุ่น 25/09/69) — ชุดเดิมของ extension ต้องได้ผลเท่าแบบ tuple ----
+def as_dict(t, **extra):
+    return {"date": t[0], "claim_no": t[1], **extra}
+check("row fields: dict + tuple", P.emcs_row_fields({"date": "d", "claim_no": "c"}) == ("d", "c")
+      and P.emcs_row_fields(("d", "c")) == ("d", "c"))
+emcs_dicts = {k: [as_dict(t) for t in v] for k, v in emcs_lists.items()}
+out2 = P.aggregate_daily(con, isurvey_rows, emcs_dicts, mapping, 2, PREFIX_OWNERS)
+check("agg: dict rows = tuple rows (extension ไม่เปลี่ยน)",
+      out2["totals"] == out["totals"]
+      and {s["name"]: (s["emcs_edit"], s["emcs_continuous"]) for s in out2["supervisors"]}
+      == {s["name"]: (s["emcs_edit"], s["emcs_continuous"]) for s in out["supervisors"]})
+
+# ---- emcs_inbox: รายการเต็มให้เว็บ se-survey ----
+inbox_lists = {
+    "continuous": [
+        as_dict((thai(recent), "C1"), esurvey_no="S68426093061", survey_no="SEABI-121260900065", company="ไอโออิกรุงเทพประกันภัย",
+                follow_type="-", lock_by="สุทิษา พงษ์แขก", lock_icon="Lock_Blue.gif", keyer="สุทิษา พงษ์แขก", car_role="ประกัน"),
+        as_dict((thai(oldd), "C2"), follow_type="งานติดตาม - รถหาย"),                 # เกิน 2 ปี: ชุด extension ตัด แต่ inbox ต้องมี
+        as_dict((thai(recent), ""), survey_no="SETP-6907-000125"),                  # ไม่มีเลขเคลม + SETP -> สราวุธ (prefix)
+        as_dict((thai(recent), ""), survey_no="SEABI-000999"),                      # ไม่มีเลขเคลม ไม่มี prefix -> sesurvey
+        as_dict((thai(recent), "C9")),                                              # ผู้ปิดงานนอก mapping -> ชื่อจริง
+    ],
+    "edit": [as_dict((thai(recent), "C1"))],
+}
+inbox = P.build_emcs_inbox(con, inbox_lists, mapping, 2, PREFIX_OWNERS)
+C = inbox["continuous"]
+check("inbox: ครบทุกแถว (เกิน 2 ปี + ไม่มีเลขเคลมไม่ถูกตัด)", inbox["totals"] == {"edit": 1, "continuous": 5} and len(C) == 5)
+check("inbox: ok=True เมื่อมีรายการจาก EMCS · max_age_years ติดไปด้วย", inbox["ok"] is True and inbox["max_age_years"] == 2)
+check("inbox: เกิน 2 ปี ติดธง over_age · ปกติไม่ติด", C[1]["over_age"] is True and C[0]["over_age"] is False)
+check("inbox: หัวหน้าจากผู้ปิดงาน (C1 -> ศุภชัย · C2 -> ภูริ)",
+      C[0]["supervisor"] == "นาย ศุภชัย เศรษฐชัยชาญ" and C[0]["supervisor_from"] == "closer"
+      and C[1]["supervisor"] == "นายภูริ ภัทรภิรัก")
+check("inbox: ไม่มีเลขเคลม + SETP -> สราวุธ (prefix) · ไม่มี prefix -> sesurvey",
+      C[2]["supervisor"] == "นายสราวุธ บุญคุ้ม" and C[2]["supervisor_from"] == "prefix"
+      and C[3]["supervisor"] == "sesurvey" and C[3]["supervisor_from"] == "none")
+check("inbox: ผู้ปิดงานนอก mapping -> ชื่อจริง", C[4]["supervisor"] == "นาย เจษ ผินกลับ")
+check("inbox: คอลัมน์ครบ · ประเภทงานติดตาม '-' = ว่าง",
+      C[0]["esurvey_no"] == "S68426093061" and C[0]["survey_no"] == "SEABI-121260900065" and C[0]["lock_by"] == "สุทิษา พงษ์แขก"
+      and C[0]["follow_type"] == "" and C[1]["follow_type"] == "งานติดตาม - รถหาย" and isinstance(C[0]["aging_days"], int))
+check("inbox: ไม่มีกรมธรรม์/ทะเบียน/ยี่ห้อ/รุ่น ขึ้น VPS", not any(k in C[0] for k in ("policy_no", "plate", "brand", "model")))
+check("inbox: เข้า EMCS ไม่ได้ (ไม่มีรายการ) -> ok=False", P.build_emcs_inbox(con, {}, mapping, 2)["ok"] is False)
 
 print("\n" + ("ALL PASS ✅" if not FAILS else f"FAILED {len(FAILS)}: " + "; ".join(FAILS)))
 sys.exit(1 if FAILS else 0)

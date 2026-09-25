@@ -4,3 +4,4 @@ last_payload.json
 run.log
 .venv/
 __pycache__/
+last_payload_dry.json

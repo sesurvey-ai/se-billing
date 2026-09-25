@@ -13,9 +13,13 @@ Modes
   python pull_data.py --daily      Daily run (Task Scheduler ~06:00): pull isurvey
                                    (last ~30 days) + emcs claim lists, aggregate, upload.
   add  --show   to run the browser headful (watch / verify the login on first run).
+  add  --no-upload   (with --daily) to try a run without overwriting today's dashboard (saves last_payload_dry.json).
 
 Auth: Playwright logs in to both systems with credentials from config.json.
-Credentials never leave this machine; ONLY aggregated counts are uploaded.
+Credentials never leave this machine; uploaded = per-supervisor counts/items + (25/09/69) `emcs_inbox`
+= every row of the EMCS "รายงานแก้ไข"/"งานต่อเนื่อง" boxes with job reference numbers only
+(claim/e-Survey/survey no, insurer, follow-up type, keyer, lock holder) for the se-survey web page —
+no policy/plate/customer data.
 
 See ../PROGRESS.md and the project memory for the verified data logic this implements.
 """
@@ -387,6 +391,11 @@ def row_to_index_record(r, now_iso):
 # --------------------------------------------------------------------------- #
 # emcs pull (claim lists for the two backlog categories)
 # --------------------------------------------------------------------------- #
+# แถวของตาราง tbodyReportList มี 20 ช่อง (ตรวจกับหน้า EMCS ที่บอท se-autokey เซฟไว้ 25/09/69 — ช่อง class="hide" ไม่ขึ้นจอแต่อยู่ใน HTML):
+#   0 วันที่/เวลา · 1 เลข e-Survey · 2 เลขรับแจ้ง · 3 เลขเรื่องเซอร์เวย์ · 4 เลขเคลม · 5 กรมธรรม์ · 6 ทะเบียน · 7 ยี่ห้อ · 8 รุ่น
+#   9 บริษัทประกัน · 10 สถานะ · 12 (ซ่อน) ชื่อผู้คีย์บน EMCS · 14 ป/ค/ย (title = ประกัน/คู่กรณี/ยกเลิกการเคลม)
+#   16 ประเภทงานติดตาม ("-" = ไม่ใช่งานติดตาม) · 17 แก้ไข · 18 รูปกุญแจ (title = คนที่ล็อกเรื่องอยู่ · Lock_Green = ว่าง)
+# ⛔ ไม่เก็บกรมธรรม์/ทะเบียน/ยี่ห้อ/รุ่น — ขึ้น VPS เฉพาะเลขอ้างอิงงาน ไม่ใช่ข้อมูลลูกค้า
 EMCS_CHANGEPAGE_JS = """
 async (intPage) => {
   const res = await fetch('ajaxSurvey.aspx/changePage', {
@@ -400,19 +409,34 @@ async (intPage) => {
   catch (e) { return { rows: [], totalPage: 0, totalReport: -1, err: String(raw).slice(0, 100) }; }
   const tb = document.createElement('table'); tb.innerHTML = payload.reportList || '';
   const rows = [];
+  const txt = (el) => (el ? el.textContent.trim().replace(/\\s+/g, ' ') : '');
+  const attr = (el, sel, name) => { const x = el ? el.querySelector(sel) : null; return x ? (x.getAttribute(name) || '').trim() : ''; };
   tb.querySelectorAll('tr').forEach(tr => {
     const c = tr.children;
-    if (c.length > 4) rows.push([c[0].textContent.trim().replace(/\\s+/g,' '), c[4].textContent.trim()]);
+    if (c.length > 4) rows.push({
+      date: txt(c[0]), esurvey_no: txt(c[1]), notify_no: txt(c[2]), survey_no: txt(c[3]), claim_no: txt(c[4]),
+      company: txt(c[9]), status: txt(c[10]), keyer: txt(c[12]),
+      car_role: attr(c[14], '[title]', 'title'), follow_type: txt(c[16]), edit_mark: txt(c[17]),
+      lock_icon: attr(c[18], 'img', 'src').split('/').pop(), lock_by: attr(c[18], 'img', 'title'),
+      ncells: c.length
+    });
   });
   return { rows, totalPage: payload.totalPage, totalReport: payload.totalReport };
 }
 """
 
 
+def emcs_row_fields(row):
+    """แถว EMCS -> (date_str, claim_no) — รับทั้ง dict (ตัวดึงรุ่น 25/09/69) และ tuple (date, claim) แบบเดิม"""
+    if isinstance(row, dict):
+        return row.get("date") or "", row.get("claim_no") or ""
+    return (row[0] if len(row) > 0 else ""), (row[1] if len(row) > 1 else "")
+
+
 def emcs_collect_category(page, postback_target, pause_ms):
     """Switch to an INBOX category via the page's own __doPostBack (scheduled with setTimeout so
     page.evaluate returns before the postback navigation destroys the context), then loop
-    changePage. Returns [(date_str, claim_no), ...]."""
+    changePage. Returns [{date, claim_no, esurvey_no, survey_no, ...}, ...] (ดู EMCS_CHANGEPAGE_JS)."""
     has_dpb = page.evaluate("typeof window.__doPostBack === 'function'")
     try:
         with page.expect_navigation(timeout=60000):
@@ -434,6 +458,14 @@ def emcs_collect_category(page, postback_target, pause_ms):
         except Exception as e:
             print(f"[emcs] page {p} error: {e}")
             break
+    # EMCS เปลี่ยนหน้าตาราง = ตำแหน่งคอลัมน์เลื่อนเงียบ ๆ → เตือนใน run.log (ปกติ 20 ช่องทุกแถว)
+    shapes = {}
+    for r in out:
+        if isinstance(r, dict):
+            n = r.pop("ncells", None)
+            shapes[n] = shapes.get(n, 0) + 1
+    if shapes and set(shapes) != {20}:
+        print(f"[emcs]   ⚠️ จำนวนช่องต่อแถวไม่ใช่ 20 ทุกแถว {shapes} — ตำแหน่งคอลัมน์อาจเลื่อน ตรวจ EMCS_CHANGEPAGE_JS")
     return out
 
 
@@ -500,7 +532,8 @@ def aggregate_daily(con, isurvey_rows, emcs_lists, mapping, max_age_years, surve
 
     # --- emcs backlog: claim -> closer (supervisor) via index ---
     for category, rows in emcs_lists.items():  # category in {"edit","continuous"}
-        for date_str, claim_no in rows:
+        for row in rows:
+            date_str, claim_no = emcs_row_fields(row)
             claim_no = (claim_no or "").strip()
             if not claim_no:
                 continue
@@ -531,6 +564,60 @@ def aggregate_daily(con, isurvey_rows, emcs_lists, mapping, max_age_years, surve
         "unmatched": unmatched,
         "totals": totals,
     }
+
+
+def emcs_supervisor_for(con, claim_no, survey_no, norm_sup_to_display, prefix_items, fallback_label):
+    """หัวหน้าของแถว EMCS: ผู้ปิดงานเคลมนั้นบน ISURVEY (ดัชนี) → ไม่เจอ = เจ้าของ prefix เลขเซอร์เวย์ (SETP/SEMS)
+    → ไม่เจอ = fallback_label · คืน (ชื่อ, ที่มา 'closer'|'prefix'|'none')"""
+    closer = index_lookup_closer(con, claim_no) if claim_no else None
+    if closer:
+        return closer_supervisor(closer, norm_sup_to_display) or closer, "closer"
+    owner = next((sup for p, sup in prefix_items if (survey_no or "").upper().startswith(p)), None)
+    if owner:
+        return owner, "prefix"
+    return fallback_label, "none"
+
+
+def build_emcs_inbox(con, emcs_lists, mapping, max_age_years, survey_prefix_owners=None, fallback_label="sesurvey"):
+    """รายการ **เต็ม** ของกล่อง "รายงานแก้ไข" / "งานต่อเนื่อง" ให้หน้าเว็บ se-survey (user สั่ง 25/09/69)
+    — ทุกแถวที่ EMCS มี: ไม่ตัดอายุ (เกิน max_age_years ติดธง over_age ให้เว็บขึ้นป้าย) · ไม่ตัดแถวที่ไม่มีเลขเคลม
+    ⛔ supervisors[].emcs_* ของ extension คงกติกาเดิม (ตัดเกิน max_age_years + ไม่มีเลขเคลม) — ไม่แตะแดชบอร์ดเดิม
+    ok=False = รอบนี้เข้า EMCS ไม่ได้ (รายการว่างไม่ได้แปลว่าไม่มีงาน)"""
+    _, _, norm_sup_to_display, _ = mapping
+    prefix_items = [(p.upper(), sup) for p, sup in (survey_prefix_owners or {}).items()]
+    today = date.today()
+    cutoff = today - timedelta(days=int(round(max_age_years * 365.25)))
+    out = {"ok": bool(emcs_lists), "max_age_years": max_age_years, "totals": {}}
+    for category in ("edit", "continuous"):
+        items = []
+        for row in emcs_lists.get(category) or []:
+            r = row if isinstance(row, dict) else {"date": emcs_row_fields(row)[0], "claim_no": emcs_row_fields(row)[1]}
+            claim_no = (r.get("claim_no") or "").strip()
+            survey_no = (r.get("survey_no") or "").strip()
+            d = parse_thai_dt(r.get("date"))
+            sup, sup_from = emcs_supervisor_for(con, claim_no, survey_no, norm_sup_to_display, prefix_items, fallback_label)
+            follow = (r.get("follow_type") or "").strip()
+            items.append({
+                "date": (r.get("date") or "").strip(),
+                "aging_days": (today - d).days if d else None,
+                "over_age": bool(d and d < cutoff),
+                "claim_no": claim_no,
+                "esurvey_no": (r.get("esurvey_no") or "").strip(),
+                "notify_no": (r.get("notify_no") or "").strip(),
+                "survey_no": survey_no,
+                "company": (r.get("company") or "").strip(),
+                "status": (r.get("status") or "").strip(),
+                "car_role": (r.get("car_role") or "").strip(),
+                "follow_type": "" if follow == "-" else follow,
+                "keyer": (r.get("keyer") or "").strip(),
+                "lock_by": (r.get("lock_by") or "").strip(),
+                "lock_icon": (r.get("lock_icon") or "").strip(),
+                "supervisor": sup,
+                "supervisor_from": sup_from,
+            })
+        out[category] = items
+        out["totals"][category] = len(items)
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -582,7 +669,7 @@ def run_backfill(cfg, headless):
     print(f"[backfill] indexed {n} isurvey rows over {years}y -> {INDEX_DB}")
 
 
-def run_daily(cfg, headless, emcs_only=False):
+def run_daily(cfg, headless, emcs_only=False, do_upload=True):
     from playwright.sync_api import sync_playwright
     s = cfg["settings"]
     pause = s["request_pause_ms"]
@@ -639,6 +726,22 @@ def run_daily(cfg, headless, emcs_only=False):
     payload = aggregate_daily(con, isurvey_rows, emcs_lists, mapping, s["emcs_max_age_years"],
                               prefix_owners, fallback_label)
     print(f"[daily] totals: {payload['totals']}  unmatched: {payload['unmatched']}")
+    # รายการเต็มของ 2 กล่องให้หน้าเว็บ se-survey "งานแก้ไข/ต่อเนื่อง (EMCS)" (25/09/69) — พังก็ไม่ล้มทั้งรอบ
+    try:
+        inbox = build_emcs_inbox(con, emcs_lists, mapping, s["emcs_max_age_years"], prefix_owners, fallback_label)
+        payload["emcs_inbox"] = inbox
+        for k in ("edit", "continuous"):
+            its = inbox.get(k) or []
+            print(f"[emcs] inbox {k}: {len(its)} แถว · เกิน {s['emcs_max_age_years']} ปี {sum(1 for x in its if x['over_age'])}"
+                  f" · ไม่มีเลขเคลม {sum(1 for x in its if not x['claim_no'])}"
+                  f" · ไม่พบหัวหน้า {sum(1 for x in its if x['supervisor_from'] == 'none')}")
+    except Exception as e:
+        print(f"[emcs] build_emcs_inbox error: {type(e).__name__}: {e} — อัปเฉพาะชุดเดิม")
+    if not do_upload:
+        out = HERE / "last_payload_dry.json"
+        out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"[daily] --no-upload: ไม่อัปขึ้น VPS · เซฟไว้ที่ {out}")
+        return
     upload(cfg["vps"], payload)
 
 
@@ -648,6 +751,8 @@ def main():
     ap.add_argument("--daily", action="store_true", help="daily pull + aggregate + upload")
     ap.add_argument("--show", action="store_true", help="run browser headful (verify login)")
     ap.add_argument("--emcs-only", action="store_true", help="daily: skip isurvey, debug emcs only")
+    ap.add_argument("--no-upload", action="store_true",
+                    help="daily: ไม่อัปขึ้น VPS (เซฟ last_payload_dry.json) — ใช้ลองรัน ไม่ทับแดชบอร์ดของวัน")
     args = ap.parse_args()
     if not (args.backfill or args.daily):
         ap.error("choose --backfill or --daily")
@@ -656,7 +761,7 @@ def main():
     if args.backfill:
         run_backfill(cfg, headless)
     if args.daily:
-        run_daily(cfg, headless, emcs_only=args.emcs_only)
+        run_daily(cfg, headless, emcs_only=args.emcs_only, do_upload=not args.no_upload)
 
 
 if __name__ == "__main__":
