@@ -156,5 +156,21 @@ check("inbox: คอลัมน์ครบ · ประเภทงานต�
 check("inbox: ไม่มีกรมธรรม์/ทะเบียน/ยี่ห้อ/รุ่น ขึ้น VPS", not any(k in C[0] for k in ("policy_no", "plate", "brand", "model")))
 check("inbox: เข้า EMCS ไม่ได้ (ไม่มีรายการ) -> ok=False", P.build_emcs_inbox(con, {}, mapping, 2)["ok"] is False)
 
+# ---- ข้อความ log ทุก print ต้องเขียนได้ด้วย cp874 (Task Scheduler เขียน run.log ด้วย encoding เครื่อง) ----
+# 26/09/69: "·" ในบรรทัด log ของ emcs_inbox ทำ print โยน UnicodeEncodeError ตอนรันจริง 06:00 (รอบนั้นยังอัปได้เพราะอยู่ใน try)
+import ast
+_src = open(P.__file__, encoding="utf-8").read()
+_bad = []
+for node in ast.walk(ast.parse(_src)):
+    if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "print":
+        for sub in ast.walk(node):
+            if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                try:
+                    sub.value.encode("cp874")
+                except UnicodeEncodeError:
+                    _bad.append((node.lineno, sub.value[:40]))
+check(f"print ทุกบรรทัดใน pull_data.py เขียนด้วย cp874 ได้ {_bad[:3]}", not _bad)
+check("main() ตั้ง stdout errors='replace' กันอักขระแปลกทำทั้งรอบล้ม", 'stream.reconfigure(errors="replace")' in _src)
+
 print("\n" + ("ALL PASS ✅" if not FAILS else f"FAILED {len(FAILS)}: " + "; ".join(FAILS)))
 sys.exit(1 if FAILS else 0)

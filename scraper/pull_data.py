@@ -465,7 +465,7 @@ def emcs_collect_category(page, postback_target, pause_ms):
             n = r.pop("ncells", None)
             shapes[n] = shapes.get(n, 0) + 1
     if shapes and set(shapes) != {20}:
-        print(f"[emcs]   ⚠️ จำนวนช่องต่อแถวไม่ใช่ 20 ทุกแถว {shapes} — ตำแหน่งคอลัมน์อาจเลื่อน ตรวจ EMCS_CHANGEPAGE_JS")
+        print(f"[emcs]   WARNING จำนวนช่องต่อแถวไม่ใช่ 20 ทุกแถว {shapes} — ตำแหน่งคอลัมน์อาจเลื่อน ตรวจ EMCS_CHANGEPAGE_JS")
     return out
 
 
@@ -727,25 +727,33 @@ def run_daily(cfg, headless, emcs_only=False, do_upload=True):
                               prefix_owners, fallback_label)
     print(f"[daily] totals: {payload['totals']}  unmatched: {payload['unmatched']}")
     # รายการเต็มของ 2 กล่องให้หน้าเว็บ se-survey "งานแก้ไข/ต่อเนื่อง (EMCS)" (25/09/69) — พังก็ไม่ล้มทั้งรอบ
+    # ⛔ ข้อความ log ต้องอยู่ในชุดอักษร cp874 (Task Scheduler เขียน run.log ด้วย cp874) — 26/09/69 "·" ทำ print พัง
     try:
-        inbox = build_emcs_inbox(con, emcs_lists, mapping, s["emcs_max_age_years"], prefix_owners, fallback_label)
-        payload["emcs_inbox"] = inbox
-        for k in ("edit", "continuous"):
-            its = inbox.get(k) or []
-            print(f"[emcs] inbox {k}: {len(its)} แถว · เกิน {s['emcs_max_age_years']} ปี {sum(1 for x in its if x['over_age'])}"
-                  f" · ไม่มีเลขเคลม {sum(1 for x in its if not x['claim_no'])}"
-                  f" · ไม่พบหัวหน้า {sum(1 for x in its if x['supervisor_from'] == 'none')}")
+        payload["emcs_inbox"] = build_emcs_inbox(con, emcs_lists, mapping, s["emcs_max_age_years"], prefix_owners, fallback_label)
     except Exception as e:
         print(f"[emcs] build_emcs_inbox error: {type(e).__name__}: {e} — อัปเฉพาะชุดเดิม")
+    for k in ("edit", "continuous"):
+        its = (payload.get("emcs_inbox") or {}).get(k)
+        if its is not None:
+            print(f"[emcs] inbox {k}: {len(its)} แถว, เกิน {s['emcs_max_age_years']} ปี {sum(1 for x in its if x['over_age'])}"
+                  f", ไม่มีเลขเคลม {sum(1 for x in its if not x['claim_no'])}"
+                  f", ไม่พบหัวหน้า {sum(1 for x in its if x['supervisor_from'] == 'none')}")
     if not do_upload:
         out = HERE / "last_payload_dry.json"
         out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(f"[daily] --no-upload: ไม่อัปขึ้น VPS · เซฟไว้ที่ {out}")
+        print(f"[daily] --no-upload: ไม่อัปขึ้น VPS, เซฟไว้ที่ {out}")
         return
     upload(cfg["vps"], payload)
 
 
 def main():
+    # Task Scheduler เขียน run.log ด้วย encoding ของเครื่อง (cp874) — อักขระนอกชุดต้องกลายเป็น "?" ไม่ใช่ทำทั้งรอบล้ม
+    # (26/09/69 "·" ในบรรทัด log ทำ print โยน UnicodeEncodeError) · เทส test_logic.py ตรวจข้อความ print ทุกบรรทัดอีกชั้น
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description="extenBoard data puller")
     ap.add_argument("--backfill", action="store_true", help="one-time: build claim->closer index")
     ap.add_argument("--daily", action="store_true", help="daily pull + aggregate + upload")
